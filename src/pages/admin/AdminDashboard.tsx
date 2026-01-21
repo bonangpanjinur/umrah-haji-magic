@@ -2,38 +2,89 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/format";
 import { 
   DollarSign, Users, Calendar, CreditCard, 
-  TrendingUp, AlertCircle 
+  TrendingUp, ArrowRight, Package
 } from "lucide-react";
+import { Link } from "react-router-dom";
+import {
+  AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
+  ResponsiveContainer, Tooltip, XAxis
+} from "recharts";
+import { format, subMonths, startOfMonth, endOfMonth, eachMonthOfInterval, parseISO } from "date-fns";
+import { id as idLocale } from "date-fns/locale";
+
+const COLORS = ['hsl(var(--primary))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))'];
 
 export default function AdminDashboard() {
   const { data: stats, isLoading } = useQuery({
     queryKey: ['admin-dashboard-stats'],
     queryFn: async () => {
-      // Get booking stats
       const { data: bookings } = await supabase
         .from('bookings')
-        .select('total_price, paid_amount, booking_status, payment_status');
+        .select('total_price, paid_amount, booking_status, payment_status, created_at, total_pax');
 
-      // Get customer count
       const { count: customerCount } = await supabase
         .from('customers')
         .select('*', { count: 'exact', head: true });
 
-      // Get pending payments
       const { data: pendingPayments } = await supabase
         .from('payments')
         .select('amount')
         .eq('status', 'pending');
 
-      // Calculate stats
       const totalRevenue = bookings?.reduce((sum, b) => sum + (b.paid_amount || 0), 0) || 0;
       const totalBookings = bookings?.length || 0;
       const pendingBookings = bookings?.filter(b => b.booking_status === 'pending').length || 0;
       const pendingPaymentAmount = pendingPayments?.reduce((sum, p) => sum + p.amount, 0) || 0;
       const pendingPaymentCount = pendingPayments?.length || 0;
+      const totalPax = bookings?.reduce((sum, b) => sum + (b.total_pax || 0), 0) || 0;
+
+      // Monthly data for mini chart (last 6 months)
+      const months = eachMonthOfInterval({
+        start: subMonths(new Date(), 5),
+        end: new Date()
+      });
+
+      const monthlyRevenue = months.map(month => {
+        const monthStart = startOfMonth(month);
+        const monthEnd = endOfMonth(month);
+        
+        const monthBookings = bookings?.filter(b => {
+          const date = parseISO(b.created_at);
+          return date >= monthStart && date <= monthEnd;
+        }) || [];
+
+        return {
+          month: format(month, 'MMM', { locale: idLocale }),
+          revenue: monthBookings.reduce((sum, b) => sum + (b.paid_amount || 0), 0),
+          bookings: monthBookings.length
+        };
+      });
+
+      // Status distribution
+      const statusMap: Record<string, number> = {};
+      bookings?.forEach(b => {
+        const status = b.booking_status || 'pending';
+        statusMap[status] = (statusMap[status] || 0) + 1;
+      });
+      const statusData = Object.entries(statusMap).map(([name, value]) => ({
+        name: name.charAt(0).toUpperCase() + name.slice(1),
+        value
+      }));
+
+      // Payment status distribution
+      const paymentMap: Record<string, number> = {};
+      bookings?.forEach(b => {
+        const status = b.payment_status || 'pending';
+        paymentMap[status] = (paymentMap[status] || 0) + 1;
+      });
+      const paymentData = Object.entries(paymentMap).map(([name, value]) => ({
+        name: name.charAt(0).toUpperCase() + name.slice(1),
+        value
+      }));
 
       return {
         totalRevenue,
@@ -42,6 +93,10 @@ export default function AdminDashboard() {
         customerCount: customerCount || 0,
         pendingPaymentAmount,
         pendingPaymentCount,
+        totalPax,
+        monthlyRevenue,
+        statusData,
+        paymentData,
       };
     },
   });
@@ -68,31 +123,68 @@ export default function AdminDashboard() {
     },
   });
 
+  const { data: upcomingDepartures } = useQuery({
+    queryKey: ['admin-upcoming-departures'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('departures')
+        .select(`
+          id,
+          departure_date,
+          quota,
+          booked_count,
+          package:packages(name, code)
+        `)
+        .gte('departure_date', new Date().toISOString().split('T')[0])
+        .order('departure_date', { ascending: true })
+        .limit(5);
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Dashboard</h1>
-        <p className="text-muted-foreground">Selamat datang di Admin Panel</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Dashboard</h1>
+          <p className="text-muted-foreground">Selamat datang di Admin Panel</p>
+        </div>
+        <Button asChild>
+          <Link to="/admin/analytics">
+            Lihat Analytics Lengkap
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Link>
+        </Button>
       </div>
 
-      {/* Stats Cards */}
+      {/* Stats Cards with Mini Charts */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatsCard
+        <StatsCardWithChart
           title="Total Pendapatan"
           value={formatCurrency(stats?.totalRevenue || 0)}
           icon={DollarSign}
           loading={isLoading}
+          chartData={stats?.monthlyRevenue || []}
+          dataKey="revenue"
+          color="hsl(var(--primary))"
         />
-        <StatsCard
+        <StatsCardWithChart
           title="Total Booking"
           value={stats?.totalBookings?.toString() || '0'}
           subtitle={`${stats?.pendingBookings || 0} pending`}
           icon={Calendar}
           loading={isLoading}
+          chartData={stats?.monthlyRevenue || []}
+          dataKey="bookings"
+          color="hsl(var(--chart-2))"
+          chartType="bar"
         />
         <StatsCard
           title="Total Jamaah"
-          value={stats?.customerCount?.toString() || '0'}
+          value={stats?.totalPax?.toString() || '0'}
+          subtitle={`${stats?.customerCount || 0} customers`}
           icon={Users}
           loading={isLoading}
         />
@@ -106,35 +198,204 @@ export default function AdminDashboard() {
         />
       </div>
 
-      {/* Recent Bookings */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Booking Terbaru</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {recentBookings?.map((booking) => (
-              <div 
-                key={booking.id} 
-                className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
-              >
-                <div>
-                  <p className="font-mono text-sm font-semibold">{booking.booking_code}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {(booking.customer as any)?.full_name}
-                  </p>
+      {/* Charts Row */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        {/* Booking Status Distribution */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-medium flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
+              Status Booking
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <Skeleton className="h-[160px] w-full" />
+            ) : (
+              <div className="flex items-center gap-4">
+                <div className="w-[140px] h-[140px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={stats?.statusData || []}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={35}
+                        outerRadius={60}
+                        dataKey="value"
+                      >
+                        {(stats?.statusData || []).map((_, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: 'hsl(var(--background))',
+                          border: '1px solid hsl(var(--border))',
+                          borderRadius: '8px',
+                          fontSize: '12px'
+                        }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
                 </div>
-                <div className="text-right">
-                  <p className="font-semibold">{formatCurrency(booking.total_price)}</p>
-                  <p className="text-xs text-muted-foreground capitalize">
-                    {booking.payment_status}
-                  </p>
+                <div className="flex-1 space-y-2">
+                  {(stats?.statusData || []).map((item, index) => (
+                    <div key={item.name} className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2">
+                        <div 
+                          className="w-3 h-3 rounded-full" 
+                          style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                        />
+                        <span className="text-muted-foreground">{item.name}</span>
+                      </div>
+                      <span className="font-medium">{item.value}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Payment Status Distribution */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-medium flex items-center gap-2">
+              <CreditCard className="h-4 w-4" />
+              Status Pembayaran
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <Skeleton className="h-[160px] w-full" />
+            ) : (
+              <div className="flex items-center gap-4">
+                <div className="w-[140px] h-[140px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={stats?.paymentData || []}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={35}
+                        outerRadius={60}
+                        dataKey="value"
+                      >
+                        {(stats?.paymentData || []).map((_, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: 'hsl(var(--background))',
+                          border: '1px solid hsl(var(--border))',
+                          borderRadius: '8px',
+                          fontSize: '12px'
+                        }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="flex-1 space-y-2">
+                  {(stats?.paymentData || []).map((item, index) => (
+                    <div key={item.name} className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2">
+                        <div 
+                          className="w-3 h-3 rounded-full" 
+                          style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                        />
+                        <span className="text-muted-foreground">{item.name}</span>
+                      </div>
+                      <span className="font-medium">{item.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Recent Data */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        {/* Recent Bookings */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-base font-medium">Booking Terbaru</CardTitle>
+            <Button variant="ghost" size="sm" asChild>
+              <Link to="/admin/bookings">Lihat Semua</Link>
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {recentBookings?.map((booking) => (
+                <div 
+                  key={booking.id} 
+                  className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+                >
+                  <div>
+                    <p className="font-mono text-sm font-semibold">{booking.booking_code}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {(booking.customer as any)?.full_name}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-semibold">{formatCurrency(booking.total_price)}</p>
+                    <p className="text-xs text-muted-foreground capitalize">
+                      {booking.payment_status}
+                    </p>
+                  </div>
+                </div>
+              ))}
+              {(!recentBookings || recentBookings.length === 0) && (
+                <p className="text-center text-muted-foreground py-4">Belum ada booking</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Upcoming Departures */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-base font-medium">Keberangkatan Mendatang</CardTitle>
+            <Button variant="ghost" size="sm" asChild>
+              <Link to="/admin/packages">Lihat Semua</Link>
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {upcomingDepartures?.map((departure) => (
+                <div 
+                  key={departure.id} 
+                  className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-primary/10 rounded-lg">
+                      <Package className="h-4 w-4 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm">{(departure.package as any)?.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {format(new Date(departure.departure_date), 'dd MMM yyyy', { locale: idLocale })}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-semibold text-sm">
+                      {departure.booked_count || 0}/{departure.quota}
+                    </p>
+                    <p className="text-xs text-muted-foreground">pax</p>
+                  </div>
+                </div>
+              ))}
+              {(!upcomingDepartures || upcomingDepartures.length === 0) && (
+                <p className="text-center text-muted-foreground py-4">Belum ada keberangkatan</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
@@ -150,7 +411,7 @@ interface StatsCardProps {
 
 function StatsCard({ title, value, subtitle, icon: Icon, loading, highlight }: StatsCardProps) {
   return (
-    <Card className={highlight ? 'border-amber-300 bg-amber-50' : ''}>
+    <Card className={highlight ? 'border-amber-300 bg-amber-50 dark:bg-amber-950/20' : ''}>
       <CardContent className="p-6">
         <div className="flex items-center justify-between">
           <div>
@@ -166,10 +427,96 @@ function StatsCard({ title, value, subtitle, icon: Icon, loading, highlight }: S
               </>
             )}
           </div>
-          <div className={`p-3 rounded-full ${highlight ? 'bg-amber-100' : 'bg-primary/10'}`}>
+          <div className={`p-3 rounded-full ${highlight ? 'bg-amber-100 dark:bg-amber-900/30' : 'bg-primary/10'}`}>
             <Icon className={`h-6 w-6 ${highlight ? 'text-amber-600' : 'text-primary'}`} />
           </div>
         </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+interface StatsCardWithChartProps extends StatsCardProps {
+  chartData: Array<{ month: string; revenue?: number; bookings?: number }>;
+  dataKey: string;
+  color: string;
+  chartType?: 'area' | 'bar';
+}
+
+function StatsCardWithChart({ 
+  title, value, subtitle, icon: Icon, loading, chartData, dataKey, color, chartType = 'area' 
+}: StatsCardWithChartProps) {
+  return (
+    <Card>
+      <CardContent className="p-6">
+        <div className="flex items-start justify-between mb-3">
+          <div>
+            <p className="text-sm text-muted-foreground">{title}</p>
+            {loading ? (
+              <Skeleton className="h-8 w-24 mt-1" />
+            ) : (
+              <>
+                <p className="text-2xl font-bold">{value}</p>
+                {subtitle && (
+                  <p className="text-xs text-muted-foreground">{subtitle}</p>
+                )}
+              </>
+            )}
+          </div>
+          <div className="p-2 rounded-full bg-primary/10">
+            <Icon className="h-5 w-5 text-primary" />
+          </div>
+        </div>
+        {!loading && chartData.length > 0 && (
+          <div className="h-[60px] mt-2">
+            <ResponsiveContainer width="100%" height="100%">
+              {chartType === 'area' ? (
+                <AreaChart data={chartData}>
+                  <defs>
+                    <linearGradient id={`gradient-${dataKey}`} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={color} stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor={color} stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <XAxis dataKey="month" hide />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--background))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px',
+                      fontSize: '12px'
+                    }}
+                    formatter={(value: number) => [
+                      dataKey === 'revenue' ? formatCurrency(value) : value,
+                      dataKey === 'revenue' ? 'Revenue' : 'Bookings'
+                    ]}
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey={dataKey} 
+                    stroke={color} 
+                    fillOpacity={1} 
+                    fill={`url(#gradient-${dataKey})`}
+                    strokeWidth={2}
+                  />
+                </AreaChart>
+              ) : (
+                <BarChart data={chartData}>
+                  <XAxis dataKey="month" hide />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--background))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px',
+                      fontSize: '12px'
+                    }}
+                  />
+                  <Bar dataKey={dataKey} fill={color} radius={[2, 2, 0, 0]} />
+                </BarChart>
+              )}
+            </ResponsiveContainer>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
