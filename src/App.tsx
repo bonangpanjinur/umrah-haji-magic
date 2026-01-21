@@ -17,6 +17,7 @@ import BookingDetail from "./pages/customer/BookingDetail";
 import PaymentUpload from "./pages/customer/PaymentUpload";
 import { AdminLayout } from "./components/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import AdminPackages from "./pages/admin/AdminPackages";
 import AdminPackageDetail from "./pages/admin/AdminPackageDetail";
 import AdminBookings from "./pages/admin/AdminBookings";
@@ -66,6 +67,7 @@ const App = () => (
             {/* Admin Routes */}
             <Route path="/admin" element={<AdminLayout />}>
               <Route index element={<AdminDashboard />} />
+              <Route path="analytics" element={<AdminAnalytics />} />
               <Route path="packages" element={<AdminPackages />} />
               <Route path="packages/:id" element={<AdminPackageDetail />} />
               <Route path="master-data" element={<AdminMasterData />} />
