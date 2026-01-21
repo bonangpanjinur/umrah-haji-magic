@@ -12,6 +12,16 @@ import PackageList from "./pages/packages/PackageList";
 import PackageDetail from "./pages/packages/PackageDetail";
 import BookingPage from "./pages/booking/BookingPage";
 import BookingSuccess from "./pages/booking/BookingSuccess";
+import MyBookings from "./pages/customer/MyBookings";
+import BookingDetail from "./pages/customer/BookingDetail";
+import PaymentUpload from "./pages/customer/PaymentUpload";
+import { AdminLayout } from "./components/admin/AdminLayout";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminPackages from "./pages/admin/AdminPackages";
+import AdminBookings from "./pages/admin/AdminBookings";
+import AdminPayments from "./pages/admin/AdminPayments";
+import AdminCustomers from "./pages/admin/AdminCustomers";
+import AdminSettings from "./pages/admin/AdminSettings";
 
 const queryClient = new QueryClient();
 
@@ -30,7 +40,20 @@ const App = () => (
             <Route path="/packages/:id" element={<PackageDetail />} />
             <Route path="/booking/:packageId" element={<BookingPage />} />
             <Route path="/booking/success/:bookingId" element={<BookingSuccess />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="/my-bookings" element={<MyBookings />} />
+            <Route path="/my-bookings/:bookingId" element={<BookingDetail />} />
+            <Route path="/my-bookings/:bookingId/payment" element={<PaymentUpload />} />
+            
+            {/* Admin Routes */}
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route index element={<AdminDashboard />} />
+              <Route path="packages" element={<AdminPackages />} />
+              <Route path="bookings" element={<AdminBookings />} />
+              <Route path="payments" element={<AdminPayments />} />
+              <Route path="customers" element={<AdminCustomers />} />
+              <Route path="settings" element={<AdminSettings />} />
+            </Route>
+            
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
