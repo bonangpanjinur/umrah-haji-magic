@@ -1,0 +1,487 @@
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
+import { 
+  Plus, Search, Phone, Mail, Calendar, User, 
+  ArrowRight, Filter, Users, TrendingUp, Target, XCircle
+} from "lucide-react";
+import { Link } from "react-router-dom";
+import { format } from "date-fns";
+import { id as idLocale } from "date-fns/locale";
+import { cn } from "@/lib/utils";
+import type { Database } from "@/integrations/supabase/types";
+
+type LeadStatus = Database["public"]["Enums"]["lead_status"];
+
+const STATUS_CONFIG: Record<LeadStatus, { label: string; color: string; bgColor: string }> = {
+  new: { label: 'Baru', color: 'text-blue-700', bgColor: 'bg-blue-100 dark:bg-blue-900/30' },
+  contacted: { label: 'Dihubungi', color: 'text-purple-700', bgColor: 'bg-purple-100 dark:bg-purple-900/30' },
+  follow_up: { label: 'Follow Up', color: 'text-amber-700', bgColor: 'bg-amber-100 dark:bg-amber-900/30' },
+  negotiation: { label: 'Negosiasi', color: 'text-orange-700', bgColor: 'bg-orange-100 dark:bg-orange-900/30' },
+  closing: { label: 'Closing', color: 'text-emerald-700', bgColor: 'bg-emerald-100 dark:bg-emerald-900/30' },
+  won: { label: 'Won', color: 'text-green-700', bgColor: 'bg-green-100 dark:bg-green-900/30' },
+  lost: { label: 'Lost', color: 'text-red-700', bgColor: 'bg-red-100 dark:bg-red-900/30' },
+};
+
+const KANBAN_COLUMNS: LeadStatus[] = ['new', 'contacted', 'follow_up', 'negotiation', 'closing'];
+
+export default function AdminLeads() {
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const { data: leads, isLoading } = useQuery({
+    queryKey: ['admin-leads'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('leads')
+        .select(`
+          *,
+          package:packages(name, code),
+          branch:branches(name)
+        `)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: packages } = useQuery({
+    queryKey: ['packages-for-leads'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('packages')
+        .select('id, name, code')
+        .eq('is_active', true);
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const createMutation = useMutation({
+    mutationFn: async (data: {
+      full_name: string;
+      phone?: string;
+      email?: string;
+      source?: string;
+      notes?: string;
+      package_interest?: string;
+    }) => {
+      const { error } = await supabase.from('leads').insert(data);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-leads'] });
+      setIsCreateOpen(false);
+      toast({ title: "Lead berhasil ditambahkan" });
+    },
+    onError: (error: any) => {
+      toast({ title: "Gagal menambahkan lead", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const updateStatusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: LeadStatus }) => {
+      const { error } = await supabase
+        .from('leads')
+        .update({ status, updated_at: new Date().toISOString() })
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-leads'] });
+      toast({ title: "Status lead diperbarui" });
+    },
+  });
+
+  const filteredLeads = leads?.filter(lead => {
+    const matchesSearch = lead.full_name.toLowerCase().includes(search.toLowerCase()) ||
+      lead.phone?.toLowerCase().includes(search.toLowerCase()) ||
+      lead.email?.toLowerCase().includes(search.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || lead.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
+  // Stats
+  const stats = {
+    total: leads?.length || 0,
+    new: leads?.filter(l => l.status === 'new').length || 0,
+    inProgress: leads?.filter(l => ['contacted', 'follow_up', 'negotiation', 'closing'].includes(l.status || '')).length || 0,
+    won: leads?.filter(l => l.status === 'won').length || 0,
+    lost: leads?.filter(l => l.status === 'lost').length || 0,
+    conversionRate: leads?.length ? ((leads.filter(l => l.status === 'won').length / leads.length) * 100).toFixed(1) : '0',
+  };
+
+  const handleCreateSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    createMutation.mutate({
+      full_name: formData.get('full_name') as string,
+      phone: formData.get('phone') as string || undefined,
+      email: formData.get('email') as string || undefined,
+      source: formData.get('source') as string || undefined,
+      notes: formData.get('notes') as string || undefined,
+      package_interest: formData.get('package_interest') as string || undefined,
+    });
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">CRM - Leads</h1>
+          <p className="text-muted-foreground">Kelola prospek dan konversi ke booking</p>
+        </div>
+        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              Tambah Lead
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Tambah Lead Baru</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleCreateSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="full_name">Nama Lengkap *</Label>
+                <Input id="full_name" name="full_name" required />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Telepon</Label>
+                  <Input id="phone" name="phone" type="tel" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input id="email" name="email" type="email" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="source">Sumber</Label>
+                  <Select name="source">
+                    <SelectTrigger>
+                      <SelectValue placeholder="Pilih sumber" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="website">Website</SelectItem>
+                      <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                      <SelectItem value="instagram">Instagram</SelectItem>
+                      <SelectItem value="facebook">Facebook</SelectItem>
+                      <SelectItem value="referral">Referral</SelectItem>
+                      <SelectItem value="walk-in">Walk-in</SelectItem>
+                      <SelectItem value="phone">Telepon</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="package_interest">Paket Diminati</Label>
+                  <Select name="package_interest">
+                    <SelectTrigger>
+                      <SelectValue placeholder="Pilih paket" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {packages?.map(pkg => (
+                        <SelectItem key={pkg.id} value={pkg.id}>{pkg.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="notes">Catatan</Label>
+                <Textarea id="notes" name="notes" rows={3} />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)}>
+                  Batal
+                </Button>
+                <Button type="submit" disabled={createMutation.isPending}>
+                  {createMutation.isPending ? 'Menyimpan...' : 'Simpan'}
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      {/* Stats */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <StatCard title="Total Leads" value={stats.total} icon={Users} />
+        <StatCard title="Leads Baru" value={stats.new} icon={Plus} color="blue" />
+        <StatCard title="Dalam Proses" value={stats.inProgress} icon={TrendingUp} color="amber" />
+        <StatCard title="Won" value={stats.won} icon={Target} color="green" />
+        <StatCard title="Conversion Rate" value={`${stats.conversionRate}%`} icon={ArrowRight} color="emerald" />
+      </div>
+
+      <Tabs defaultValue="kanban" className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <TabsList>
+            <TabsTrigger value="kanban">Kanban</TabsTrigger>
+            <TabsTrigger value="list">List</TabsTrigger>
+          </TabsList>
+          <div className="flex gap-2">
+            <div className="relative flex-1 sm:w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Cari lead..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[140px]">
+                <Filter className="h-4 w-4 mr-2" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Semua Status</SelectItem>
+                {Object.entries(STATUS_CONFIG).map(([key, config]) => (
+                  <SelectItem key={key} value={key}>{config.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <TabsContent value="kanban">
+          {isLoading ? (
+            <div className="grid gap-4 lg:grid-cols-5">
+              {KANBAN_COLUMNS.map(col => (
+                <Skeleton key={col} className="h-[400px]" />
+              ))}
+            </div>
+          ) : (
+            <div className="grid gap-4 lg:grid-cols-5 overflow-x-auto">
+              {KANBAN_COLUMNS.map(status => {
+                const statusLeads = filteredLeads?.filter(l => l.status === status) || [];
+                const config = STATUS_CONFIG[status];
+                
+                return (
+                  <div key={status} className="min-w-[250px]">
+                    <div className={cn("rounded-t-lg px-3 py-2 font-medium flex items-center justify-between", config.bgColor)}>
+                      <span className={config.color}>{config.label}</span>
+                      <Badge variant="secondary" className="text-xs">{statusLeads.length}</Badge>
+                    </div>
+                    <div className="bg-muted/30 rounded-b-lg p-2 space-y-2 min-h-[350px]">
+                      {statusLeads.map(lead => (
+                        <LeadCard 
+                          key={lead.id} 
+                          lead={lead} 
+                          onStatusChange={(newStatus) => updateStatusMutation.mutate({ id: lead.id, status: newStatus })}
+                        />
+                      ))}
+                      {statusLeads.length === 0 && (
+                        <p className="text-center text-muted-foreground text-sm py-8">
+                          Tidak ada lead
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="list">
+          <Card>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b bg-muted/50">
+                      <th className="text-left py-3 px-4 font-medium">Nama</th>
+                      <th className="text-left py-3 px-4 font-medium">Kontak</th>
+                      <th className="text-left py-3 px-4 font-medium">Paket</th>
+                      <th className="text-left py-3 px-4 font-medium">Status</th>
+                      <th className="text-left py-3 px-4 font-medium">Follow Up</th>
+                      <th className="text-left py-3 px-4 font-medium">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredLeads?.map(lead => (
+                      <tr key={lead.id} className="border-b last:border-0 hover:bg-muted/30">
+                        <td className="py-3 px-4">
+                          <div>
+                            <p className="font-medium">{lead.full_name}</p>
+                            <p className="text-xs text-muted-foreground capitalize">{lead.source}</p>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="space-y-1 text-sm">
+                            {lead.phone && (
+                              <div className="flex items-center gap-1 text-muted-foreground">
+                                <Phone className="h-3 w-3" />
+                                {lead.phone}
+                              </div>
+                            )}
+                            {lead.email && (
+                              <div className="flex items-center gap-1 text-muted-foreground">
+                                <Mail className="h-3 w-3" />
+                                {lead.email}
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                        <td className="py-3 px-4">
+                          {(lead.package as any)?.name || '-'}
+                        </td>
+                        <td className="py-3 px-4">
+                          <Badge className={cn("font-normal", STATUS_CONFIG[lead.status as LeadStatus]?.bgColor, STATUS_CONFIG[lead.status as LeadStatus]?.color)}>
+                            {STATUS_CONFIG[lead.status as LeadStatus]?.label}
+                          </Badge>
+                        </td>
+                        <td className="py-3 px-4 text-sm">
+                          {lead.follow_up_date 
+                            ? format(new Date(lead.follow_up_date), 'dd MMM yyyy', { locale: idLocale })
+                            : '-'
+                          }
+                        </td>
+                        <td className="py-3 px-4">
+                          <Button variant="ghost" size="sm" asChild>
+                            <Link to={`/admin/leads/${lead.id}`}>
+                              Detail
+                              <ArrowRight className="h-4 w-4 ml-1" />
+                            </Link>
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+interface StatCardProps {
+  title: string;
+  value: number | string;
+  icon: React.ComponentType<{ className?: string }>;
+  color?: 'blue' | 'amber' | 'green' | 'emerald' | 'red';
+}
+
+function StatCard({ title, value, icon: Icon, color }: StatCardProps) {
+  const colorClasses = {
+    blue: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30',
+    amber: 'bg-amber-100 text-amber-600 dark:bg-amber-900/30',
+    green: 'bg-green-100 text-green-600 dark:bg-green-900/30',
+    emerald: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30',
+    red: 'bg-red-100 text-red-600 dark:bg-red-900/30',
+  };
+
+  return (
+    <Card>
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm text-muted-foreground">{title}</p>
+            <p className="text-2xl font-bold">{value}</p>
+          </div>
+          <div className={cn("p-2 rounded-full", color ? colorClasses[color] : "bg-primary/10 text-primary")}>
+            <Icon className="h-5 w-5" />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+interface LeadCardProps {
+  lead: any;
+  onStatusChange: (status: LeadStatus) => void;
+}
+
+function LeadCard({ lead, onStatusChange }: LeadCardProps) {
+  const currentIndex = KANBAN_COLUMNS.indexOf(lead.status as LeadStatus);
+  const canMoveForward = currentIndex < KANBAN_COLUMNS.length - 1;
+  const nextStatus = canMoveForward ? KANBAN_COLUMNS[currentIndex + 1] : null;
+
+  return (
+    <Card className="cursor-pointer hover:shadow-md transition-shadow">
+      <CardContent className="p-3">
+        <Link to={`/admin/leads/${lead.id}`} className="block">
+          <div className="flex items-start justify-between mb-2">
+            <div>
+              <p className="font-medium text-sm">{lead.full_name}</p>
+              {lead.source && (
+                <Badge variant="outline" className="text-xs mt-1">{lead.source}</Badge>
+              )}
+            </div>
+          </div>
+          
+          {(lead.package as any)?.name && (
+            <p className="text-xs text-muted-foreground mb-2">
+              📦 {(lead.package as any).name}
+            </p>
+          )}
+          
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            {lead.phone && (
+              <span className="flex items-center gap-1">
+                <Phone className="h-3 w-3" />
+                {lead.phone}
+              </span>
+            )}
+          </div>
+          
+          {lead.follow_up_date && (
+            <div className="flex items-center gap-1 text-xs mt-2 text-amber-600">
+              <Calendar className="h-3 w-3" />
+              {format(new Date(lead.follow_up_date), 'dd MMM', { locale: idLocale })}
+            </div>
+          )}
+        </Link>
+        
+        {nextStatus && (
+          <Button 
+            size="sm" 
+            variant="ghost" 
+            className="w-full mt-2 text-xs h-7"
+            onClick={(e) => {
+              e.preventDefault();
+              onStatusChange(nextStatus);
+            }}
+          >
+            Pindah ke {STATUS_CONFIG[nextStatus].label}
+            <ArrowRight className="h-3 w-3 ml-1" />
+          </Button>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
