@@ -1,28 +1,27 @@
 import { useState } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StepIndicator } from "./StepIndicator";
 import { StepSelectDeparture } from "./steps/StepSelectDeparture";
-import { StepPassengers } from "./steps/StepPassengers";
-import { StepDocuments } from "./steps/StepDocuments";
+import { StepPassengersSimple } from "./steps/StepPassengersSimple";
 import { StepRoomSelection } from "./steps/StepRoomSelection";
-import { StepReview } from "./steps/StepReview";
-import { useBookingWizard } from "@/hooks/useBookingWizard";
-import { Loader2 } from "lucide-react";
+import { StepReviewSimple } from "./steps/StepReviewSimple";
+import { useBookingWizardSimple } from "@/hooks/useBookingWizardSimple";
+import { Loader2, ArrowLeft } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 export type BookingStep = 
   | 'departure'
   | 'passengers'
-  | 'documents'
   | 'room'
   | 'review';
 
 const STEPS: { id: BookingStep; label: string }[] = [
   { id: 'departure', label: 'Keberangkatan' },
   { id: 'passengers', label: 'Data Jamaah' },
-  { id: 'documents', label: 'Dokumen' },
   { id: 'room', label: 'Kamar' },
   { id: 'review', label: 'Review' },
 ];
@@ -35,6 +34,21 @@ export function BookingWizard() {
   
   const initialDepartureId = searchParams.get('departure') || undefined;
   
+  // Fetch package info
+  const { data: packageInfo } = useQuery({
+    queryKey: ['package-info', packageId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('packages')
+        .select('id, name, code, duration_days, package_type')
+        .eq('id', packageId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!packageId,
+  });
+
   const {
     currentStep,
     setCurrentStep,
@@ -42,7 +56,7 @@ export function BookingWizard() {
     updateFormData,
     isSubmitting,
     submitBooking,
-  } = useBookingWizard(packageId!, initialDepartureId);
+  } = useBookingWizardSimple(packageId!, initialDepartureId);
 
   const currentStepIndex = STEPS.findIndex(s => s.id === currentStep);
 
@@ -94,6 +108,24 @@ export function BookingWizard() {
 
   return (
     <div className="space-y-6">
+      {/* Back Button & Title */}
+      <div>
+        <Button variant="outline" size="sm" asChild className="mb-4">
+          <Link to={`/packages/${packageId}`}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Kembali ke Detail Paket
+          </Link>
+        </Button>
+        {packageInfo && (
+          <div>
+            <h1 className="text-2xl font-bold">Booking: {packageInfo.name}</h1>
+            <p className="text-muted-foreground">
+              {packageInfo.duration_days} Hari • {packageInfo.package_type?.toUpperCase()}
+            </p>
+          </div>
+        )}
+      </div>
+
       {/* Step Indicator */}
       <StepIndicator steps={STEPS} currentStep={currentStep} />
 
@@ -109,14 +141,7 @@ export function BookingWizard() {
           )}
           
           {currentStep === 'passengers' && (
-            <StepPassengers
-              passengers={formData.passengers}
-              onUpdate={(passengers) => updateFormData({ passengers })}
-            />
-          )}
-          
-          {currentStep === 'documents' && (
-            <StepDocuments
+            <StepPassengersSimple
               passengers={formData.passengers}
               onUpdate={(passengers) => updateFormData({ passengers })}
             />
@@ -131,7 +156,7 @@ export function BookingWizard() {
           )}
           
           {currentStep === 'review' && (
-            <StepReview
+            <StepReviewSimple
               formData={formData}
               packageId={packageId!}
             />
@@ -175,10 +200,9 @@ function canProceed(step: BookingStep, formData: any): boolean {
     case 'departure':
       return !!formData.departureId;
     case 'passengers':
+      // Only require name for each passenger
       return formData.passengers.length > 0 && 
-        formData.passengers.every((p: any) => p.fullName && p.birthDate && p.gender);
-    case 'documents':
-      return formData.passengers.every((p: any) => p.ktpUrl || p.passportUrl);
+        formData.passengers.every((p: any) => p.fullName?.trim());
     case 'room':
       return !!formData.roomType;
     case 'review':
