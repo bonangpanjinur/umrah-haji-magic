@@ -7,9 +7,10 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Search, Eye, User, Phone, Mail, Users, FileCheck, Calendar, Star } from "lucide-react";
+import { Search, Eye, User, Phone, Mail, Users, FileCheck, Calendar, Star, UserPlus } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
+import { RegisterAsJamaahDialog } from "@/components/admin/RegisterAsJamaahDialog";
 
 export default function AdminCustomers() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -95,14 +96,24 @@ export default function AdminCustomers() {
           <h1 className="text-2xl font-bold">Data Jamaah</h1>
           <p className="text-muted-foreground">Lihat dan kelola data jamaah</p>
         </div>
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Cari nama, email, NIK, paspor..."
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-            className="pl-10 w-full sm:w-72"
+        <div className="flex items-center gap-2">
+          <RegisterAsJamaahDialog
+            trigger={
+              <Button variant="outline" size="sm">
+                <UserPlus className="h-4 w-4 mr-2" />
+                Daftarkan Saya
+              </Button>
+            }
           />
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Cari nama, email, NIK, paspor..."
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              className="pl-10 w-full sm:w-72"
+            />
+          </div>
         </div>
       </div>
 
