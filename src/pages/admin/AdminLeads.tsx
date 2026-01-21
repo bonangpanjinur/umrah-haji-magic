@@ -158,13 +158,20 @@ export default function AdminLeads() {
           <h1 className="text-2xl font-bold">CRM - Leads</h1>
           <p className="text-muted-foreground">Kelola prospek dan konversi ke booking</p>
         </div>
-        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Tambah Lead
-            </Button>
-          </DialogTrigger>
+        <div className="flex gap-2">
+          <Button variant="outline" asChild>
+            <Link to="/admin/leads/analytics">
+              <TrendingUp className="h-4 w-4 mr-2" />
+              Analytics
+            </Link>
+          </Button>
+          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Tambah Lead
+              </Button>
+            </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Tambah Lead Baru</DialogTitle>
@@ -230,7 +237,8 @@ export default function AdminLeads() {
               </div>
             </form>
           </DialogContent>
-        </Dialog>
+          </Dialog>
+        </div>
       </div>
 
       {/* Stats */}

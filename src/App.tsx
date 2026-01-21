@@ -32,6 +32,7 @@ import AdminSettings from "./pages/admin/AdminSettings";
 import AdminMasterData from "./pages/admin/AdminMasterData";
 import AdminLeads from "./pages/admin/AdminLeads";
 import AdminLeadDetail from "./pages/admin/AdminLeadDetail";
+import AdminLeadAnalytics from "./pages/admin/AdminLeadAnalytics";
 // Operational
 import OperationalLayout from "./pages/operational/OperationalLayout";
 import OperationalDashboard from "./pages/operational/OperationalDashboard";
@@ -82,6 +83,7 @@ const App = () => (
               <Route path="agents" element={<AdminAgents />} />
               <Route path="leads" element={<AdminLeads />} />
               <Route path="leads/:id" element={<AdminLeadDetail />} />
+              <Route path="leads/analytics" element={<AdminLeadAnalytics />} />
               <Route path="reports" element={<AdminReports />} />
               <Route path="settings" element={<AdminSettings />} />
             </Route>
