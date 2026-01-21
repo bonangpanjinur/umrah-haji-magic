@@ -779,7 +779,7 @@ export type Database = {
             foreignKeyName: "departures_team_leader_id_fkey"
             columns: ["team_leader_id"]
             isOneToOne: false
-            referencedRelation: "profiles"
+            referencedRelation: "customers"
             referencedColumns: ["id"]
           },
         ]

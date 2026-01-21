@@ -74,10 +74,13 @@ export function DepartureForm({ departureData, packageId, onSuccess, onCancel }:
     },
   });
 
-  const { data: profiles } = useQuery({
-    queryKey: ["profiles-list"],
+  const { data: customers } = useQuery({
+    queryKey: ["customers-tl-list"],
     queryFn: async () => {
-      const { data } = await supabase.from("profiles").select("id, full_name, user_id");
+      const { data } = await supabase
+        .from("customers")
+        .select("id, full_name, phone")
+        .order("full_name");
       return data || [];
     },
   });
@@ -343,16 +346,18 @@ export function DepartureForm({ departureData, packageId, onSuccess, onCancel }:
             name="team_leader_id"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Team Leader (TL)</FormLabel>
+                <FormLabel>Tour Leader (TL)</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value || undefined}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Pilih TL" />
+                      <SelectValue placeholder="Pilih Tour Leader dari jamaah" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {profiles?.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>{p.full_name || 'Unnamed'}</SelectItem>
+                    {customers?.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.full_name} {c.phone ? `(${c.phone})` : ''}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
