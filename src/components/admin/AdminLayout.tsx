@@ -4,13 +4,14 @@ import { Button } from "@/components/ui/button";
 import { 
   LayoutDashboard, Package, Users, Calendar, CreditCard, 
   Settings, LogOut, Menu, X, ChevronDown, Shield, UserCheck,
-  FileBarChart
+  FileBarChart, BarChart3
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
   { label: 'Dashboard', icon: LayoutDashboard, path: '/admin' },
+  { label: 'Analytics', icon: BarChart3, path: '/admin/analytics' },
   { label: 'Paket', icon: Package, path: '/admin/packages' },
   { label: 'Master Data', icon: Settings, path: '/admin/master-data' },
   { label: 'Booking', icon: Calendar, path: '/admin/bookings' },
