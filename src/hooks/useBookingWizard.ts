@@ -3,7 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { RoomType } from "@/types/database";
-import { BookingStep } from "@/components/booking/BookingWizard";
+
+// Old booking step type (kept for backward compatibility)
+type LegacyBookingStep = 'departure' | 'passengers' | 'documents' | 'room' | 'review';
 
 export interface PassengerData {
   id: string;
@@ -47,7 +49,7 @@ const createEmptyPassenger = (): PassengerData => ({
 
 export function useBookingWizard(packageId: string, initialDepartureId?: string) {
   const { user } = useAuth();
-  const [currentStep, setCurrentStep] = useState<BookingStep>('departure');
+  const [currentStep, setCurrentStep] = useState<LegacyBookingStep>('departure');
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [formData, setFormData] = useState<BookingFormData>({

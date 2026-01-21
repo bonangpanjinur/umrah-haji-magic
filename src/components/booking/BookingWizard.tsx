@@ -1,29 +1,22 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useParams, useSearchParams, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StepIndicator } from "./StepIndicator";
-import { StepSelectDeparture } from "./steps/StepSelectDeparture";
 import { StepPassengersSimple } from "./steps/StepPassengersSimple";
-import { StepRoomSelection } from "./steps/StepRoomSelection";
 import { StepReviewSimple } from "./steps/StepReviewSimple";
 import { useBookingWizardSimple } from "@/hooks/useBookingWizardSimple";
 import { Loader2, ArrowLeft } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { RoomType } from "@/types/database";
 
-export type BookingStep = 
-  | 'departure'
-  | 'passengers'
-  | 'room'
-  | 'review';
+export type BookingStep = 'passengers' | 'review';
 
 const STEPS: { id: BookingStep; label: string }[] = [
-  { id: 'departure', label: 'Keberangkatan' },
   { id: 'passengers', label: 'Data Jamaah' },
-  { id: 'room', label: 'Kamar' },
-  { id: 'review', label: 'Review' },
+  { id: 'review', label: 'Review & Bayar' },
 ];
 
 export function BookingWizard() {
@@ -32,7 +25,10 @@ export function BookingWizard() {
   const navigate = useNavigate();
   const { user, isLoading: authLoading } = useAuth();
   
-  const initialDepartureId = searchParams.get('departure') || undefined;
+  // Get pre-selected options from URL params
+  const initialDepartureId = searchParams.get('departure') || '';
+  const initialRoomType = (searchParams.get('room') as RoomType) || 'quad';
+  const initialPaxCount = parseInt(searchParams.get('pax') || '1', 10);
   
   // Fetch package info
   const { data: packageInfo } = useQuery({
@@ -49,6 +45,21 @@ export function BookingWizard() {
     enabled: !!packageId,
   });
 
+  // Fetch departure info
+  const { data: departureInfo } = useQuery({
+    queryKey: ['departure-info', initialDepartureId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('departures')
+        .select('id, departure_date, return_date, flight_number')
+        .eq('id', initialDepartureId)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!initialDepartureId,
+  });
+
   const {
     currentStep,
     setCurrentStep,
@@ -56,7 +67,15 @@ export function BookingWizard() {
     updateFormData,
     isSubmitting,
     submitBooking,
-  } = useBookingWizardSimple(packageId!, initialDepartureId);
+    initializePassengers,
+  } = useBookingWizardSimple(packageId!, initialDepartureId, initialRoomType);
+
+  // Initialize passengers based on pax count from URL
+  useEffect(() => {
+    if (initialPaxCount > 1 && formData.passengers.length === 1) {
+      initializePassengers(initialPaxCount);
+    }
+  }, [initialPaxCount]);
 
   const currentStepIndex = STEPS.findIndex(s => s.id === currentStep);
 
@@ -106,6 +125,25 @@ export function BookingWizard() {
     );
   }
 
+  // If no departure selected, redirect back to package page
+  if (!initialDepartureId) {
+    return (
+      <Card className="max-w-lg mx-auto">
+        <CardContent className="p-8 text-center">
+          <h2 className="text-xl font-semibold mb-4">Pilih Keberangkatan</h2>
+          <p className="text-muted-foreground mb-6">
+            Silakan pilih tanggal keberangkatan terlebih dahulu di halaman detail paket.
+          </p>
+          <Button asChild>
+            <Link to={`/packages/${packageId}`}>
+              Kembali ke Detail Paket
+            </Link>
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Back Button & Title */}
@@ -121,10 +159,29 @@ export function BookingWizard() {
             <h1 className="text-2xl font-bold">Booking: {packageInfo.name}</h1>
             <p className="text-muted-foreground">
               {packageInfo.duration_days} Hari • {packageInfo.package_type?.toUpperCase()}
+              {departureInfo && (
+                <> • Berangkat {new Date(departureInfo.departure_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</>
+              )}
             </p>
           </div>
         )}
       </div>
+
+      {/* Booking Summary Info */}
+      <Card className="bg-muted/50">
+        <CardContent className="p-4">
+          <div className="flex flex-wrap gap-4 text-sm">
+            <div>
+              <span className="text-muted-foreground">Tipe Kamar:</span>
+              <span className="ml-2 font-medium capitalize">{formData.roomType}</span>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Jumlah Jamaah:</span>
+              <span className="ml-2 font-medium">{formData.passengers.length} orang</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Step Indicator */}
       <StepIndicator steps={STEPS} currentStep={currentStep} />
@@ -132,26 +189,10 @@ export function BookingWizard() {
       {/* Step Content */}
       <Card>
         <CardContent className="p-6">
-          {currentStep === 'departure' && (
-            <StepSelectDeparture
-              packageId={packageId!}
-              selectedDepartureId={formData.departureId}
-              onSelect={(id) => updateFormData({ departureId: id })}
-            />
-          )}
-          
           {currentStep === 'passengers' && (
             <StepPassengersSimple
               passengers={formData.passengers}
               onUpdate={(passengers) => updateFormData({ passengers })}
-            />
-          )}
-          
-          {currentStep === 'room' && (
-            <StepRoomSelection
-              packageId={packageId!}
-              roomType={formData.roomType}
-              onSelect={(roomType) => updateFormData({ roomType })}
             />
           )}
           
@@ -197,14 +238,10 @@ export function BookingWizard() {
 
 function canProceed(step: BookingStep, formData: any): boolean {
   switch (step) {
-    case 'departure':
-      return !!formData.departureId;
     case 'passengers':
       // Only require name for each passenger
       return formData.passengers.length > 0 && 
         formData.passengers.every((p: any) => p.fullName?.trim());
-    case 'room':
-      return !!formData.roomType;
     case 'review':
       return true;
     default:

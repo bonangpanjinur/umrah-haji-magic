@@ -30,19 +30,31 @@ const createEmptyPassenger = (): SimplePassengerData => ({
   passengerType: 'adult',
 });
 
-export function useBookingWizardSimple(packageId: string, initialDepartureId?: string) {
+export function useBookingWizardSimple(
+  packageId: string, 
+  initialDepartureId?: string,
+  initialRoomType?: RoomType
+) {
   const { user } = useAuth();
-  const [currentStep, setCurrentStep] = useState<BookingStep>('departure');
+  const [currentStep, setCurrentStep] = useState<BookingStep>('passengers');
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [formData, setFormData] = useState<SimpleBookingFormData>({
     departureId: initialDepartureId || '',
-    roomType: 'quad',
+    roomType: initialRoomType || 'quad',
     passengers: [createEmptyPassenger()],
   });
 
   const updateFormData = (updates: Partial<SimpleBookingFormData>) => {
     setFormData(prev => ({ ...prev, ...updates }));
+  };
+
+  const initializePassengers = (count: number) => {
+    const passengers: SimplePassengerData[] = [];
+    for (let i = 0; i < count; i++) {
+      passengers.push(createEmptyPassenger());
+    }
+    setFormData(prev => ({ ...prev, passengers }));
   };
 
   const submitBooking = async () => {
@@ -199,5 +211,6 @@ export function useBookingWizardSimple(packageId: string, initialDepartureId?: s
     updateFormData,
     isSubmitting,
     submitBooking,
+    initializePassengers,
   };
 }

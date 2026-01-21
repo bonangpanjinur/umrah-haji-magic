@@ -7,13 +7,12 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
-import { formatCurrency, formatPackageType } from '@/lib/format';
+import { formatPackageType } from '@/lib/format';
+import { PackageBookingForm } from '@/components/packages/PackageBookingForm';
 import { 
-  Calendar, Clock, MapPin, Plane, Building2, Users, 
-  Check, X, Star, Phone, MessageCircle, ChevronLeft,
-  Shield, Award
+  Clock, MapPin, Plane, Building2, Users, 
+  Check, X, Star, ChevronLeft
 } from 'lucide-react';
-
 export default function PackageDetail() {
   const { id } = useParams<{ id: string }>();
 
@@ -373,67 +372,17 @@ export default function PackageDetail() {
             </Tabs>
           </div>
 
-          {/* Sidebar - Price Card */}
+          {/* Sidebar - Booking Form */}
           <div className="lg:col-span-1">
-            <Card className="sticky top-24">
-              <CardHeader>
-                <CardTitle>Harga Paket</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Quad (4 orang/kamar)</span>
-                    <span className="font-semibold">{formatCurrency(pkg.price_quad)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Triple (3 orang/kamar)</span>
-                    <span className="font-semibold">{formatCurrency(pkg.price_triple)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Double (2 orang/kamar)</span>
-                    <span className="font-semibold">{formatCurrency(pkg.price_double)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Single (1 orang/kamar)</span>
-                    <span className="font-semibold">{formatCurrency(pkg.price_single)}</span>
-                  </div>
-                </div>
-
-                <hr />
-
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Shield className="h-4 w-4 text-primary" />
-                    Izin resmi Kemenag
-                  </div>
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Award className="h-4 w-4 text-primary" />
-                    Pembayaran aman & terjamin
-                  </div>
-                </div>
-
-                <Button asChild className="w-full" size="lg">
-                  <Link to={`/booking/${pkg.id}`}>
-                    Daftar Sekarang
-                  </Link>
-                </Button>
-
-                <div className="flex gap-2">
-                  <Button variant="outline" className="flex-1 gap-2" asChild>
-                    <a href="https://wa.me/6281234567890" target="_blank" rel="noopener noreferrer">
-                      <MessageCircle className="h-4 w-4" />
-                      WhatsApp
-                    </a>
-                  </Button>
-                  <Button variant="outline" className="flex-1 gap-2" asChild>
-                    <a href="tel:+6281234567890">
-                      <Phone className="h-4 w-4" />
-                      Telepon
-                    </a>
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+            <PackageBookingForm 
+              packageId={pkg.id}
+              prices={{
+                quad: pkg.price_quad,
+                triple: pkg.price_triple,
+                double: pkg.price_double,
+                single: pkg.price_single,
+              }}
+            />
           </div>
         </div>
       </div>
