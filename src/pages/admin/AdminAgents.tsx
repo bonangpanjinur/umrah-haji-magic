@@ -1,0 +1,641 @@
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Table, TableBody, TableCell, TableHead,
+  TableHeader, TableRow
+} from "@/components/ui/table";
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter,
+  DialogHeader, DialogTitle
+} from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
+import { format } from "date-fns";
+import { id } from "date-fns/locale";
+import { formatCurrency } from "@/lib/format";
+import {
+  Search, Users, CheckCircle, Clock, XCircle,
+  DollarSign, Eye, Check, X, Edit2, Percent
+} from "lucide-react";
+
+interface Agent {
+  id: string;
+  user_id: string;
+  agent_code: string;
+  company_name: string | null;
+  commission_rate: number | null;
+  is_active: boolean;
+  bank_name: string | null;
+  bank_account_number: string | null;
+  bank_account_name: string | null;
+  npwp: string | null;
+  created_at: string;
+  branch_id: string | null;
+  profile?: {
+    full_name: string | null;
+    phone: string | null;
+  };
+}
+
+interface Commission {
+  id: string;
+  agent_id: string;
+  booking_id: string;
+  commission_amount: number;
+  status: string;
+  created_at: string;
+  paid_at: string | null;
+  notes: string | null;
+  agent?: {
+    agent_code: string;
+    company_name: string | null;
+  };
+  booking?: {
+    booking_code: string;
+    total_price: number;
+  };
+}
+
+export default function AdminAgents() {
+  const queryClient = useQueryClient();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [activeTab, setActiveTab] = useState("agents");
+  const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
+  const [showDetailDialog, setShowDetailDialog] = useState(false);
+  const [showCommissionDialog, setShowCommissionDialog] = useState(false);
+  const [selectedCommission, setSelectedCommission] = useState<Commission | null>(null);
+  const [agentToToggle, setAgentToToggle] = useState<Agent | null>(null);
+  const [editingRate, setEditingRate] = useState<{ agentId: string; rate: string } | null>(null);
+
+  // Fetch agents
+  const { data: agents, isLoading: agentsLoading } = useQuery({
+    queryKey: ['admin-agents'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('agents')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Fetch profiles for each agent
+      const userIds = (data || []).map(a => a.user_id);
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, full_name, phone')
+        .in('user_id', userIds);
+
+      return (data || []).map(agent => ({
+        ...agent,
+        profile: profiles?.find(p => p.user_id === agent.user_id),
+      })) as Agent[];
+    },
+  });
+
+  // Fetch commissions
+  const { data: commissions, isLoading: commissionsLoading } = useQuery({
+    queryKey: ['admin-commissions'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('agent_commissions')
+        .select(`
+          id,
+          agent_id,
+          booking_id,
+          commission_amount,
+          status,
+          created_at,
+          paid_at,
+          notes
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Fetch agent and booking details
+      const agentIds = [...new Set((data || []).map(c => c.agent_id))];
+      const bookingIds = [...new Set((data || []).map(c => c.booking_id))];
+
+      const [agentsRes, bookingsRes] = await Promise.all([
+        supabase.from('agents').select('id, agent_code, company_name').in('id', agentIds),
+        supabase.from('bookings').select('id, booking_code, total_price').in('id', bookingIds),
+      ]);
+
+      return (data || []).map(commission => ({
+        ...commission,
+        agent: agentsRes.data?.find(a => a.id === commission.agent_id),
+        booking: bookingsRes.data?.find(b => b.id === commission.booking_id),
+      })) as Commission[];
+    },
+  });
+
+  // Toggle agent status
+  const toggleAgentMutation = useMutation({
+    mutationFn: async ({ agentId, isActive }: { agentId: string; isActive: boolean }) => {
+      const { error } = await supabase
+        .from('agents')
+        .update({ is_active: isActive })
+        .eq('id', agentId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-agents'] });
+      toast.success(agentToToggle?.is_active ? "Agent dinonaktifkan" : "Agent diaktifkan");
+      setAgentToToggle(null);
+    },
+    onError: (error) => {
+      toast.error("Gagal mengubah status: " + error.message);
+    },
+  });
+
+  // Update commission rate
+  const updateRateMutation = useMutation({
+    mutationFn: async ({ agentId, rate }: { agentId: string; rate: number }) => {
+      const { error } = await supabase
+        .from('agents')
+        .update({ commission_rate: rate })
+        .eq('id', agentId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-agents'] });
+      toast.success("Rate komisi berhasil diupdate");
+      setEditingRate(null);
+    },
+    onError: (error) => {
+      toast.error("Gagal update rate: " + error.message);
+    },
+  });
+
+  // Pay commission
+  const payCommissionMutation = useMutation({
+    mutationFn: async (commissionId: string) => {
+      const { error } = await supabase
+        .from('agent_commissions')
+        .update({ 
+          status: 'paid',
+          paid_at: new Date().toISOString(),
+        })
+        .eq('id', commissionId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-commissions'] });
+      toast.success("Komisi berhasil dibayar");
+      setShowCommissionDialog(false);
+      setSelectedCommission(null);
+    },
+    onError: (error) => {
+      toast.error("Gagal membayar komisi: " + error.message);
+    },
+  });
+
+  const filteredAgents = agents?.filter(agent => {
+    if (!searchTerm) return true;
+    const search = searchTerm.toLowerCase();
+    return (
+      agent.agent_code?.toLowerCase().includes(search) ||
+      agent.company_name?.toLowerCase().includes(search) ||
+      agent.profile?.full_name?.toLowerCase().includes(search) ||
+      agent.profile?.phone?.includes(search)
+    );
+  });
+
+  const filteredCommissions = commissions?.filter(commission => {
+    if (!searchTerm) return true;
+    const search = searchTerm.toLowerCase();
+    return (
+      commission.agent?.agent_code?.toLowerCase().includes(search) ||
+      commission.agent?.company_name?.toLowerCase().includes(search) ||
+      commission.booking?.booking_code?.toLowerCase().includes(search)
+    );
+  });
+
+  const stats = {
+    totalAgents: agents?.length || 0,
+    activeAgents: agents?.filter(a => a.is_active).length || 0,
+    pendingCommissions: commissions?.filter(c => c.status === 'pending').length || 0,
+    totalPendingAmount: commissions?.filter(c => c.status === 'pending')
+      .reduce((sum, c) => sum + Number(c.commission_amount), 0) || 0,
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">Manajemen Agent</h1>
+          <p className="text-muted-foreground">Kelola agent dan komisi</p>
+        </div>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Cari agent, kode..."
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            className="pl-10 w-full sm:w-64"
+          />
+        </div>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Users className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Total Agent</p>
+                <p className="text-2xl font-bold">{stats.totalAgents}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-green-100">
+                <CheckCircle className="h-5 w-5 text-green-600" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Agent Aktif</p>
+                <p className="text-2xl font-bold">{stats.activeAgents}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-amber-100">
+                <Clock className="h-5 w-5 text-amber-600" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Komisi Pending</p>
+                <p className="text-2xl font-bold">{stats.pendingCommissions}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-blue-100">
+                <DollarSign className="h-5 w-5 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Total Pending</p>
+                <p className="text-xl font-bold">{formatCurrency(stats.totalPendingAmount)}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="agents">Daftar Agent</TabsTrigger>
+          <TabsTrigger value="commissions">Komisi</TabsTrigger>
+        </TabsList>
+
+        {/* Agents Tab */}
+        <TabsContent value="agents" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Daftar Agent</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {agentsLoading ? (
+                <div className="space-y-3">
+                  {[1, 2, 3, 4, 5].map(i => <Skeleton key={i} className="h-16 w-full" />)}
+                </div>
+              ) : !filteredAgents || filteredAgents.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  {searchTerm ? 'Tidak ada agent yang cocok.' : 'Belum ada data agent.'}
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Kode</TableHead>
+                        <TableHead>Nama</TableHead>
+                        <TableHead>Perusahaan</TableHead>
+                        <TableHead>Rate Komisi</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Bergabung</TableHead>
+                        <TableHead className="text-right">Aksi</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredAgents.map((agent) => (
+                        <TableRow key={agent.id}>
+                          <TableCell className="font-mono font-semibold">
+                            {agent.agent_code}
+                          </TableCell>
+                          <TableCell>{agent.profile?.full_name || '-'}</TableCell>
+                          <TableCell>{agent.company_name || '-'}</TableCell>
+                          <TableCell>
+                            {editingRate?.agentId === agent.id ? (
+                              <div className="flex items-center gap-2">
+                                <Input
+                                  type="number"
+                                  value={editingRate.rate}
+                                  onChange={(e) => setEditingRate({ ...editingRate, rate: e.target.value })}
+                                  className="w-20 h-8"
+                                  min="0"
+                                  max="100"
+                                />
+                                <span>%</span>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => updateRateMutation.mutate({
+                                    agentId: agent.id,
+                                    rate: parseFloat(editingRate.rate) || 0
+                                  })}
+                                >
+                                  <Check className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => setEditingRate(null)}
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2">
+                                <Badge variant="outline">
+                                  <Percent className="h-3 w-3 mr-1" />
+                                  {agent.commission_rate || 0}%
+                                </Badge>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => setEditingRate({
+                                    agentId: agent.id,
+                                    rate: String(agent.commission_rate || 0)
+                                  })}
+                                >
+                                  <Edit2 className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Badge className={agent.is_active ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}>
+                              {agent.is_active ? "Aktif" : "Nonaktif"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {format(new Date(agent.created_at), 'd MMM yyyy', { locale: id })}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedAgent(agent);
+                                  setShowDetailDialog(true);
+                                }}
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant={agent.is_active ? "destructive" : "default"}
+                                size="sm"
+                                onClick={() => setAgentToToggle(agent)}
+                              >
+                                {agent.is_active ? <XCircle className="h-4 w-4" /> : <CheckCircle className="h-4 w-4" />}
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Commissions Tab */}
+        <TabsContent value="commissions" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Riwayat Komisi</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {commissionsLoading ? (
+                <div className="space-y-3">
+                  {[1, 2, 3, 4, 5].map(i => <Skeleton key={i} className="h-16 w-full" />)}
+                </div>
+              ) : !filteredCommissions || filteredCommissions.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  {searchTerm ? 'Tidak ada komisi yang cocok.' : 'Belum ada data komisi.'}
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Agent</TableHead>
+                        <TableHead>Booking</TableHead>
+                        <TableHead>Jumlah</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Tanggal</TableHead>
+                        <TableHead className="text-right">Aksi</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredCommissions.map((commission) => (
+                        <TableRow key={commission.id}>
+                          <TableCell>
+                            <div>
+                              <p className="font-semibold">{commission.agent?.agent_code}</p>
+                              <p className="text-sm text-muted-foreground">{commission.agent?.company_name || '-'}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <p className="font-mono">{commission.booking?.booking_code}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {formatCurrency(commission.booking?.total_price || 0)}
+                            </p>
+                          </TableCell>
+                          <TableCell className="font-semibold">
+                            {formatCurrency(commission.commission_amount)}
+                          </TableCell>
+                          <TableCell>
+                            <Badge className={
+                              commission.status === 'paid'
+                                ? "bg-green-100 text-green-800"
+                                : commission.status === 'pending'
+                                  ? "bg-amber-100 text-amber-800"
+                                  : "bg-gray-100 text-gray-800"
+                            }>
+                              {commission.status === 'paid' ? 'Dibayar' : 'Pending'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {format(new Date(commission.created_at), 'd MMM yyyy', { locale: id })}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {commission.status === 'pending' && (
+                              <Button
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedCommission(commission);
+                                  setShowCommissionDialog(true);
+                                }}
+                              >
+                                <DollarSign className="h-4 w-4 mr-1" />
+                                Bayar
+                              </Button>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* Agent Detail Dialog */}
+      <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Detail Agent</DialogTitle>
+          </DialogHeader>
+          {selectedAgent && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">Kode Agent</p>
+                  <p className="font-semibold">{selectedAgent.agent_code}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Status</p>
+                  <Badge className={selectedAgent.is_active ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}>
+                    {selectedAgent.is_active ? "Aktif" : "Nonaktif"}
+                  </Badge>
+                </div>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Nama</p>
+                <p className="font-semibold">{selectedAgent.profile?.full_name || '-'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Telepon</p>
+                <p className="font-semibold">{selectedAgent.profile?.phone || '-'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Perusahaan</p>
+                <p className="font-semibold">{selectedAgent.company_name || '-'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">NPWP</p>
+                <p className="font-semibold">{selectedAgent.npwp || '-'}</p>
+              </div>
+              <div className="border-t pt-4">
+                <p className="text-sm text-muted-foreground mb-2">Info Rekening</p>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <p className="text-muted-foreground">Bank</p>
+                    <p className="font-medium">{selectedAgent.bank_name || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">No. Rekening</p>
+                    <p className="font-medium">{selectedAgent.bank_account_number || '-'}</p>
+                  </div>
+                  <div className="col-span-2">
+                    <p className="text-muted-foreground">Nama Rekening</p>
+                    <p className="font-medium">{selectedAgent.bank_account_name || '-'}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDetailDialog(false)}>
+              Tutup
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Pay Commission Dialog */}
+      <AlertDialog open={showCommissionDialog} onOpenChange={setShowCommissionDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Bayar Komisi?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Anda akan menandai pembayaran komisi sebesar{' '}
+              <strong>{formatCurrency(selectedCommission?.commission_amount || 0)}</strong>{' '}
+              untuk agent <strong>{selectedCommission?.agent?.agent_code}</strong>.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => selectedCommission && payCommissionMutation.mutate(selectedCommission.id)}
+            >
+              {payCommissionMutation.isPending ? "Memproses..." : "Konfirmasi Bayar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Toggle Agent Status Confirmation */}
+      <AlertDialog open={!!agentToToggle} onOpenChange={() => setAgentToToggle(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {agentToToggle?.is_active ? 'Nonaktifkan Agent?' : 'Aktifkan Agent?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {agentToToggle?.is_active
+                ? `Agent ${agentToToggle?.agent_code} tidak akan bisa mengakses fitur agent.`
+                : `Agent ${agentToToggle?.agent_code} akan bisa mengakses fitur agent kembali.`
+              }
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => agentToToggle && toggleAgentMutation.mutate({
+                agentId: agentToToggle.id,
+                isActive: !agentToToggle.is_active
+              })}
+              className={agentToToggle?.is_active ? "bg-destructive hover:bg-destructive/90" : ""}
+            >
+              {toggleAgentMutation.isPending ? "Memproses..." : "Konfirmasi"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
