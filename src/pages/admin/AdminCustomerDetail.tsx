@@ -225,6 +225,31 @@ export default function AdminCustomerDetail() {
     );
   }
 
+  // Check data completeness
+  const dataCompleteness = {
+    basic: !!(customer.full_name && customer.gender && customer.birth_date && customer.nik),
+    contact: !!(customer.phone && customer.address),
+    passport: !!(customer.passport_number && customer.passport_expiry),
+    family: !!(customer.father_name && customer.mother_name),
+    emergency: !!(customer.emergency_contact_name && customer.emergency_contact_phone),
+  };
+  
+  const completedSections = Object.values(dataCompleteness).filter(Boolean).length;
+  const totalSections = Object.keys(dataCompleteness).length;
+  const isDataComplete = completedSections === totalSections;
+  
+  const missingFields: string[] = [];
+  if (!customer.nik) missingFields.push("NIK");
+  if (!customer.gender) missingFields.push("Jenis Kelamin");
+  if (!customer.birth_date) missingFields.push("Tanggal Lahir");
+  if (!customer.phone) missingFields.push("No. Telepon");
+  if (!customer.address) missingFields.push("Alamat");
+  if (!customer.passport_number) missingFields.push("No. Paspor");
+  if (!customer.passport_expiry) missingFields.push("Masa Berlaku Paspor");
+  if (!customer.father_name) missingFields.push("Nama Ayah");
+  if (!customer.mother_name) missingFields.push("Nama Ibu");
+  if (!customer.emergency_contact_name) missingFields.push("Kontak Darurat");
+
   const stats = {
     totalBookings: bookings?.length || 0,
     totalSpent: bookings?.reduce((sum, b) => sum + Number(b.total_price), 0) || 0,
@@ -235,6 +260,33 @@ export default function AdminCustomerDetail() {
 
   return (
     <div className="space-y-6">
+      {/* Data Completeness Alert */}
+      {!isDataComplete && (
+        <div className="p-4 rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5" />
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <h4 className="font-semibold text-amber-800 dark:text-amber-200">Data Belum Lengkap</h4>
+                <Badge variant="outline" className="text-amber-700 border-amber-300">
+                  {completedSections}/{totalSections} Terisi
+                </Badge>
+              </div>
+              <p className="text-sm text-amber-700 dark:text-amber-300 mb-2">
+                Lengkapi data berikut agar jamaah dapat diproses untuk keberangkatan:
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {missingFields.map((field) => (
+                  <Badge key={field} variant="secondary" className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
+                    {field}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div className="flex items-center gap-4">
@@ -250,6 +302,17 @@ export default function AdminCustomerDetail() {
                 <Badge className="bg-amber-500 hover:bg-amber-600">
                   <Star className="h-3 w-3 mr-1" />
                   Tour Leader
+                </Badge>
+              )}
+              {isDataComplete ? (
+                <Badge className="bg-green-500 hover:bg-green-600">
+                  <CheckCircle className="h-3 w-3 mr-1" />
+                  Data Lengkap
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="border-amber-400 text-amber-600">
+                  <AlertCircle className="h-3 w-3 mr-1" />
+                  Belum Lengkap
                 </Badge>
               )}
             </div>
