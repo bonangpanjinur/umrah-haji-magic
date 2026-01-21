@@ -18,6 +18,7 @@ import PaymentUpload from "./pages/customer/PaymentUpload";
 import { AdminLayout } from "./components/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminPackages from "./pages/admin/AdminPackages";
+import AdminPackageDetail from "./pages/admin/AdminPackageDetail";
 import AdminBookings from "./pages/admin/AdminBookings";
 import AdminPayments from "./pages/admin/AdminPayments";
 import AdminCustomers from "./pages/admin/AdminCustomers";
@@ -61,6 +62,7 @@ const App = () => (
             <Route path="/admin" element={<AdminLayout />}>
               <Route index element={<AdminDashboard />} />
               <Route path="packages" element={<AdminPackages />} />
+              <Route path="packages/:id" element={<AdminPackageDetail />} />
               <Route path="master-data" element={<AdminMasterData />} />
               <Route path="bookings" element={<AdminBookings />} />
               <Route path="payments" element={<AdminPayments />} />
