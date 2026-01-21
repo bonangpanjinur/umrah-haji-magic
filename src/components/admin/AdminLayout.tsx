@@ -6,7 +6,7 @@ import { NotificationBell } from "./NotificationBell";
 import { 
   LayoutDashboard, Package, Users, Calendar, CreditCard, 
   Settings, LogOut, Menu, X, ChevronDown, Shield, UserCheck,
-  FileBarChart, BarChart3, Target, KeyRound
+  FileBarChart, BarChart3, Target, KeyRound, BedDouble
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -19,6 +19,7 @@ const NAV_ITEMS = [
   { label: 'Master Data', icon: Settings, path: '/admin/master-data' },
   { label: 'Booking', icon: Calendar, path: '/admin/bookings' },
   { label: 'Pembayaran', icon: CreditCard, path: '/admin/payments' },
+  { label: 'Kamar', icon: BedDouble, path: '/admin/room-assignments' },
   { label: 'Jamaah', icon: Users, path: '/admin/customers' },
   { label: 'Users', icon: Shield, path: '/admin/users' },
   { label: 'Hak Akses', icon: KeyRound, path: '/admin/permissions' },

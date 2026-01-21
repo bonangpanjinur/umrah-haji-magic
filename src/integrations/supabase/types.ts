@@ -270,7 +270,9 @@ export type Database = {
           id: string
           is_main_passenger: boolean | null
           passenger_type: string | null
+          room_number: string | null
           room_preference: Database["public"]["Enums"]["room_type"] | null
+          roommate_id: string | null
           special_requests: string | null
         }
         Insert: {
@@ -280,7 +282,9 @@ export type Database = {
           id?: string
           is_main_passenger?: boolean | null
           passenger_type?: string | null
+          room_number?: string | null
           room_preference?: Database["public"]["Enums"]["room_type"] | null
+          roommate_id?: string | null
           special_requests?: string | null
         }
         Update: {
@@ -290,7 +294,9 @@ export type Database = {
           id?: string
           is_main_passenger?: boolean | null
           passenger_type?: string | null
+          room_number?: string | null
           room_preference?: Database["public"]["Enums"]["room_type"] | null
+          roommate_id?: string | null
           special_requests?: string | null
         }
         Relationships: [
@@ -306,6 +312,13 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_passengers_roommate_id_fkey"
+            columns: ["roommate_id"]
+            isOneToOne: false
+            referencedRelation: "booking_passengers"
             referencedColumns: ["id"]
           },
         ]
