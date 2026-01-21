@@ -22,6 +22,18 @@ import AdminBookings from "./pages/admin/AdminBookings";
 import AdminPayments from "./pages/admin/AdminPayments";
 import AdminCustomers from "./pages/admin/AdminCustomers";
 import AdminSettings from "./pages/admin/AdminSettings";
+// Operational
+import OperationalLayout from "./pages/operational/OperationalLayout";
+import OperationalDashboard from "./pages/operational/OperationalDashboard";
+import ManifestPage from "./pages/operational/ManifestPage";
+import CheckinPage from "./pages/operational/CheckinPage";
+import LuggagePage from "./pages/operational/LuggagePage";
+// Agent
+import AgentLayout from "./pages/agent/AgentLayout";
+import AgentDashboard from "./pages/agent/AgentDashboard";
+import AgentRegister from "./pages/agent/AgentRegister";
+import AgentCommissions from "./pages/agent/AgentCommissions";
+import AgentPackages from "./pages/agent/AgentPackages";
 
 const queryClient = new QueryClient();
 
@@ -52,6 +64,22 @@ const App = () => (
               <Route path="payments" element={<AdminPayments />} />
               <Route path="customers" element={<AdminCustomers />} />
               <Route path="settings" element={<AdminSettings />} />
+            </Route>
+            
+            {/* Operational Routes */}
+            <Route path="/operational" element={<OperationalLayout />}>
+              <Route index element={<OperationalDashboard />} />
+              <Route path="manifest" element={<ManifestPage />} />
+              <Route path="checkin" element={<CheckinPage />} />
+              <Route path="luggage" element={<LuggagePage />} />
+            </Route>
+            
+            {/* Agent Routes */}
+            <Route path="/agent" element={<AgentLayout />}>
+              <Route index element={<AgentDashboard />} />
+              <Route path="register" element={<AgentRegister />} />
+              <Route path="commissions" element={<AgentCommissions />} />
+              <Route path="packages" element={<AgentPackages />} />
             </Route>
             
             <Route path="*" element={<NotFound />} />
