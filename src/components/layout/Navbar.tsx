@@ -31,7 +31,7 @@ export function Navbar() {
 
   const getDashboardLink = () => {
     if (isAdmin()) return '/admin';
-    return '/dashboard';
+    return '/my-bookings';
   };
 
   return (
