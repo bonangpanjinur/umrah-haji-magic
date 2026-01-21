@@ -704,10 +704,12 @@ export type Database = {
           departure_time: string | null
           flight_number: string | null
           id: string
+          muthawif_id: string | null
           package_id: string
           quota: number
           return_date: string
           status: string | null
+          team_leader_id: string | null
           updated_at: string | null
         }
         Insert: {
@@ -719,10 +721,12 @@ export type Database = {
           departure_time?: string | null
           flight_number?: string | null
           id?: string
+          muthawif_id?: string | null
           package_id: string
           quota?: number
           return_date: string
           status?: string | null
+          team_leader_id?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -734,10 +738,12 @@ export type Database = {
           departure_time?: string | null
           flight_number?: string | null
           id?: string
+          muthawif_id?: string | null
           package_id?: string
           quota?: number
           return_date?: string
           status?: string | null
+          team_leader_id?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -756,10 +762,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "departures_muthawif_id_fkey"
+            columns: ["muthawif_id"]
+            isOneToOne: false
+            referencedRelation: "muthawifs"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "departures_package_id_fkey"
             columns: ["package_id"]
             isOneToOne: false
             referencedRelation: "packages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "departures_team_leader_id_fkey"
+            columns: ["team_leader_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1355,6 +1375,33 @@ export type Database = {
           province?: string | null
           updated_at?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      role_permissions: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_enabled: boolean | null
+          permission_key: string
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          permission_key: string
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          permission_key?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string | null
         }
         Relationships: []
       }

@@ -33,6 +33,8 @@ const departureSchema = z.object({
   flight_number: z.string().optional(),
   departure_time: z.string().optional(),
   status: z.string().default("open"),
+  muthawif_id: z.string().optional().nullable(),
+  team_leader_id: z.string().optional().nullable(),
 });
 
 type DepartureFormValues = z.infer<typeof departureSchema>;
@@ -64,6 +66,22 @@ export function DepartureForm({ departureData, packageId, onSuccess, onCancel }:
     },
   });
 
+  const { data: muthawifs } = useQuery({
+    queryKey: ["muthawifs-list"],
+    queryFn: async () => {
+      const { data } = await supabase.from("muthawifs").select("id, name").eq("is_active", true);
+      return data || [];
+    },
+  });
+
+  const { data: profiles } = useQuery({
+    queryKey: ["profiles-list"],
+    queryFn: async () => {
+      const { data } = await supabase.from("profiles").select("id, full_name, user_id");
+      return data || [];
+    },
+  });
+
   const form = useForm<DepartureFormValues>({
     resolver: zodResolver(departureSchema),
     defaultValues: {
@@ -76,6 +94,8 @@ export function DepartureForm({ departureData, packageId, onSuccess, onCancel }:
       flight_number: departureData?.flight_number || "",
       departure_time: departureData?.departure_time || "",
       status: departureData?.status || "open",
+      muthawif_id: departureData?.muthawif_id || null,
+      team_leader_id: departureData?.team_leader_id || null,
     },
   });
 
@@ -87,6 +107,8 @@ export function DepartureForm({ departureData, packageId, onSuccess, onCancel }:
         arrival_airport_id: values.arrival_airport_id || null,
         flight_number: values.flight_number || null,
         departure_time: values.departure_time || null,
+        muthawif_id: values.muthawif_id || null,
+        team_leader_id: values.team_leader_id || null,
       };
 
       if (isEditing) {
@@ -286,6 +308,54 @@ export function DepartureForm({ departureData, packageId, onSuccess, onCancel }:
                 <FormControl>
                   <Input type="time" {...field} />
                 </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FormField
+            control={form.control}
+            name="muthawif_id"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Muthawif</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value || undefined}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Pilih muthawif" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {muthawifs?.map((m) => (
+                      <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="team_leader_id"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Team Leader (TL)</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value || undefined}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Pilih TL" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {profiles?.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>{p.full_name || 'Unnamed'}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <FormMessage />
               </FormItem>
             )}
