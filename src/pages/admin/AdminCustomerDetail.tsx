@@ -1,5 +1,5 @@
 import { useParams, Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,14 +10,22 @@ import {
   Table, TableBody, TableCell, TableHead,
   TableHeader, TableRow
 } from "@/components/ui/table";
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter,
+  DialogHeader, DialogTitle
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { formatCurrency } from "@/lib/format";
 import {
   ArrowLeft, User, Phone, Mail, MapPin, Calendar,
   FileText, CreditCard, Eye, ExternalLink, CheckCircle,
-  Clock, XCircle, AlertCircle
+  Clock, XCircle, AlertCircle, ShieldCheck, ShieldX, Loader2
 } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
 
 const STATUS_CONFIG = {
   pending: { label: "Menunggu", color: "bg-amber-100 text-amber-800", icon: Clock },
@@ -38,6 +46,53 @@ const BOOKING_STATUS_CONFIG: Record<string, { label: string; color: string }> = 
 
 export default function AdminCustomerDetail() {
   const { id: customerId } = useParams();
+  const queryClient = useQueryClient();
+  
+  // State for document verification
+  const [selectedDoc, setSelectedDoc] = useState<any>(null);
+  const [verifyDialogOpen, setVerifyDialogOpen] = useState(false);
+  const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
+
+  // Mutation for verifying document
+  const verifyMutation = useMutation({
+    mutationFn: async ({ docId, status, notes }: { docId: string; status: 'verified' | 'rejected'; notes?: string }) => {
+      const { data: userData } = await supabase.auth.getUser();
+      
+      const updateData: any = {
+        status,
+        verified_at: new Date().toISOString(),
+        verified_by: userData.user?.id,
+      };
+      
+      if (notes) {
+        updateData.notes = notes;
+      }
+
+      const { error } = await supabase
+        .from('customer_documents')
+        .update(updateData)
+        .eq('id', docId);
+
+      if (error) throw error;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-customer-documents', customerId] });
+      toast.success(
+        variables.status === 'verified' 
+          ? 'Dokumen berhasil diverifikasi' 
+          : 'Dokumen ditolak'
+      );
+      setVerifyDialogOpen(false);
+      setRejectDialogOpen(false);
+      setSelectedDoc(null);
+      setRejectReason("");
+    },
+    onError: (error) => {
+      toast.error('Gagal memperbarui status dokumen');
+      console.error(error);
+    },
+  });
 
   // Fetch customer details
   const { data: customer, isLoading: customerLoading } = useQuery({
@@ -446,7 +501,7 @@ export default function AdminCustomerDetail() {
                         <TableHead>Nama File</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead>Tanggal Upload</TableHead>
-                        <TableHead>Catatan</TableHead>
+                        <TableHead>Verifikasi</TableHead>
                         <TableHead className="text-right">Aksi</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -456,6 +511,7 @@ export default function AdminCustomerDetail() {
                         const status = doc.status as keyof typeof STATUS_CONFIG;
                         const statusConfig = STATUS_CONFIG[status] || STATUS_CONFIG.pending;
                         const StatusIcon = statusConfig.icon;
+                        const canVerify = status === 'uploaded' || status === 'pending';
                         
                         return (
                           <TableRow key={doc.id}>
@@ -474,19 +530,58 @@ export default function AdminCustomerDetail() {
                             <TableCell>
                               {format(new Date(doc.created_at), 'd MMM yyyy HH:mm', { locale: id })}
                             </TableCell>
-                            <TableCell className="max-w-[150px] truncate">
-                              {doc.notes || '-'}
+                            <TableCell>
+                              {doc.verified_at ? (
+                                <span className="text-sm text-muted-foreground">
+                                  {format(new Date(doc.verified_at), 'd MMM yyyy', { locale: id })}
+                                </span>
+                              ) : (
+                                <span className="text-sm text-muted-foreground">-</span>
+                              )}
                             </TableCell>
                             <TableCell className="text-right">
-                              {doc.file_url && (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => window.open(doc.file_url, '_blank')}
-                                >
-                                  <ExternalLink className="h-4 w-4" />
-                                </Button>
-                              )}
+                              <div className="flex items-center justify-end gap-2">
+                                {doc.file_url && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                      setSelectedDoc(doc);
+                                      setVerifyDialogOpen(true);
+                                    }}
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                )}
+                                {canVerify && (
+                                  <>
+                                    <Button
+                                      variant="default"
+                                      size="sm"
+                                      className="bg-green-600 hover:bg-green-700"
+                                      onClick={() => verifyMutation.mutate({ docId: doc.id, status: 'verified' })}
+                                      disabled={verifyMutation.isPending}
+                                    >
+                                      {verifyMutation.isPending ? (
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                      ) : (
+                                        <ShieldCheck className="h-4 w-4" />
+                                      )}
+                                    </Button>
+                                    <Button
+                                      variant="destructive"
+                                      size="sm"
+                                      onClick={() => {
+                                        setSelectedDoc(doc);
+                                        setRejectDialogOpen(true);
+                                      }}
+                                      disabled={verifyMutation.isPending}
+                                    >
+                                      <ShieldX className="h-4 w-4" />
+                                    </Button>
+                                  </>
+                                )}
+                              </div>
                             </TableCell>
                           </TableRow>
                         );
@@ -555,6 +650,149 @@ export default function AdminCustomerDetail() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Document Preview & Verify Dialog */}
+      <Dialog open={verifyDialogOpen} onOpenChange={setVerifyDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Preview Dokumen</DialogTitle>
+            <DialogDescription>
+              {(selectedDoc?.document_type as any)?.name || 'Dokumen'} - {selectedDoc?.file_name}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedDoc?.file_url && (
+            <div className="border rounded-lg overflow-hidden bg-muted">
+              {selectedDoc.file_url.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                <img
+                  src={selectedDoc.file_url}
+                  alt="Document preview"
+                  className="w-full h-auto max-h-[500px] object-contain"
+                />
+              ) : selectedDoc.file_url.match(/\.pdf$/i) ? (
+                <iframe
+                  src={selectedDoc.file_url}
+                  className="w-full h-[500px]"
+                  title="PDF Preview"
+                />
+              ) : (
+                <div className="p-8 text-center">
+                  <FileText className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground mb-4">Preview tidak tersedia untuk format file ini</p>
+                  <Button onClick={() => window.open(selectedDoc.file_url, '_blank')}>
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    Buka di Tab Baru
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <p className="text-muted-foreground">Status Saat Ini</p>
+              <Badge className={STATUS_CONFIG[selectedDoc?.status as keyof typeof STATUS_CONFIG]?.color || ''}>
+                {STATUS_CONFIG[selectedDoc?.status as keyof typeof STATUS_CONFIG]?.label || selectedDoc?.status}
+              </Badge>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Tanggal Upload</p>
+              <p className="font-medium">
+                {selectedDoc?.created_at && format(new Date(selectedDoc.created_at), 'd MMMM yyyy HH:mm', { locale: id })}
+              </p>
+            </div>
+            {selectedDoc?.notes && (
+              <div className="col-span-2">
+                <p className="text-muted-foreground">Catatan</p>
+                <p>{selectedDoc.notes}</p>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="flex gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => window.open(selectedDoc?.file_url, '_blank')}
+            >
+              <ExternalLink className="h-4 w-4 mr-2" />
+              Buka File
+            </Button>
+            {(selectedDoc?.status === 'uploaded' || selectedDoc?.status === 'pending') && (
+              <>
+                <Button
+                  variant="destructive"
+                  onClick={() => {
+                    setVerifyDialogOpen(false);
+                    setRejectDialogOpen(true);
+                  }}
+                >
+                  <ShieldX className="h-4 w-4 mr-2" />
+                  Tolak
+                </Button>
+                <Button
+                  className="bg-green-600 hover:bg-green-700"
+                  onClick={() => verifyMutation.mutate({ docId: selectedDoc.id, status: 'verified' })}
+                  disabled={verifyMutation.isPending}
+                >
+                  {verifyMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <ShieldCheck className="h-4 w-4 mr-2" />
+                  )}
+                  Verifikasi
+                </Button>
+              </>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reject Document Dialog */}
+      <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Tolak Dokumen</DialogTitle>
+            <DialogDescription>
+              Berikan alasan penolakan dokumen {(selectedDoc?.document_type as any)?.name}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="reject-reason">Alasan Penolakan</Label>
+              <Textarea
+                id="reject-reason"
+                placeholder="Contoh: Foto dokumen tidak jelas, silakan upload ulang dengan kualitas lebih baik"
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                rows={4}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRejectDialogOpen(false)}>
+              Batal
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => verifyMutation.mutate({ 
+                docId: selectedDoc?.id, 
+                status: 'rejected', 
+                notes: rejectReason 
+              })}
+              disabled={verifyMutation.isPending || !rejectReason.trim()}
+            >
+              {verifyMutation.isPending ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <ShieldX className="h-4 w-4 mr-2" />
+              )}
+              Tolak Dokumen
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
