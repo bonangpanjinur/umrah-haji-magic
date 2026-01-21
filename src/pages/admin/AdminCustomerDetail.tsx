@@ -22,8 +22,9 @@ import { formatCurrency } from "@/lib/format";
 import {
   ArrowLeft, User, Phone, Mail, MapPin, Calendar,
   FileText, CreditCard, Eye, ExternalLink, CheckCircle,
-  Clock, XCircle, AlertCircle, ShieldCheck, ShieldX, Loader2
+  Clock, XCircle, AlertCircle, ShieldCheck, ShieldX, Loader2, Star
 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -53,6 +54,26 @@ export default function AdminCustomerDetail() {
   const [verifyDialogOpen, setVerifyDialogOpen] = useState(false);
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
+
+  // Mutation for toggling tour leader status
+  const toggleTourLeaderMutation = useMutation({
+    mutationFn: async (isTourLeader: boolean) => {
+      const { error } = await supabase
+        .from('customers')
+        .update({ is_tour_leader: isTourLeader })
+        .eq('id', customerId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-customer', customerId] });
+      queryClient.invalidateQueries({ queryKey: ['tour-leaders-list'] });
+      toast.success('Status Tour Leader berhasil diperbarui');
+    },
+    onError: () => {
+      toast.error('Gagal memperbarui status Tour Leader');
+    },
+  });
 
   // Mutation for verifying document
   const verifyMutation = useMutation({
@@ -215,15 +236,38 @@ export default function AdminCustomerDetail() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" asChild>
-          <Link to="/admin/customers">
-            <ArrowLeft className="h-5 w-5" />
-          </Link>
-        </Button>
-        <div>
-          <h1 className="text-2xl font-bold">{customer.full_name}</h1>
-          <p className="text-muted-foreground">Detail informasi jamaah</p>
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" asChild>
+            <Link to="/admin/customers">
+              <ArrowLeft className="h-5 w-5" />
+            </Link>
+          </Button>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold">{customer.full_name}</h1>
+              {customer.is_tour_leader && (
+                <Badge className="bg-amber-500 hover:bg-amber-600">
+                  <Star className="h-3 w-3 mr-1" />
+                  Tour Leader
+                </Badge>
+              )}
+            </div>
+            <p className="text-muted-foreground">Detail informasi jamaah</p>
+          </div>
+        </div>
+        
+        {/* Tour Leader Toggle */}
+        <div className="flex items-center gap-3 p-3 rounded-lg border bg-card">
+          <div className="flex items-center gap-2">
+            <Star className={`h-4 w-4 ${customer.is_tour_leader ? 'text-amber-500' : 'text-muted-foreground'}`} />
+            <span className="text-sm font-medium">Tour Leader</span>
+          </div>
+          <Switch
+            checked={customer.is_tour_leader || false}
+            onCheckedChange={(checked) => toggleTourLeaderMutation.mutate(checked)}
+            disabled={toggleTourLeaderMutation.isPending}
+          />
         </div>
       </div>
 

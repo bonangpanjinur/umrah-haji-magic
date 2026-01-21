@@ -74,12 +74,13 @@ export function DepartureForm({ departureData, packageId, onSuccess, onCancel }:
     },
   });
 
-  const { data: customers } = useQuery({
-    queryKey: ["customers-tl-list"],
+  const { data: tourLeaders } = useQuery({
+    queryKey: ["tour-leaders-list"],
     queryFn: async () => {
       const { data } = await supabase
         .from("customers")
         .select("id, full_name, phone")
+        .eq("is_tour_leader", true)
         .order("full_name");
       return data || [];
     },
@@ -354,11 +355,17 @@ export function DepartureForm({ departureData, packageId, onSuccess, onCancel }:
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {customers?.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.full_name} {c.phone ? `(${c.phone})` : ''}
-                      </SelectItem>
-                    ))}
+                    {tourLeaders?.length === 0 ? (
+                      <div className="p-2 text-sm text-muted-foreground text-center">
+                        Belum ada jamaah yang ditandai sebagai Tour Leader
+                      </div>
+                    ) : (
+                      tourLeaders?.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.full_name} {c.phone ? `(${c.phone})` : ''}
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
                 <FormMessage />

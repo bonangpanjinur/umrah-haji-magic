@@ -610,6 +610,7 @@ export type Database = {
           full_name: string
           gender: Database["public"]["Enums"]["gender_type"] | null
           id: string
+          is_tour_leader: boolean | null
           mahram_name: string | null
           mahram_relation: string | null
           marital_status: string | null
@@ -640,6 +641,7 @@ export type Database = {
           full_name: string
           gender?: Database["public"]["Enums"]["gender_type"] | null
           id?: string
+          is_tour_leader?: boolean | null
           mahram_name?: string | null
           mahram_relation?: string | null
           marital_status?: string | null
@@ -670,6 +672,7 @@ export type Database = {
           full_name?: string
           gender?: Database["public"]["Enums"]["gender_type"] | null
           id?: string
+          is_tour_leader?: boolean | null
           mahram_name?: string | null
           mahram_relation?: string | null
           marital_status?: string | null
