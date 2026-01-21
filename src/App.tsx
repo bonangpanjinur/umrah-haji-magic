@@ -38,6 +38,9 @@ import AdminLeadDetail from "./pages/admin/AdminLeadDetail";
 import AdminLeadAnalytics from "./pages/admin/AdminLeadAnalytics";
 import AdminRolePermissions from "./pages/admin/AdminRolePermissions";
 import AdminRoomAssignments from "./pages/admin/AdminRoomAssignments";
+import AdminDepartures from "./pages/admin/AdminDepartures";
+import AdminSavingsPlans from "./pages/admin/AdminSavingsPlans";
+import AdminDocumentVerification from "./pages/admin/AdminDocumentVerification";
 // Operational
 import OperationalLayout from "./pages/operational/OperationalLayout";
 import OperationalDashboard from "./pages/operational/OperationalDashboard";
@@ -110,12 +113,15 @@ const App = () => (
               <Route path="analytics" element={<AdminAnalytics />} />
               <Route path="packages" element={<AdminPackages />} />
               <Route path="packages/:id" element={<AdminPackageDetail />} />
+              <Route path="departures" element={<AdminDepartures />} />
+              <Route path="savings" element={<AdminSavingsPlans />} />
               <Route path="master-data" element={<AdminMasterData />} />
               <Route path="bookings" element={<AdminBookings />} />
               <Route path="bookings/:id" element={<AdminBookingDetail />} />
               <Route path="payments" element={<AdminPayments />} />
               <Route path="customers" element={<AdminCustomers />} />
               <Route path="customers/:id" element={<AdminCustomerDetail />} />
+              <Route path="documents" element={<AdminDocumentVerification />} />
               <Route path="users" element={<AdminUsers />} />
               <Route path="permissions" element={<AdminRolePermissions />} />
               <Route path="agents" element={<AdminAgents />} />

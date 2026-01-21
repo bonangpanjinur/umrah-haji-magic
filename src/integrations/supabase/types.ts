@@ -1421,6 +1421,141 @@ export type Database = {
         }
         Relationships: []
       }
+      savings_payments: {
+        Row: {
+          account_name: string | null
+          amount: number
+          bank_name: string | null
+          created_at: string | null
+          id: string
+          notes: string | null
+          payment_code: string
+          payment_date: string
+          payment_method: string | null
+          proof_url: string | null
+          savings_plan_id: string
+          status: string | null
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          account_name?: string | null
+          amount: number
+          bank_name?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          payment_code: string
+          payment_date?: string
+          payment_method?: string | null
+          proof_url?: string | null
+          savings_plan_id: string
+          status?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          account_name?: string | null
+          amount?: number
+          bank_name?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          payment_code?: string
+          payment_date?: string
+          payment_method?: string | null
+          proof_url?: string | null
+          savings_plan_id?: string
+          status?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "savings_payments_savings_plan_id_fkey"
+            columns: ["savings_plan_id"]
+            isOneToOne: false
+            referencedRelation: "savings_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      savings_plans: {
+        Row: {
+          converted_booking_id: string | null
+          created_at: string | null
+          customer_id: string
+          id: string
+          monthly_amount: number
+          notes: string | null
+          package_id: string
+          paid_amount: number | null
+          remaining_amount: number | null
+          start_date: string
+          status: string | null
+          target_amount: number
+          target_date: string
+          tenor_months: number
+          updated_at: string | null
+        }
+        Insert: {
+          converted_booking_id?: string | null
+          created_at?: string | null
+          customer_id: string
+          id?: string
+          monthly_amount: number
+          notes?: string | null
+          package_id: string
+          paid_amount?: number | null
+          remaining_amount?: number | null
+          start_date?: string
+          status?: string | null
+          target_amount: number
+          target_date: string
+          tenor_months?: number
+          updated_at?: string | null
+        }
+        Update: {
+          converted_booking_id?: string | null
+          created_at?: string | null
+          customer_id?: string
+          id?: string
+          monthly_amount?: number
+          notes?: string | null
+          package_id?: string
+          paid_amount?: number | null
+          remaining_amount?: number | null
+          start_date?: string
+          status?: string | null
+          target_amount?: number
+          target_date?: string
+          tenor_months?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "savings_plans_converted_booking_id_fkey"
+            columns: ["converted_booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "savings_plans_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "savings_plans_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "packages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           branch_id: string | null
@@ -1460,6 +1595,7 @@ export type Database = {
     Functions: {
       generate_booking_code: { Args: never; Returns: string }
       generate_payment_code: { Args: never; Returns: string }
+      generate_savings_payment_code: { Args: never; Returns: string }
       get_user_branch_id: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
@@ -1508,7 +1644,7 @@ export type Database = {
         | "closing"
         | "won"
         | "lost"
-      package_type: "umroh" | "haji" | "haji_plus" | "umroh_plus"
+      package_type: "umroh" | "haji" | "haji_plus" | "umroh_plus" | "tabungan"
       payment_status: "pending" | "partial" | "paid" | "refunded" | "failed"
       room_type: "quad" | "triple" | "double" | "single"
     }
@@ -1675,7 +1811,7 @@ export const Constants = {
         "won",
         "lost",
       ],
-      package_type: ["umroh", "haji", "haji_plus", "umroh_plus"],
+      package_type: ["umroh", "haji", "haji_plus", "umroh_plus", "tabungan"],
       payment_status: ["pending", "partial", "paid", "refunded", "failed"],
       room_type: ["quad", "triple", "double", "single"],
     },
