@@ -22,6 +22,7 @@ import AdminBookings from "./pages/admin/AdminBookings";
 import AdminPayments from "./pages/admin/AdminPayments";
 import AdminCustomers from "./pages/admin/AdminCustomers";
 import AdminSettings from "./pages/admin/AdminSettings";
+import AdminMasterData from "./pages/admin/AdminMasterData";
 // Operational
 import OperationalLayout from "./pages/operational/OperationalLayout";
 import OperationalDashboard from "./pages/operational/OperationalDashboard";
@@ -60,6 +61,7 @@ const App = () => (
             <Route path="/admin" element={<AdminLayout />}>
               <Route index element={<AdminDashboard />} />
               <Route path="packages" element={<AdminPackages />} />
+              <Route path="master-data" element={<AdminMasterData />} />
               <Route path="bookings" element={<AdminBookings />} />
               <Route path="payments" element={<AdminPayments />} />
               <Route path="customers" element={<AdminCustomers />} />
