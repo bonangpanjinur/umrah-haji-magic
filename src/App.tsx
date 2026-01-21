@@ -23,6 +23,8 @@ import AdminBookings from "./pages/admin/AdminBookings";
 import AdminBookingDetail from "./pages/admin/AdminBookingDetail";
 import AdminPayments from "./pages/admin/AdminPayments";
 import AdminCustomers from "./pages/admin/AdminCustomers";
+import AdminUsers from "./pages/admin/AdminUsers";
+import AdminAgents from "./pages/admin/AdminAgents";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminMasterData from "./pages/admin/AdminMasterData";
 // Operational
@@ -69,6 +71,8 @@ const App = () => (
               <Route path="bookings/:id" element={<AdminBookingDetail />} />
               <Route path="payments" element={<AdminPayments />} />
               <Route path="customers" element={<AdminCustomers />} />
+              <Route path="users" element={<AdminUsers />} />
+              <Route path="agents" element={<AdminAgents />} />
               <Route path="settings" element={<AdminSettings />} />
             </Route>
             
