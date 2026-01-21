@@ -20,6 +20,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminPackages from "./pages/admin/AdminPackages";
 import AdminPackageDetail from "./pages/admin/AdminPackageDetail";
 import AdminBookings from "./pages/admin/AdminBookings";
+import AdminBookingDetail from "./pages/admin/AdminBookingDetail";
 import AdminPayments from "./pages/admin/AdminPayments";
 import AdminCustomers from "./pages/admin/AdminCustomers";
 import AdminSettings from "./pages/admin/AdminSettings";
@@ -65,6 +66,7 @@ const App = () => (
               <Route path="packages/:id" element={<AdminPackageDetail />} />
               <Route path="master-data" element={<AdminMasterData />} />
               <Route path="bookings" element={<AdminBookings />} />
+              <Route path="bookings/:id" element={<AdminBookingDetail />} />
               <Route path="payments" element={<AdminPayments />} />
               <Route path="customers" element={<AdminCustomers />} />
               <Route path="settings" element={<AdminSettings />} />
