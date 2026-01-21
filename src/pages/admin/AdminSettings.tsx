@@ -2,16 +2,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { Building2, CreditCard, Bell } from "lucide-react";
+import ChangePassword from "@/components/settings/ChangePassword";
 
 export default function AdminSettings() {
   return (
     <div className="space-y-6 max-w-2xl">
       <div>
         <h1 className="text-2xl font-bold">Pengaturan</h1>
-        <p className="text-muted-foreground">Kelola pengaturan sistem</p>
+        <p className="text-muted-foreground">Kelola pengaturan sistem dan akun</p>
       </div>
+
+      {/* Change Password */}
+      <ChangePassword />
 
       {/* Company Info */}
       <Card>
