@@ -7,10 +7,11 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Search, Eye, User, Phone, Mail, Users, FileCheck, Calendar, Star, UserPlus } from "lucide-react";
+import { Search, Eye, User, Phone, Mail, Users, FileCheck, Calendar, Star, UserPlus, Plus } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { RegisterAsJamaahDialog } from "@/components/admin/RegisterAsJamaahDialog";
+import { AddCustomerDialog } from "@/components/admin/AddCustomerDialog";
 
 export default function AdminCustomers() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -97,6 +98,14 @@ export default function AdminCustomers() {
           <p className="text-muted-foreground">Lihat dan kelola data jamaah</p>
         </div>
         <div className="flex items-center gap-2">
+          <AddCustomerDialog
+            trigger={
+              <Button size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                Tambah Jamaah
+              </Button>
+            }
+          />
           <RegisterAsJamaahDialog
             trigger={
               <Button variant="outline" size="sm">
