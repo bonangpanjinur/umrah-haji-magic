@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -10,19 +10,37 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 
 const loginSchema = z.object({
-  email: z.string().email('Email tidak valid'),
-  password: z.string().min(6, 'Password minimal 6 karakter'),
+  email: z.string().trim().email('Email tidak valid').max(255),
+  password: z.string().min(6, 'Password minimal 6 karakter').max(100),
 });
 
 type LoginForm = z.infer<typeof loginSchema>;
 
 export default function Login() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
+  const { user, isAdmin, isLoading: authLoading } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  const redirectTo = searchParams.get('redirect');
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user && !authLoading) {
+      if (redirectTo) {
+        navigate(redirectTo);
+      } else if (isAdmin()) {
+        navigate('/admin');
+      } else {
+        navigate('/my-bookings');
+      }
+    }
+  }, [user, authLoading, isAdmin, navigate, redirectTo]);
 
   const { register, handleSubmit, formState: { errors } } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
@@ -32,7 +50,7 @@ export default function Login() {
     setIsLoading(true);
     try {
       const { error } = await supabase.auth.signInWithPassword({
-        email: data.email,
+        email: data.email.trim(),
         password: data.password,
       });
 
@@ -43,7 +61,7 @@ export default function Login() {
         description: 'Selamat datang kembali!',
       });
 
-      navigate('/');
+      // Redirect will happen via useEffect
     } catch (error: any) {
       toast({
         title: 'Login Gagal',
