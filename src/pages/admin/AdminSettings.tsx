@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Building2, CreditCard, Bell } from "lucide-react";
 import ChangePassword from "@/components/settings/ChangePassword";
+import ProfileForm from "@/components/settings/ProfileForm";
 
 export default function AdminSettings() {
   return (
@@ -12,6 +13,9 @@ export default function AdminSettings() {
         <h1 className="text-2xl font-bold">Pengaturan</h1>
         <p className="text-muted-foreground">Kelola pengaturan sistem dan akun</p>
       </div>
+
+      {/* User Profile */}
+      <ProfileForm />
 
       {/* Change Password */}
       <ChangePassword />
