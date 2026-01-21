@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 const NAV_ITEMS = [
   { label: 'Dashboard', icon: LayoutDashboard, path: '/admin' },
   { label: 'Paket', icon: Package, path: '/admin/packages' },
+  { label: 'Master Data', icon: Settings, path: '/admin/master-data' },
   { label: 'Booking', icon: Calendar, path: '/admin/bookings' },
   { label: 'Pembayaran', icon: CreditCard, path: '/admin/payments' },
   { label: 'Jamaah', icon: Users, path: '/admin/customers' },
