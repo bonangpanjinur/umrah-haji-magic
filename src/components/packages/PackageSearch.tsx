@@ -1,7 +1,10 @@
 import { useState } from 'react';
-import { Search, Calendar, Filter } from 'lucide-react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
   SelectContent,
@@ -9,17 +12,31 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Slider } from '@/components/ui/slider';
+import { formatCurrency } from '@/lib/format';
 
 interface PackageSearchProps {
-  onSearch: (searchTerm: string, packageType: string) => void;
+  onSearch?: (searchTerm: string, packageType: string) => void;
 }
 
 export function PackageSearch({ onSearch }: PackageSearchProps) {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [packageType, setPackageType] = useState('all');
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('q') || '');
+  const [packageType, setPackageType] = useState(searchParams.get('type') || 'all');
+  const [priceRange, setPriceRange] = useState([15000000, 100000000]);
+  const [duration, setDuration] = useState<string[]>([]);
 
   const handleSearch = () => {
-    onSearch(searchTerm, packageType);
+    if (onSearch) {
+      onSearch(searchTerm, packageType);
+    } else {
+      const params = new URLSearchParams();
+      if (searchTerm) params.set('q', searchTerm);
+      if (packageType && packageType !== 'all') params.set('type', packageType);
+      navigate(`/packages?${params.toString()}`);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -28,52 +45,100 @@ export function PackageSearch({ onSearch }: PackageSearchProps) {
     }
   };
 
+  const handleDurationChange = (value: string, checked: boolean) => {
+    if (checked) {
+      setDuration([...duration, value]);
+    } else {
+      setDuration(duration.filter(d => d !== value));
+    }
+  };
+
   return (
-    <div className="rounded-2xl bg-card p-4 shadow-lg md:p-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-end">
-        {/* Search Input */}
-        <div className="flex-1">
-          <label className="mb-2 block text-sm font-medium text-foreground">
-            Cari Paket
-          </label>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              type="text"
-              placeholder="Nama paket atau tujuan..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              onKeyDown={handleKeyDown}
-              className="pl-10"
-            />
-          </div>
+    <div className="rounded-xl bg-card p-5 shadow-sm border space-y-5">
+      <h3 className="font-semibold text-foreground">Filter Paket</h3>
+      
+      {/* Search Input */}
+      <div className="space-y-2">
+        <Label>Kata Kunci</Label>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            type="text"
+            placeholder="Cari paket..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            onKeyDown={handleKeyDown}
+            className="pl-10"
+          />
         </div>
-
-        {/* Package Type */}
-        <div className="w-full md:w-48">
-          <label className="mb-2 block text-sm font-medium text-foreground">
-            Jenis Paket
-          </label>
-          <Select value={packageType} onValueChange={setPackageType}>
-            <SelectTrigger>
-              <SelectValue placeholder="Semua Jenis" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Semua Jenis</SelectItem>
-              <SelectItem value="umroh">Umroh</SelectItem>
-              <SelectItem value="umroh_plus">Umroh Plus</SelectItem>
-              <SelectItem value="haji">Haji Reguler</SelectItem>
-              <SelectItem value="haji_plus">Haji Plus</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Search Button */}
-        <Button onClick={handleSearch} size="lg" className="gap-2">
-          <Search className="h-4 w-4" />
-          Cari Paket
-        </Button>
       </div>
+
+      {/* Package Type */}
+      <div className="space-y-2">
+        <Label>Jenis Paket</Label>
+        <Select value={packageType} onValueChange={setPackageType}>
+          <SelectTrigger>
+            <SelectValue placeholder="Semua Jenis" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Semua Jenis</SelectItem>
+            <SelectItem value="umroh">Umroh</SelectItem>
+            <SelectItem value="umroh_plus">Umroh Plus</SelectItem>
+            <SelectItem value="haji">Haji Reguler</SelectItem>
+            <SelectItem value="haji_plus">Haji Plus</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Price Range */}
+      <div className="space-y-3">
+        <Label>Rentang Harga</Label>
+        <Slider
+          value={priceRange}
+          onValueChange={setPriceRange}
+          min={10000000}
+          max={150000000}
+          step={5000000}
+          className="mt-2"
+        />
+        <div className="flex justify-between text-xs text-muted-foreground">
+          <span>{formatCurrency(priceRange[0])}</span>
+          <span>{formatCurrency(priceRange[1])}</span>
+        </div>
+      </div>
+
+      {/* Duration */}
+      <div className="space-y-3">
+        <Label>Durasi Perjalanan</Label>
+        <div className="space-y-2">
+          {[
+            { value: '9', label: '9 Hari' },
+            { value: '12', label: '12 Hari' },
+            { value: '14', label: '14 Hari' },
+            { value: '21', label: '21+ Hari' },
+          ].map((item) => (
+            <div key={item.value} className="flex items-center space-x-2">
+              <Checkbox
+                id={`duration-${item.value}`}
+                checked={duration.includes(item.value)}
+                onCheckedChange={(checked) => handleDurationChange(item.value, checked as boolean)}
+              />
+              <label
+                htmlFor={`duration-${item.value}`}
+                className="text-sm text-muted-foreground cursor-pointer"
+              >
+                {item.label}
+              </label>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Search Button */}
+      <Button onClick={handleSearch} className="w-full gap-2">
+        <Search className="h-4 w-4" />
+        Terapkan Filter
+      </Button>
     </div>
   );
 }

@@ -83,6 +83,9 @@ export function getPackageTypeLabel(packageType: string): string {
   return labels[packageType] || packageType;
 }
 
+// Alias for formatPackageType
+export const formatPackageType = getPackageTypeLabel;
+
 export function getBookingStatusLabel(status: string): string {
   const labels: Record<string, string> = {
     pending: 'Menunggu Konfirmasi',
