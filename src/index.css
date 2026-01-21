@@ -2,95 +2,143 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
+/* 
+  SISTEM MANAJEMEN UMROH & HAJI
+  Islamic-themed Design System with Emerald Green & Gold Accents
+  All colors MUST be HSL.
 */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Base Colors - Light Mode */
+    --background: 60 20% 99%;
+    --foreground: 160 30% 10%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-
+    /* Card & Popover */
+    --card: 60 20% 99%;
+    --card-foreground: 160 30% 10%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 160 30% 10%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Primary - Emerald Green (Islamic) */
+    --primary: 160 84% 25%;
+    --primary-foreground: 60 20% 99%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Secondary - Warm Sand */
+    --secondary: 40 30% 94%;
+    --secondary-foreground: 160 30% 15%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* Accent - Gold */
+    --accent: 45 93% 47%;
+    --accent-foreground: 160 30% 10%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* Muted */
+    --muted: 40 20% 94%;
+    --muted-foreground: 160 10% 45%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    /* Destructive */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    /* Success */
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
 
-    --radius: 0.5rem;
+    /* Warning */
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
 
-    --sidebar-background: 0 0% 98%;
+    /* Info */
+    --info: 199 89% 48%;
+    --info-foreground: 0 0% 100%;
 
-    --sidebar-foreground: 240 5.3% 26.1%;
+    /* Border & Input */
+    --border: 40 20% 88%;
+    --input: 40 20% 88%;
+    --ring: 160 84% 25%;
 
-    --sidebar-primary: 240 5.9% 10%;
+    --radius: 0.75rem;
 
-    --sidebar-primary-foreground: 0 0% 98%;
+    /* Sidebar - Dashboard */
+    --sidebar-background: 160 30% 8%;
+    --sidebar-foreground: 60 20% 95%;
+    --sidebar-primary: 45 93% 47%;
+    --sidebar-primary-foreground: 160 30% 10%;
+    --sidebar-accent: 160 30% 15%;
+    --sidebar-accent-foreground: 60 20% 95%;
+    --sidebar-border: 160 20% 18%;
+    --sidebar-ring: 45 93% 47%;
 
-    --sidebar-accent: 240 4.8% 95.9%;
+    /* Chart Colors */
+    --chart-1: 160 84% 25%;
+    --chart-2: 45 93% 47%;
+    --chart-3: 199 89% 48%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 0 84% 60%;
 
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Custom Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(160, 84%, 25%), hsl(160, 70%, 35%));
+    --gradient-gold: linear-gradient(135deg, hsl(45, 93%, 47%), hsl(38, 92%, 50%));
+    --gradient-hero: linear-gradient(135deg, hsl(160, 30%, 8%) 0%, hsl(160, 40%, 15%) 100%);
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    /* Base Colors - Dark Mode */
+    --background: 160 30% 6%;
+    --foreground: 60 20% 95%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    /* Card & Popover */
+    --card: 160 25% 10%;
+    --card-foreground: 60 20% 95%;
+    --popover: 160 25% 10%;
+    --popover-foreground: 60 20% 95%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    /* Primary - Emerald Green (Brighter for dark mode) */
+    --primary: 160 70% 40%;
+    --primary-foreground: 160 30% 6%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    /* Secondary */
+    --secondary: 160 20% 18%;
+    --secondary-foreground: 60 20% 95%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    /* Accent - Gold */
+    --accent: 45 93% 50%;
+    --accent-foreground: 160 30% 6%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    /* Muted */
+    --muted: 160 20% 15%;
+    --muted-foreground: 60 10% 60%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    /* Destructive */
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 100%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    /* Success */
+    --success: 142 70% 45%;
+    --success-foreground: 0 0% 100%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Warning */
+    --warning: 38 92% 55%;
+    --warning-foreground: 160 30% 6%;
+
+    /* Info */
+    --info: 199 89% 55%;
+    --info-foreground: 160 30% 6%;
+
+    /* Border & Input */
+    --border: 160 20% 20%;
+    --input: 160 20% 20%;
+    --ring: 160 70% 40%;
+
+    /* Sidebar */
+    --sidebar-background: 160 35% 5%;
+    --sidebar-foreground: 60 20% 95%;
+    --sidebar-primary: 45 93% 50%;
+    --sidebar-primary-foreground: 160 30% 6%;
+    --sidebar-accent: 160 25% 12%;
+    --sidebar-accent-foreground: 60 20% 95%;
+    --sidebar-border: 160 20% 15%;
+    --sidebar-ring: 45 93% 50%;
   }
 }
 
@@ -100,6 +148,140 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-muted;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-muted-foreground/30 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/50;
+  }
+}
+
+@layer components {
+  /* Islamic Pattern Background */
+  .islamic-pattern {
+    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23059669' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  }
+
+  /* Hero Gradient Overlay */
+  .hero-gradient {
+    background: linear-gradient(135deg, hsl(160, 30%, 8%, 0.95) 0%, hsl(160, 40%, 15%, 0.9) 100%);
+  }
+
+  /* Gold Shimmer Effect */
+  .gold-shimmer {
+    background: linear-gradient(
+      90deg,
+      hsl(45, 93%, 47%) 0%,
+      hsl(50, 100%, 60%) 50%,
+      hsl(45, 93%, 47%) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+
+  /* Card Hover Effect */
+  .card-hover {
+    @apply transition-all duration-300 hover:shadow-xl hover:-translate-y-1;
+  }
+
+  /* Glass Effect */
+  .glass {
+    @apply bg-background/80 backdrop-blur-md;
+  }
+
+  /* Status Badge Styles */
+  .status-pending {
+    @apply bg-warning/10 text-warning border-warning/20;
+  }
+
+  .status-confirmed {
+    @apply bg-info/10 text-info border-info/20;
+  }
+
+  .status-completed {
+    @apply bg-success/10 text-success border-success/20;
+  }
+
+  .status-cancelled {
+    @apply bg-destructive/10 text-destructive border-destructive/20;
+  }
+}
+
+@layer utilities {
+  /* Text Gradient */
+  .text-gradient-primary {
+    @apply bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent;
+  }
+
+  .text-gradient-gold {
+    @apply bg-gradient-to-r from-accent to-amber-400 bg-clip-text text-transparent;
+  }
+
+  /* Animations */
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-out;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.5s ease-out;
+  }
+
+  .animate-scale-in {
+    animation: scaleIn 0.3s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes scaleIn {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
   }
 }
