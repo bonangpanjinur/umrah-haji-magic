@@ -3,9 +3,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState } from "react";
-import { Search, Eye, User, Phone, Mail } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Search, Eye, User, Phone, Mail, Users, FileCheck, Calendar } from "lucide-react";
+import { format } from "date-fns";
+import { id } from "date-fns/locale";
 
 export default function AdminCustomers() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -23,6 +27,48 @@ export default function AdminCustomers() {
     },
   });
 
+  // Fetch booking counts per customer
+  const { data: bookingCounts } = useQuery({
+    queryKey: ['admin-customer-booking-counts'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('bookings')
+        .select('customer_id');
+
+      if (error) throw error;
+      
+      const counts: Record<string, number> = {};
+      (data || []).forEach(b => {
+        counts[b.customer_id] = (counts[b.customer_id] || 0) + 1;
+      });
+      return counts;
+    },
+  });
+
+  // Fetch document counts per customer
+  const { data: documentCounts } = useQuery({
+    queryKey: ['admin-customer-document-counts'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('customer_documents')
+        .select('customer_id, status');
+
+      if (error) throw error;
+      
+      const counts: Record<string, { total: number; verified: number }> = {};
+      (data || []).forEach(d => {
+        if (!counts[d.customer_id]) {
+          counts[d.customer_id] = { total: 0, verified: 0 };
+        }
+        counts[d.customer_id].total++;
+        if (d.status === 'verified') {
+          counts[d.customer_id].verified++;
+        }
+      });
+      return counts;
+    },
+  });
+
   const filteredCustomers = customers?.filter(customer => {
     if (!searchTerm) return true;
     const search = searchTerm.toLowerCase();
@@ -30,9 +76,16 @@ export default function AdminCustomers() {
       customer.full_name?.toLowerCase().includes(search) ||
       customer.email?.toLowerCase().includes(search) ||
       customer.phone?.includes(search) ||
-      customer.nik?.includes(search)
+      customer.nik?.includes(search) ||
+      customer.passport_number?.includes(search)
     );
   });
+
+  const stats = {
+    total: customers?.length || 0,
+    withBookings: Object.keys(bookingCounts || {}).length,
+    withDocuments: Object.keys(documentCounts || {}).length,
+  };
 
   return (
     <div className="space-y-6">
@@ -44,12 +97,55 @@ export default function AdminCustomers() {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Cari nama, email, NIK..."
+            placeholder="Cari nama, email, NIK, paspor..."
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
-            className="pl-10 w-full sm:w-64"
+            className="pl-10 w-full sm:w-72"
           />
         </div>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Users className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Total Jamaah</p>
+                <p className="text-2xl font-bold">{stats.total}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-green-100">
+                <Calendar className="h-5 w-5 text-green-600" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Pernah Booking</p>
+                <p className="text-2xl font-bold">{stats.withBookings}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-blue-100">
+                <FileCheck className="h-5 w-5 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Dokumen Lengkap</p>
+                <p className="text-2xl font-bold">{stats.withDocuments}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       <Card>
@@ -64,43 +160,77 @@ export default function AdminCustomers() {
             </div>
           ) : (
             <div className="divide-y">
-              {filteredCustomers.map((customer) => (
-                <div key={customer.id} className="p-4 hover:bg-muted/50 transition-colors">
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                        <User className="h-5 w-5 text-primary" />
-                      </div>
-                      <div>
-                        <p className="font-semibold">{customer.full_name}</p>
-                        <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                          {customer.phone && (
-                            <span className="flex items-center gap-1">
-                              <Phone className="h-3 w-3" />
-                              {customer.phone}
-                            </span>
-                          )}
-                          {customer.email && (
-                            <span className="flex items-center gap-1">
-                              <Mail className="h-3 w-3" />
-                              {customer.email}
-                            </span>
-                          )}
+              {filteredCustomers.map((customer) => {
+                const bookingCount = bookingCounts?.[customer.id] || 0;
+                const docInfo = documentCounts?.[customer.id];
+                
+                return (
+                  <div key={customer.id} className="p-4 hover:bg-muted/50 transition-colors">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                          <User className="h-6 w-6 text-primary" />
+                        </div>
+                        <div>
+                          <p className="font-semibold">{customer.full_name}</p>
+                          <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                            {customer.phone && (
+                              <span className="flex items-center gap-1">
+                                <Phone className="h-3 w-3" />
+                                {customer.phone}
+                              </span>
+                            )}
+                            {customer.email && (
+                              <span className="flex items-center gap-1">
+                                <Mail className="h-3 w-3" />
+                                {customer.email}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 mt-1">
+                            {customer.gender && (
+                              <Badge variant="outline" className="text-xs">
+                                {customer.gender === 'male' ? 'L' : 'P'}
+                              </Badge>
+                            )}
+                            {customer.passport_number && (
+                              <Badge variant="outline" className="text-xs font-mono">
+                                {customer.passport_number}
+                              </Badge>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <div className="text-right text-sm">
-                        <p className="text-muted-foreground">NIK</p>
-                        <p className="font-mono">{customer.nik || '-'}</p>
+                      <div className="flex items-center gap-6">
+                        <div className="text-right text-sm hidden sm:block">
+                          <p className="text-muted-foreground">NIK</p>
+                          <p className="font-mono">{customer.nik || '-'}</p>
+                        </div>
+                        <div className="text-center hidden md:block">
+                          <p className="text-2xl font-bold">{bookingCount}</p>
+                          <p className="text-xs text-muted-foreground">Booking</p>
+                        </div>
+                        {docInfo && (
+                          <div className="text-center hidden md:block">
+                            <p className="text-lg font-semibold">{docInfo.verified}/{docInfo.total}</p>
+                            <p className="text-xs text-muted-foreground">Dokumen</p>
+                          </div>
+                        )}
+                        <div className="text-right text-sm hidden lg:block">
+                          <p className="text-muted-foreground">Terdaftar</p>
+                          <p>{format(new Date(customer.created_at), 'd MMM yyyy', { locale: id })}</p>
+                        </div>
+                        <Button variant="outline" size="sm" asChild>
+                          <Link to={`/admin/customers/${customer.id}`}>
+                            <Eye className="h-4 w-4 mr-1" />
+                            Detail
+                          </Link>
+                        </Button>
                       </div>
-                      <Button variant="outline" size="sm">
-                        <Eye className="h-4 w-4" />
-                      </Button>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>
