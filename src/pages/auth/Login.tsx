@@ -43,7 +43,7 @@ export default function Login() {
         description: 'Selamat datang kembali!',
       });
 
-      navigate('/dashboard');
+      navigate('/');
     } catch (error: any) {
       toast({
         title: 'Login Gagal',
