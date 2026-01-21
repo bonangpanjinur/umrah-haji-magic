@@ -26,6 +26,7 @@ import AdminCustomers from "./pages/admin/AdminCustomers";
 import AdminCustomerDetail from "./pages/admin/AdminCustomerDetail";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminAgents from "./pages/admin/AdminAgents";
+import AdminReports from "./pages/admin/AdminReports";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminMasterData from "./pages/admin/AdminMasterData";
 // Operational
@@ -75,6 +76,7 @@ const App = () => (
               <Route path="customers/:id" element={<AdminCustomerDetail />} />
               <Route path="users" element={<AdminUsers />} />
               <Route path="agents" element={<AdminAgents />} />
+              <Route path="reports" element={<AdminReports />} />
               <Route path="settings" element={<AdminSettings />} />
             </Route>
             
