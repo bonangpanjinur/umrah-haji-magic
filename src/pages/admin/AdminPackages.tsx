@@ -1,6 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -8,10 +8,33 @@ import { Input } from "@/components/ui/input";
 import { formatCurrency, formatPackageType } from "@/lib/format";
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Search, Plus, Edit, Eye, Package } from "lucide-react";
+import { Search, Plus, Edit, Eye, Package, Trash2, Calendar } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { PackageForm } from "@/components/admin/forms/PackageForm";
+import { toast } from "sonner";
 
 export default function AdminPackages() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingPackage, setEditingPackage] = useState<any>(null);
+  const [deletePackage, setDeletePackage] = useState<any>(null);
+  
+  const queryClient = useQueryClient();
 
   const { data: packages, isLoading } = useQuery({
     queryKey: ['admin-packages'],
@@ -23,7 +46,7 @@ export default function AdminPackages() {
           airline:airlines(name),
           hotel_makkah:hotels!packages_hotel_makkah_id_fkey(name),
           hotel_madinah:hotels!packages_hotel_madinah_id_fkey(name),
-          departures(id)
+          departures(id, departure_date, quota, booked_count, status)
         `)
         .order('created_at', { ascending: false });
 
@@ -32,11 +55,42 @@ export default function AdminPackages() {
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('packages').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Paket berhasil dihapus");
+      queryClient.invalidateQueries({ queryKey: ['admin-packages'] });
+      setDeletePackage(null);
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Gagal menghapus paket");
+    },
+  });
+
   const filteredPackages = packages?.filter(pkg => {
     if (!searchTerm) return true;
     return pkg.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
            pkg.code.toLowerCase().includes(searchTerm.toLowerCase());
   });
+
+  const handleEdit = (pkg: any) => {
+    setEditingPackage(pkg);
+    setIsFormOpen(true);
+  };
+
+  const handleFormClose = () => {
+    setIsFormOpen(false);
+    setEditingPackage(null);
+  };
+
+  const getUpcomingDepartures = (departures: any[]) => {
+    if (!departures) return 0;
+    const today = new Date().toISOString().split('T')[0];
+    return departures.filter(d => d.departure_date >= today && d.status === 'open').length;
+  };
 
   return (
     <div className="space-y-6">
@@ -55,7 +109,7 @@ export default function AdminPackages() {
               className="pl-10 w-full sm:w-64"
             />
           </div>
-          <Button>
+          <Button onClick={() => setIsFormOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Tambah Paket
           </Button>
@@ -101,9 +155,12 @@ export default function AdminPackages() {
                   <h3 className="font-semibold line-clamp-1">{pkg.name}</h3>
                 </div>
                 
-                <div className="text-sm text-muted-foreground">
+                <div className="text-sm text-muted-foreground space-y-1">
                   <p>{pkg.duration_days} Hari</p>
-                  <p>{(pkg.departures as any[])?.length || 0} jadwal keberangkatan</p>
+                  <div className="flex items-center gap-1">
+                    <Calendar className="h-3 w-3" />
+                    <span>{getUpcomingDepartures(pkg.departures as any[])} jadwal aktif</span>
+                  </div>
                 </div>
 
                 <div>
@@ -113,14 +170,21 @@ export default function AdminPackages() {
 
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm" className="flex-1" asChild>
-                    <Link to={`/packages/${pkg.id}`}>
+                    <Link to={`/admin/packages/${pkg.id}`}>
                       <Eye className="h-4 w-4 mr-1" />
-                      Lihat
+                      Detail
                     </Link>
                   </Button>
-                  <Button size="sm" className="flex-1">
-                    <Edit className="h-4 w-4 mr-1" />
-                    Edit
+                  <Button variant="outline" size="sm" onClick={() => handleEdit(pkg)}>
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => setDeletePackage(pkg)}
+                  >
+                    <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
               </CardContent>
@@ -128,6 +192,44 @@ export default function AdminPackages() {
           ))}
         </div>
       )}
+
+      {/* Package Form Dialog */}
+      <Dialog open={isFormOpen} onOpenChange={handleFormClose}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {editingPackage ? 'Edit Paket' : 'Tambah Paket Baru'}
+            </DialogTitle>
+          </DialogHeader>
+          <PackageForm
+            packageData={editingPackage}
+            onSuccess={handleFormClose}
+            onCancel={handleFormClose}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={!!deletePackage} onOpenChange={() => setDeletePackage(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus Paket?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Anda yakin ingin menghapus paket "{deletePackage?.name}"? 
+              Tindakan ini tidak dapat dibatalkan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => deletePackage && deleteMutation.mutate(deletePackage.id)}
+            >
+              Hapus
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
