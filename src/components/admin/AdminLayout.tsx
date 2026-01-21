@@ -3,7 +3,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { 
   LayoutDashboard, Package, Users, Calendar, CreditCard, 
-  Settings, LogOut, Menu, X, ChevronDown, Shield, UserCheck
+  Settings, LogOut, Menu, X, ChevronDown, Shield, UserCheck,
+  FileBarChart
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -17,6 +18,7 @@ const NAV_ITEMS = [
   { label: 'Jamaah', icon: Users, path: '/admin/customers' },
   { label: 'Users', icon: Shield, path: '/admin/users' },
   { label: 'Agent', icon: UserCheck, path: '/admin/agents' },
+  { label: 'Laporan', icon: FileBarChart, path: '/admin/reports' },
   { label: 'Pengaturan', icon: Settings, path: '/admin/settings' },
 ];
 
