@@ -32,7 +32,7 @@ type PackageType = Database["public"]["Enums"]["package_type"];
 const packageSchema = z.object({
   code: z.string().min(1, "Kode paket harus diisi"),
   name: z.string().min(1, "Nama paket harus diisi"),
-  package_type: z.enum(["umroh", "haji", "haji_plus", "umroh_plus"]),
+  package_type: z.enum(["umroh", "haji", "haji_plus", "umroh_plus", "tabungan"]),
   description: z.string().optional(),
   duration_days: z.coerce.number().min(1, "Durasi minimal 1 hari"),
   hotel_makkah_id: z.string().optional().nullable(),

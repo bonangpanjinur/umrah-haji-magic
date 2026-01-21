@@ -79,6 +79,7 @@ export function getPackageTypeLabel(packageType: string): string {
     haji: 'Haji Reguler',
     haji_plus: 'Haji Plus',
     umroh_plus: 'Umroh Plus',
+    tabungan: 'Tabungan Umroh',
   };
   return labels[packageType] || packageType;
 }

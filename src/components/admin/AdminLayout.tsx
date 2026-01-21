@@ -6,7 +6,8 @@ import { NotificationBell } from "./NotificationBell";
 import { 
   LayoutDashboard, Package, Users, Calendar, CreditCard, 
   Settings, LogOut, Menu, X, ChevronDown, Shield, UserCheck,
-  FileBarChart, BarChart3, Target, KeyRound, BedDouble
+  FileBarChart, BarChart3, Target, KeyRound, BedDouble, Plane,
+  PiggyBank, FileCheck
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -16,11 +17,14 @@ const NAV_ITEMS = [
   { label: 'Analytics', icon: BarChart3, path: '/admin/analytics' },
   { label: 'CRM Leads', icon: Target, path: '/admin/leads' },
   { label: 'Paket', icon: Package, path: '/admin/packages' },
+  { label: 'Keberangkatan', icon: Plane, path: '/admin/departures' },
+  { label: 'Tabungan', icon: PiggyBank, path: '/admin/savings' },
   { label: 'Master Data', icon: Settings, path: '/admin/master-data' },
   { label: 'Booking', icon: Calendar, path: '/admin/bookings' },
   { label: 'Pembayaran', icon: CreditCard, path: '/admin/payments' },
   { label: 'Kamar', icon: BedDouble, path: '/admin/room-assignments' },
   { label: 'Jamaah', icon: Users, path: '/admin/customers' },
+  { label: 'Dokumen', icon: FileCheck, path: '/admin/documents' },
   { label: 'Users', icon: Shield, path: '/admin/users' },
   { label: 'Hak Akses', icon: KeyRound, path: '/admin/permissions' },
   { label: 'Agent', icon: UserCheck, path: '/admin/agents' },
