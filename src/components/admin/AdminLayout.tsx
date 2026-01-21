@@ -6,7 +6,7 @@ import { NotificationBell } from "./NotificationBell";
 import { 
   LayoutDashboard, Package, Users, Calendar, CreditCard, 
   Settings, LogOut, Menu, X, ChevronDown, Shield, UserCheck,
-  FileBarChart, BarChart3
+  FileBarChart, BarChart3, Target
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 const NAV_ITEMS = [
   { label: 'Dashboard', icon: LayoutDashboard, path: '/admin' },
   { label: 'Analytics', icon: BarChart3, path: '/admin/analytics' },
+  { label: 'CRM Leads', icon: Target, path: '/admin/leads' },
   { label: 'Paket', icon: Package, path: '/admin/packages' },
   { label: 'Master Data', icon: Settings, path: '/admin/master-data' },
   { label: 'Booking', icon: Calendar, path: '/admin/bookings' },
