@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
+import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/auth/Login";
@@ -56,6 +57,7 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
+            {/* Public Routes */}
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Navigate to="/auth/login" replace />} />
             <Route path="/register" element={<Navigate to="/auth/register" replace />} />
@@ -64,14 +66,40 @@ const App = () => (
             <Route path="/auth/register" element={<Register />} />
             <Route path="/packages" element={<PackageList />} />
             <Route path="/packages/:id" element={<PackageDetail />} />
-            <Route path="/booking/:packageId" element={<BookingPage />} />
-            <Route path="/booking/success/:bookingId" element={<BookingSuccess />} />
-            <Route path="/my-bookings" element={<MyBookings />} />
-            <Route path="/my-bookings/:bookingId" element={<BookingDetail />} />
-            <Route path="/my-bookings/:bookingId/payment" element={<PaymentUpload />} />
             
-            {/* Admin Routes */}
-            <Route path="/admin" element={<AdminLayout />}>
+            {/* Customer Protected Routes */}
+            <Route path="/booking/:packageId" element={
+              <ProtectedRoute>
+                <BookingPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/booking/success/:bookingId" element={
+              <ProtectedRoute>
+                <BookingSuccess />
+              </ProtectedRoute>
+            } />
+            <Route path="/my-bookings" element={
+              <ProtectedRoute>
+                <MyBookings />
+              </ProtectedRoute>
+            } />
+            <Route path="/my-bookings/:bookingId" element={
+              <ProtectedRoute>
+                <BookingDetail />
+              </ProtectedRoute>
+            } />
+            <Route path="/my-bookings/:bookingId/payment" element={
+              <ProtectedRoute>
+                <PaymentUpload />
+              </ProtectedRoute>
+            } />
+            
+            {/* Admin Routes - Protected with admin roles */}
+            <Route path="/admin" element={
+              <ProtectedRoute allowedRoles={['super_admin', 'owner', 'branch_manager', 'finance', 'sales', 'marketing']}>
+                <AdminLayout />
+              </ProtectedRoute>
+            }>
               <Route index element={<AdminDashboard />} />
               <Route path="analytics" element={<AdminAnalytics />} />
               <Route path="packages" element={<AdminPackages />} />
@@ -91,16 +119,24 @@ const App = () => (
               <Route path="settings" element={<AdminSettings />} />
             </Route>
             
-            {/* Operational Routes */}
-            <Route path="/operational" element={<OperationalLayout />}>
+            {/* Operational Routes - Protected with operational roles */}
+            <Route path="/operational" element={
+              <ProtectedRoute allowedRoles={['super_admin', 'owner', 'branch_manager', 'operational', 'equipment']}>
+                <OperationalLayout />
+              </ProtectedRoute>
+            }>
               <Route index element={<OperationalDashboard />} />
               <Route path="manifest" element={<ManifestPage />} />
               <Route path="checkin" element={<CheckinPage />} />
               <Route path="luggage" element={<LuggagePage />} />
             </Route>
             
-            {/* Agent Routes */}
-            <Route path="/agent" element={<AgentLayout />}>
+            {/* Agent Routes - Protected with agent role */}
+            <Route path="/agent" element={
+              <ProtectedRoute allowedRoles={['super_admin', 'owner', 'agent']}>
+                <AgentLayout />
+              </ProtectedRoute>
+            }>
               <Route index element={<AgentDashboard />} />
               <Route path="register" element={<AgentRegister />} />
               <Route path="commissions" element={<AgentCommissions />} />
