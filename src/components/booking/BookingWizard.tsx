@@ -4,13 +4,15 @@ import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StepIndicator } from "./StepIndicator";
-import { StepPassengersSimple } from "./steps/StepPassengersSimple";
-import { StepReviewSimple } from "./steps/StepReviewSimple";
-import { useBookingWizardSimple } from "@/hooks/useBookingWizardSimple";
-import { Loader2, ArrowLeft } from "lucide-react";
+import { StepPassengersDynamic } from "./steps/StepPassengersDynamic";
+import { StepReviewDynamic } from "./steps/StepReviewDynamic";
+import { useBookingWizardDynamic, RoomAllocation } from "@/hooks/useBookingWizardDynamic";
+import { Loader2, ArrowLeft, BedDouble, Users } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { RoomType } from "@/types/database";
+import { formatCurrency } from "@/lib/format";
+import { format } from "date-fns";
+import { id as idLocale } from "date-fns/locale";
 
 export type BookingStep = 'passengers' | 'review';
 
@@ -18,6 +20,13 @@ const STEPS: { id: BookingStep; label: string }[] = [
   { id: 'passengers', label: 'Data Jamaah' },
   { id: 'review', label: 'Review & Bayar' },
 ];
+
+const ROOM_LABELS = {
+  quad: 'Quad',
+  triple: 'Triple', 
+  double: 'Double',
+  single: 'Single',
+};
 
 export function BookingWizard() {
   const { packageId } = useParams();
@@ -27,8 +36,12 @@ export function BookingWizard() {
   
   // Get pre-selected options from URL params
   const initialDepartureId = searchParams.get('departure') || '';
-  const initialRoomType = (searchParams.get('room') as RoomType) || 'quad';
-  const initialPaxCount = parseInt(searchParams.get('pax') || '1', 10);
+  const initialRoomAllocation: RoomAllocation = {
+    quad: parseInt(searchParams.get('quad') || '0', 10),
+    triple: parseInt(searchParams.get('triple') || '0', 10),
+    double: parseInt(searchParams.get('double') || '0', 10),
+    single: parseInt(searchParams.get('single') || '0', 10),
+  };
   
   // Fetch package info
   const { data: packageInfo } = useQuery({
@@ -36,7 +49,7 @@ export function BookingWizard() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('packages')
-        .select('id, name, code, duration_days, package_type')
+        .select('id, name, code, duration_days, package_type, price_quad, price_triple, price_double, price_single')
         .eq('id', packageId)
         .single();
       if (error) throw error;
@@ -67,17 +80,10 @@ export function BookingWizard() {
     updateFormData,
     isSubmitting,
     submitBooking,
-    initializePassengers,
-  } = useBookingWizardSimple(packageId!, initialDepartureId, initialRoomType);
-
-  // Initialize passengers based on pax count from URL
-  useEffect(() => {
-    if (initialPaxCount > 1 && formData.passengers.length === 1) {
-      initializePassengers(initialPaxCount);
-    }
-  }, [initialPaxCount]);
+  } = useBookingWizardDynamic(packageId!, initialDepartureId, initialRoomAllocation);
 
   const currentStepIndex = STEPS.findIndex(s => s.id === currentStep);
+  const totalPassengers = formData.passengers.length;
 
   const handleNext = () => {
     const nextIndex = currentStepIndex + 1;
@@ -126,13 +132,13 @@ export function BookingWizard() {
   }
 
   // If no departure selected, redirect back to package page
-  if (!initialDepartureId) {
+  if (!initialDepartureId || totalPassengers === 0) {
     return (
       <Card className="max-w-lg mx-auto">
         <CardContent className="p-8 text-center">
-          <h2 className="text-xl font-semibold mb-4">Pilih Keberangkatan</h2>
+          <h2 className="text-xl font-semibold mb-4">Pilih Keberangkatan & Kamar</h2>
           <p className="text-muted-foreground mb-6">
-            Silakan pilih tanggal keberangkatan terlebih dahulu di halaman detail paket.
+            Silakan pilih tanggal keberangkatan dan jumlah jamaah terlebih dahulu di halaman detail paket.
           </p>
           <Button asChild>
             <Link to={`/packages/${packageId}`}>
@@ -143,6 +149,13 @@ export function BookingWizard() {
       </Card>
     );
   }
+
+  // Build room summary for display
+  const roomSummary: string[] = [];
+  if (initialRoomAllocation.quad > 0) roomSummary.push(`${initialRoomAllocation.quad} Quad`);
+  if (initialRoomAllocation.triple > 0) roomSummary.push(`${initialRoomAllocation.triple} Triple`);
+  if (initialRoomAllocation.double > 0) roomSummary.push(`${initialRoomAllocation.double} Double`);
+  if (initialRoomAllocation.single > 0) roomSummary.push(`${initialRoomAllocation.single} Single`);
 
   return (
     <div className="space-y-6">
@@ -160,7 +173,7 @@ export function BookingWizard() {
             <p className="text-muted-foreground">
               {packageInfo.duration_days} Hari • {packageInfo.package_type?.toUpperCase()}
               {departureInfo && (
-                <> • Berangkat {new Date(departureInfo.departure_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</>
+                <> • Berangkat {format(new Date(departureInfo.departure_date), "d MMMM yyyy", { locale: idLocale })}</>
               )}
             </p>
           </div>
@@ -171,13 +184,15 @@ export function BookingWizard() {
       <Card className="bg-muted/50">
         <CardContent className="p-4">
           <div className="flex flex-wrap gap-4 text-sm">
-            <div>
-              <span className="text-muted-foreground">Tipe Kamar:</span>
-              <span className="ml-2 font-medium capitalize">{formData.roomType}</span>
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-muted-foreground" />
+              <span className="text-muted-foreground">Jamaah:</span>
+              <span className="font-medium">{totalPassengers} orang</span>
             </div>
-            <div>
-              <span className="text-muted-foreground">Jumlah Jamaah:</span>
-              <span className="ml-2 font-medium">{formData.passengers.length} orang</span>
+            <div className="flex items-center gap-2">
+              <BedDouble className="h-4 w-4 text-muted-foreground" />
+              <span className="text-muted-foreground">Kamar:</span>
+              <span className="font-medium">{roomSummary.join(', ')}</span>
             </div>
           </div>
         </CardContent>
@@ -190,16 +205,17 @@ export function BookingWizard() {
       <Card>
         <CardContent className="p-6">
           {currentStep === 'passengers' && (
-            <StepPassengersSimple
+            <StepPassengersDynamic
               passengers={formData.passengers}
               onUpdate={(passengers) => updateFormData({ passengers })}
             />
           )}
           
-          {currentStep === 'review' && (
-            <StepReviewSimple
+          {currentStep === 'review' && packageInfo && (
+            <StepReviewDynamic
               formData={formData}
-              packageId={packageId!}
+              packageInfo={packageInfo}
+              departureInfo={departureInfo}
             />
           )}
         </CardContent>
@@ -239,7 +255,6 @@ export function BookingWizard() {
 function canProceed(step: BookingStep, formData: any): boolean {
   switch (step) {
     case 'passengers':
-      // Only require name for each passenger
       return formData.passengers.length > 0 && 
         formData.passengers.every((p: any) => p.fullName?.trim());
     case 'review':
