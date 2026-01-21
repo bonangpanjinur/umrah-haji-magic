@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Search, Eye, User, Phone, Mail, Users, FileCheck, Calendar } from "lucide-react";
+import { Search, Eye, User, Phone, Mail, Users, FileCheck, Calendar, Star } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 
@@ -85,6 +85,7 @@ export default function AdminCustomers() {
     total: customers?.length || 0,
     withBookings: Object.keys(bookingCounts || {}).length,
     withDocuments: Object.keys(documentCounts || {}).length,
+    tourLeaders: customers?.filter(c => c.is_tour_leader).length || 0,
   };
 
   return (
@@ -106,7 +107,7 @@ export default function AdminCustomers() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
@@ -146,6 +147,19 @@ export default function AdminCustomers() {
             </div>
           </CardContent>
         </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-amber-100">
+                <Star className="h-5 w-5 text-amber-600" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Tour Leader</p>
+                <p className="text-2xl font-bold">{stats.tourLeaders}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       <Card>
@@ -172,7 +186,15 @@ export default function AdminCustomers() {
                           <User className="h-6 w-6 text-primary" />
                         </div>
                         <div>
-                          <p className="font-semibold">{customer.full_name}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="font-semibold">{customer.full_name}</p>
+                            {customer.is_tour_leader && (
+                              <Badge className="bg-amber-500 hover:bg-amber-600 text-white text-xs">
+                                <Star className="h-3 w-3 mr-1" />
+                                TL
+                              </Badge>
+                            )}
+                          </div>
                           <div className="flex items-center gap-3 text-sm text-muted-foreground">
                             {customer.phone && (
                               <span className="flex items-center gap-1">
