@@ -16,8 +16,9 @@ import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { 
   Calendar, Plus, Search, Plane, Users, Edit, Trash2, 
-  CalendarDays, Hotel, Building2, Link2Off
+  CalendarDays, Hotel, Building2, Link2Off, MapPin
 } from "lucide-react";
+import { LinkItineraryForm } from "@/components/admin/forms/LinkItineraryForm";
 
 export default function AdminDepartures() {
   const queryClient = useQueryClient();
@@ -28,6 +29,7 @@ export default function AdminDepartures() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingDeparture, setEditingDeparture] = useState<any>(null);
   const [deleteDeparture, setDeleteDeparture] = useState<any>(null);
+  const [itineraryDeparture, setItineraryDeparture] = useState<any>(null);
 
   const { data: departures, isLoading } = useQuery({
     queryKey: ['admin-all-departures'],
@@ -400,6 +402,14 @@ export default function AdminDepartures() {
                       <TableCell>{getStatusBadge(dep.status)}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            title="Itinerary"
+                            onClick={() => setItineraryDeparture(dep)}
+                          >
+                            <MapPin className="h-4 w-4" />
+                          </Button>
                           <Button variant="ghost" size="icon" onClick={() => handleEdit(dep)}>
                             <Edit className="h-4 w-4" />
                           </Button>
@@ -459,6 +469,22 @@ export default function AdminDepartures() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Itinerary Dialog */}
+      <Dialog open={!!itineraryDeparture} onOpenChange={() => setItineraryDeparture(null)}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Itinerary Keberangkatan</DialogTitle>
+          </DialogHeader>
+          {itineraryDeparture && (
+            <LinkItineraryForm 
+              departureId={itineraryDeparture.id}
+              departureDate={itineraryDeparture.departure_date}
+              onSuccess={() => setItineraryDeparture(null)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

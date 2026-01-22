@@ -54,6 +54,13 @@ import AdminSecurityAudit from "./pages/admin/AdminSecurityAudit";
 import Admin2FASettings from "./pages/admin/Admin2FASettings";
 // WhatsApp
 import AdminWhatsApp from "./pages/admin/AdminWhatsApp";
+// Advanced Features
+import AdminAdvancedReports from "./pages/admin/AdminAdvancedReports";
+import AdminHR from "./pages/admin/AdminHR";
+import AdminHajiManagement from "./pages/admin/AdminHajiManagement";
+import AdminItineraryTemplates from "./pages/admin/AdminItineraryTemplates";
+// HR Employee Pages
+import EmployeeAttendance from "./pages/hr/EmployeeAttendance";
 // Jamaah Portal (PWA)
 import JamaahPortal from "./pages/jamaah/JamaahPortal";
 import JamaahDigitalID from "./pages/jamaah/JamaahDigitalID";
@@ -182,6 +189,11 @@ const App = () => (
               <Route path="leads/:id" element={<AdminLeadDetail />} />
               <Route path="room-assignments" element={<AdminRoomAssignments />} />
               <Route path="reports" element={<AdminReports />} />
+              <Route path="advanced-reports" element={<AdminAdvancedReports />} />
+              {/* HR & Haji */}
+              <Route path="hr" element={<AdminHR />} />
+              <Route path="haji" element={<AdminHajiManagement />} />
+              <Route path="itinerary-templates" element={<AdminItineraryTemplates />} />
               {/* Security */}
               <Route path="security" element={<AdminSecurityAudit />} />
               <Route path="2fa" element={<Admin2FASettings />} />
@@ -204,6 +216,13 @@ const App = () => (
               <Route path="rooming" element={<RoomingListPage />} />
               <Route path="qrcode" element={<QRCodePage />} />
             </Route>
+            
+            {/* HR Routes */}
+            <Route path="/hr" element={
+              <ProtectedRoute allowedRoles={['super_admin', 'owner', 'branch_manager', 'operational']}>
+                <EmployeeAttendance />
+              </ProtectedRoute>
+            } />
             
             {/* Agent Routes - Protected with agent role */}
             <Route path="/agent" element={
