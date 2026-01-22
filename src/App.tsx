@@ -41,6 +41,7 @@ import AdminRoomAssignments from "./pages/admin/AdminRoomAssignments";
 import AdminDepartures from "./pages/admin/AdminDepartures";
 import AdminSavingsPlans from "./pages/admin/AdminSavingsPlans";
 import AdminDocumentVerification from "./pages/admin/AdminDocumentVerification";
+import AdminAppearance from "./pages/admin/AdminAppearance";
 // Operational
 import OperationalLayout from "./pages/operational/OperationalLayout";
 import OperationalDashboard from "./pages/operational/OperationalDashboard";
@@ -150,6 +151,7 @@ const App = () => (
               <Route path="leads/:id" element={<AdminLeadDetail />} />
               <Route path="room-assignments" element={<AdminRoomAssignments />} />
               <Route path="reports" element={<AdminReports />} />
+              <Route path="appearance" element={<AdminAppearance />} />
               <Route path="settings" element={<AdminSettings />} />
             </Route>
             

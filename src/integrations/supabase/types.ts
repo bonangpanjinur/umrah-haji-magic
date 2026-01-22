@@ -1598,6 +1598,57 @@ export type Database = {
           },
         ]
       }
+      theme_presets: {
+        Row: {
+          accent_color: string
+          background_color: string
+          body_font: string | null
+          created_at: string | null
+          description: string | null
+          foreground_color: string
+          heading_font: string | null
+          id: string
+          is_default: boolean | null
+          name: string
+          preview_image_url: string | null
+          primary_color: string
+          secondary_color: string
+          slug: string
+        }
+        Insert: {
+          accent_color: string
+          background_color?: string
+          body_font?: string | null
+          created_at?: string | null
+          description?: string | null
+          foreground_color?: string
+          heading_font?: string | null
+          id?: string
+          is_default?: boolean | null
+          name: string
+          preview_image_url?: string | null
+          primary_color: string
+          secondary_color: string
+          slug: string
+        }
+        Update: {
+          accent_color?: string
+          background_color?: string
+          body_font?: string | null
+          created_at?: string | null
+          description?: string | null
+          foreground_color?: string
+          heading_font?: string | null
+          id?: string
+          is_default?: boolean | null
+          name?: string
+          preview_image_url?: string | null
+          primary_color?: string
+          secondary_color?: string
+          slug?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           branch_id: string | null
@@ -1629,6 +1680,108 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      website_settings: {
+        Row: {
+          accent_color: string | null
+          active_theme: string
+          background_color: string | null
+          body_font: string | null
+          company_name: string | null
+          created_at: string | null
+          favicon_url: string | null
+          footer_address: string | null
+          footer_email: string | null
+          footer_phone: string | null
+          footer_whatsapp: string | null
+          foreground_color: string | null
+          heading_font: string | null
+          hero_cta_link: string | null
+          hero_cta_text: string | null
+          hero_image_url: string | null
+          hero_subtitle: string | null
+          hero_title: string | null
+          homepage_sections: Json | null
+          id: string
+          logo_url: string | null
+          meta_description: string | null
+          meta_title: string | null
+          primary_color: string | null
+          secondary_color: string | null
+          social_facebook: string | null
+          social_instagram: string | null
+          social_tiktok: string | null
+          social_youtube: string | null
+          tagline: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          accent_color?: string | null
+          active_theme?: string
+          background_color?: string | null
+          body_font?: string | null
+          company_name?: string | null
+          created_at?: string | null
+          favicon_url?: string | null
+          footer_address?: string | null
+          footer_email?: string | null
+          footer_phone?: string | null
+          footer_whatsapp?: string | null
+          foreground_color?: string | null
+          heading_font?: string | null
+          hero_cta_link?: string | null
+          hero_cta_text?: string | null
+          hero_image_url?: string | null
+          hero_subtitle?: string | null
+          hero_title?: string | null
+          homepage_sections?: Json | null
+          id?: string
+          logo_url?: string | null
+          meta_description?: string | null
+          meta_title?: string | null
+          primary_color?: string | null
+          secondary_color?: string | null
+          social_facebook?: string | null
+          social_instagram?: string | null
+          social_tiktok?: string | null
+          social_youtube?: string | null
+          tagline?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          accent_color?: string | null
+          active_theme?: string
+          background_color?: string | null
+          body_font?: string | null
+          company_name?: string | null
+          created_at?: string | null
+          favicon_url?: string | null
+          footer_address?: string | null
+          footer_email?: string | null
+          footer_phone?: string | null
+          footer_whatsapp?: string | null
+          foreground_color?: string | null
+          heading_font?: string | null
+          hero_cta_link?: string | null
+          hero_cta_text?: string | null
+          hero_image_url?: string | null
+          hero_subtitle?: string | null
+          hero_title?: string | null
+          homepage_sections?: Json | null
+          id?: string
+          logo_url?: string | null
+          meta_description?: string | null
+          meta_title?: string | null
+          primary_color?: string | null
+          secondary_color?: string | null
+          social_facebook?: string | null
+          social_instagram?: string | null
+          social_tiktok?: string | null
+          social_youtube?: string | null
+          tagline?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
     }
     Views: {
