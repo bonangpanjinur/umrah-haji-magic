@@ -5,32 +5,82 @@ import { Button } from "@/components/ui/button";
 import { NotificationBell } from "./NotificationBell";
 import { 
   LayoutDashboard, Package, Users, Calendar, CreditCard, 
-  Settings, LogOut, Menu, X, ChevronDown, Shield, UserCheck,
+  Settings, LogOut, Menu, X, Shield, UserCheck,
   FileBarChart, BarChart3, Target, KeyRound, BedDouble, Plane,
-  PiggyBank, FileCheck
+  PiggyBank, FileCheck, Building2, DollarSign, Truck, Gift,
+  HeadphonesIcon, Palette
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
-const NAV_ITEMS = [
-  { label: 'Dashboard', icon: LayoutDashboard, path: '/admin' },
-  { label: 'Analytics', icon: BarChart3, path: '/admin/analytics' },
-  { label: 'CRM Leads', icon: Target, path: '/admin/leads' },
-  { label: 'Paket', icon: Package, path: '/admin/packages' },
-  { label: 'Keberangkatan', icon: Plane, path: '/admin/departures' },
-  { label: 'Tabungan', icon: PiggyBank, path: '/admin/savings' },
-  { label: 'Master Data', icon: Settings, path: '/admin/master-data' },
-  { label: 'Booking', icon: Calendar, path: '/admin/bookings' },
-  { label: 'Pembayaran', icon: CreditCard, path: '/admin/payments' },
-  { label: 'Kamar', icon: BedDouble, path: '/admin/room-assignments' },
-  { label: 'Jamaah', icon: Users, path: '/admin/customers' },
-  { label: 'Dokumen', icon: FileCheck, path: '/admin/documents' },
-  { label: 'Users', icon: Shield, path: '/admin/users' },
-  { label: 'Hak Akses', icon: KeyRound, path: '/admin/permissions' },
-  { label: 'Agent', icon: UserCheck, path: '/admin/agents' },
-  { label: 'Laporan', icon: FileBarChart, path: '/admin/reports' },
-  { label: 'Tampilan', icon: Settings, path: '/admin/appearance' },
-  { label: 'Pengaturan', icon: Settings, path: '/admin/settings' },
+// Grouped navigation for better organization
+const NAV_GROUPS = [
+  {
+    label: 'Overview',
+    items: [
+      { label: 'Dashboard', icon: LayoutDashboard, path: '/admin' },
+      { label: 'Analytics', icon: BarChart3, path: '/admin/analytics' },
+    ]
+  },
+  {
+    label: 'Sales & CRM',
+    items: [
+      { label: 'CRM Leads', icon: Target, path: '/admin/leads' },
+      { label: 'Booking', icon: Calendar, path: '/admin/bookings' },
+      { label: 'Pembayaran', icon: CreditCard, path: '/admin/payments' },
+    ]
+  },
+  {
+    label: 'Produk & Operasional',
+    items: [
+      { label: 'Paket', icon: Package, path: '/admin/packages' },
+      { label: 'Keberangkatan', icon: Plane, path: '/admin/departures' },
+      { label: 'Tabungan', icon: PiggyBank, path: '/admin/savings' },
+      { label: 'Kamar', icon: BedDouble, path: '/admin/room-assignments' },
+    ]
+  },
+  {
+    label: 'Keuangan',
+    allowedRoles: ['super_admin', 'owner', 'finance'],
+    items: [
+      { label: 'Laba/Rugi', icon: DollarSign, path: '/admin/finance' },
+      { label: 'Vendor', icon: Truck, path: '/admin/vendors' },
+    ]
+  },
+  {
+    label: 'Jamaah & Agent',
+    items: [
+      { label: 'Jamaah', icon: Users, path: '/admin/customers' },
+      { label: 'Dokumen', icon: FileCheck, path: '/admin/documents' },
+      { label: 'Agent', icon: UserCheck, path: '/admin/agents' },
+      { label: 'Loyalty', icon: Gift, path: '/admin/loyalty' },
+    ]
+  },
+  {
+    label: 'Support & Helpdesk',
+    items: [
+      { label: 'Tiket Support', icon: HeadphonesIcon, path: '/admin/support' },
+    ]
+  },
+  {
+    label: 'Master Data',
+    allowedRoles: ['super_admin', 'owner', 'branch_manager'],
+    items: [
+      { label: 'Master Data', icon: Settings, path: '/admin/master-data' },
+      { label: 'Cabang', icon: Building2, path: '/admin/branches' },
+    ]
+  },
+  {
+    label: 'Pengaturan',
+    allowedRoles: ['super_admin', 'owner'],
+    items: [
+      { label: 'Users', icon: Shield, path: '/admin/users' },
+      { label: 'Hak Akses', icon: KeyRound, path: '/admin/permissions' },
+      { label: 'Laporan', icon: FileBarChart, path: '/admin/reports' },
+      { label: 'Tampilan', icon: Palette, path: '/admin/appearance' },
+      { label: 'Pengaturan', icon: Settings, path: '/admin/settings' },
+    ]
+  },
 ];
 
 export function AdminLayout() {
@@ -116,28 +166,37 @@ export function AdminLayout() {
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-            {NAV_ITEMS.map((item) => {
-              const isActive = location.pathname === item.path || 
-                (item.path !== '/admin' && location.pathname.startsWith(item.path));
-              
-              return (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  onClick={() => setSidebarOpen(false)}
-                  className={cn(
-                    "flex items-center gap-3 px-3 py-2 rounded-lg transition-colors",
-                    isActive 
-                      ? "bg-primary text-primary-foreground" 
-                      : "hover:bg-muted"
-                  )}
-                >
-                  <item.icon className="h-5 w-5" />
-                  <span>{item.label}</span>
-                </Link>
-              );
-            })}
+          <nav className="flex-1 p-4 space-y-4 overflow-y-auto">
+            {NAV_GROUPS.map((group) => (
+              <div key={group.label}>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-3">
+                  {group.label}
+                </p>
+                <div className="space-y-1">
+                  {group.items.map((item) => {
+                    const isActive = location.pathname === item.path || 
+                      (item.path !== '/admin' && location.pathname.startsWith(item.path));
+                    
+                    return (
+                      <Link
+                        key={item.path}
+                        to={item.path}
+                        onClick={() => setSidebarOpen(false)}
+                        className={cn(
+                          "flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-sm",
+                          isActive 
+                            ? "bg-primary text-primary-foreground" 
+                            : "hover:bg-muted"
+                        )}
+                      >
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.label}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </nav>
 
           {/* User Info */}
