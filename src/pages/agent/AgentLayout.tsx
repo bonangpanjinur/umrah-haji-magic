@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Outlet, Link, useLocation, Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { 
-  Home, Users, DollarSign, Package,
+  Home, Users, DollarSign, Package, UserCog,
   Menu, X, LogOut 
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { label: "Dashboard", href: "/agent", icon: Home },
   { label: "Daftarkan Jamaah", href: "/agent/register", icon: Users },
+  { label: "Data Jamaah", href: "/agent/jamaah", icon: UserCog },
   { label: "Komisi", href: "/agent/commissions", icon: DollarSign },
   { label: "Paket Tersedia", href: "/agent/packages", icon: Package },
 ];

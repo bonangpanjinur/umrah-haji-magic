@@ -51,6 +51,7 @@ import LuggagePage from "./pages/operational/LuggagePage";
 import AgentLayout from "./pages/agent/AgentLayout";
 import AgentDashboard from "./pages/agent/AgentDashboard";
 import AgentRegister from "./pages/agent/AgentRegister";
+import AgentJamaah from "./pages/agent/AgentJamaah";
 import AgentCommissions from "./pages/agent/AgentCommissions";
 import AgentPackages from "./pages/agent/AgentPackages";
 // Savings (Customer)
@@ -172,6 +173,7 @@ const App = () => (
             }>
               <Route index element={<AgentDashboard />} />
               <Route path="register" element={<AgentRegister />} />
+              <Route path="jamaah" element={<AgentJamaah />} />
               <Route path="commissions" element={<AgentCommissions />} />
               <Route path="packages" element={<AgentPackages />} />
             </Route>

@@ -36,6 +36,7 @@ import { ArrowLeft, User, Calendar, Plane, CreditCard, FileText, Users, Phone, M
 import { useState } from "react";
 import { toast } from "sonner";
 import type { Database } from "@/integrations/supabase/types";
+import { EditCustomerDialog } from "@/components/admin/EditCustomerDialog";
 
 type BookingStatus = Database["public"]["Enums"]["booking_status"];
 type PaymentStatus = Database["public"]["Enums"]["payment_status"];
@@ -354,6 +355,7 @@ export default function AdminBookingDetail() {
                       <TableHead>Tipe</TableHead>
                       <TableHead>Paspor</TableHead>
                       <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Aksi</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -377,6 +379,21 @@ export default function AdminBookingDetail() {
                           ) : (
                             <Badge variant="outline" className="text-xs">Belum ada paspor</Badge>
                           )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            {passenger.customer && (
+                              <EditCustomerDialog 
+                                customer={passenger.customer}
+                                onSuccess={() => queryClient.invalidateQueries({ queryKey: ['booking-passengers', id] })}
+                              />
+                            )}
+                            <Button variant="ghost" size="sm" asChild>
+                              <Link to={`/admin/customers/${passenger.customer?.id}`}>
+                                Lihat Detail
+                              </Link>
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
