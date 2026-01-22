@@ -8,7 +8,7 @@ import {
   Settings, LogOut, Menu, X, Shield, UserCheck,
   FileBarChart, BarChart3, Target, KeyRound, BedDouble, Plane,
   PiggyBank, FileCheck, Building2, DollarSign, Truck, Gift,
-  HeadphonesIcon, Palette
+  HeadphonesIcon, Palette, ShieldCheck, Key
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -76,6 +76,8 @@ const NAV_GROUPS = [
     items: [
       { label: 'Users', icon: Shield, path: '/admin/users' },
       { label: 'Hak Akses', icon: KeyRound, path: '/admin/permissions' },
+      { label: 'Security Audit', icon: ShieldCheck, path: '/admin/security' },
+      { label: '2FA Settings', icon: Key, path: '/admin/2fa' },
       { label: 'Laporan', icon: FileBarChart, path: '/admin/reports' },
       { label: 'Tampilan', icon: Palette, path: '/admin/appearance' },
       { label: 'Pengaturan', icon: Settings, path: '/admin/settings' },
