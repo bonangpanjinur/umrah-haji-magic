@@ -29,6 +29,7 @@ const NAV_ITEMS = [
   { label: 'Hak Akses', icon: KeyRound, path: '/admin/permissions' },
   { label: 'Agent', icon: UserCheck, path: '/admin/agents' },
   { label: 'Laporan', icon: FileBarChart, path: '/admin/reports' },
+  { label: 'Tampilan', icon: Settings, path: '/admin/appearance' },
   { label: 'Pengaturan', icon: Settings, path: '/admin/settings' },
 ];
 
