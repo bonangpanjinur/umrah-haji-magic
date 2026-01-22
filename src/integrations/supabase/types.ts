@@ -333,6 +333,13 @@ export type Database = {
             referencedRelation: "departures"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "attendance_departure_id_fkey"
+            columns: ["departure_id"]
+            isOneToOne: false
+            referencedRelation: "v_financial_summary"
+            referencedColumns: ["departure_id"]
+          },
         ]
       }
       audit_logs: {
@@ -561,6 +568,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "departures"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_departure_id_fkey"
+            columns: ["departure_id"]
+            isOneToOne: false
+            referencedRelation: "v_financial_summary"
+            referencedColumns: ["departure_id"]
           },
         ]
       }
@@ -1051,6 +1065,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "equipment_distributions_departure_id_fkey"
+            columns: ["departure_id"]
+            isOneToOne: false
+            referencedRelation: "v_financial_summary"
+            referencedColumns: ["departure_id"]
+          },
+          {
             foreignKeyName: "equipment_distributions_equipment_id_fkey"
             columns: ["equipment_id"]
             isOneToOne: false
@@ -1082,6 +1103,103 @@ export type Database = {
           stock_quantity?: number | null
         }
         Relationships: []
+      }
+      haji_registrations: {
+        Row: {
+          created_at: string | null
+          customer_id: string
+          estimated_departure_year: number | null
+          haji_type: string
+          health_status: string | null
+          id: string
+          manasik_completed: boolean | null
+          notes: string | null
+          passport_status: string | null
+          portion_number: string | null
+          registration_number: string | null
+          registration_year: number | null
+          status: string | null
+          updated_at: string | null
+          visa_status: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          customer_id: string
+          estimated_departure_year?: number | null
+          haji_type?: string
+          health_status?: string | null
+          id?: string
+          manasik_completed?: boolean | null
+          notes?: string | null
+          passport_status?: string | null
+          portion_number?: string | null
+          registration_number?: string | null
+          registration_year?: number | null
+          status?: string | null
+          updated_at?: string | null
+          visa_status?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          customer_id?: string
+          estimated_departure_year?: number | null
+          haji_type?: string
+          health_status?: string | null
+          id?: string
+          manasik_completed?: boolean | null
+          notes?: string | null
+          passport_status?: string | null
+          portion_number?: string | null
+          registration_number?: string | null
+          registration_year?: number | null
+          status?: string | null
+          updated_at?: string | null
+          visa_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "haji_registrations_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      haji_waiting_progress: {
+        Row: {
+          created_at: string | null
+          estimated_position: number | null
+          id: string
+          notes: string | null
+          progress_date: string
+          registration_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          estimated_position?: number | null
+          id?: string
+          notes?: string | null
+          progress_date?: string
+          registration_id: string
+        }
+        Update: {
+          created_at?: string | null
+          estimated_position?: number | null
+          id?: string
+          notes?: string | null
+          progress_date?: string
+          registration_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "haji_waiting_progress_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "haji_registrations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       hotels: {
         Row: {
@@ -1167,6 +1285,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "departures"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "jamaah_qr_codes_departure_id_fkey"
+            columns: ["departure_id"]
+            isOneToOne: false
+            referencedRelation: "v_financial_summary"
+            referencedColumns: ["departure_id"]
           },
         ]
       }
@@ -1431,6 +1556,118 @@ export type Database = {
             referencedRelation: "departures"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "luggage_departure_id_fkey"
+            columns: ["departure_id"]
+            isOneToOne: false
+            referencedRelation: "v_financial_summary"
+            referencedColumns: ["departure_id"]
+          },
+        ]
+      }
+      manasik_attendance: {
+        Row: {
+          attended: boolean | null
+          attended_at: string | null
+          created_at: string | null
+          customer_id: string
+          id: string
+          notes: string | null
+          schedule_id: string
+        }
+        Insert: {
+          attended?: boolean | null
+          attended_at?: string | null
+          created_at?: string | null
+          customer_id: string
+          id?: string
+          notes?: string | null
+          schedule_id: string
+        }
+        Update: {
+          attended?: boolean | null
+          attended_at?: string | null
+          created_at?: string | null
+          customer_id?: string
+          id?: string
+          notes?: string | null
+          schedule_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manasik_attendance_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manasik_attendance_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "manasik_schedules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      manasik_schedules: {
+        Row: {
+          created_at: string | null
+          departure_id: string | null
+          description: string | null
+          end_time: string | null
+          id: string
+          instructor: string | null
+          is_mandatory: boolean | null
+          location: string | null
+          max_participants: number | null
+          schedule_date: string
+          start_time: string | null
+          title: string
+        }
+        Insert: {
+          created_at?: string | null
+          departure_id?: string | null
+          description?: string | null
+          end_time?: string | null
+          id?: string
+          instructor?: string | null
+          is_mandatory?: boolean | null
+          location?: string | null
+          max_participants?: number | null
+          schedule_date: string
+          start_time?: string | null
+          title: string
+        }
+        Update: {
+          created_at?: string | null
+          departure_id?: string | null
+          description?: string | null
+          end_time?: string | null
+          id?: string
+          instructor?: string | null
+          is_mandatory?: boolean | null
+          location?: string | null
+          max_participants?: number | null
+          schedule_date?: string
+          start_time?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manasik_schedules_departure_id_fkey"
+            columns: ["departure_id"]
+            isOneToOne: false
+            referencedRelation: "departures"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manasik_schedules_departure_id_fkey"
+            columns: ["departure_id"]
+            isOneToOne: false
+            referencedRelation: "v_financial_summary"
+            referencedColumns: ["departure_id"]
+          },
         ]
       }
       manifests: {
@@ -1465,6 +1702,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "departures"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manifests_departure_id_fkey"
+            columns: ["departure_id"]
+            isOneToOne: false
+            referencedRelation: "v_financial_summary"
+            referencedColumns: ["departure_id"]
           },
         ]
       }
@@ -2004,6 +2248,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "room_assignments_departure_id_fkey"
+            columns: ["departure_id"]
+            isOneToOne: false
+            referencedRelation: "v_financial_summary"
+            referencedColumns: ["departure_id"]
+          },
+          {
             foreignKeyName: "room_assignments_hotel_id_fkey"
             columns: ["hotel_id"]
             isOneToOne: false
@@ -2246,6 +2497,13 @@ export type Database = {
             referencedRelation: "departures"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "support_tickets_departure_id_fkey"
+            columns: ["departure_id"]
+            isOneToOne: false
+            referencedRelation: "v_financial_summary"
+            referencedColumns: ["departure_id"]
+          },
         ]
       }
       theme_presets: {
@@ -2470,6 +2728,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "departures"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_costs_departure_id_fkey"
+            columns: ["departure_id"]
+            isOneToOne: false
+            referencedRelation: "v_financial_summary"
+            referencedColumns: ["departure_id"]
           },
           {
             foreignKeyName: "vendor_costs_vendor_id_fkey"
@@ -2786,7 +3051,22 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      v_financial_summary: {
+        Row: {
+          collected_amount: number | null
+          departure_date: string | null
+          departure_id: string | null
+          gross_revenue: number | null
+          net_profit: number | null
+          outstanding_amount: number | null
+          package_name: string | null
+          return_date: string | null
+          total_bookings: number | null
+          total_pax: number | null
+          total_vendor_costs: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       agent_can_access_customer: {
