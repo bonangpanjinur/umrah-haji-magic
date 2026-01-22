@@ -279,8 +279,9 @@ export default function AdminDepartures() {
                     <TableHead>Tanggal</TableHead>
                     <TableHead>Paket</TableHead>
                     <TableHead>Maskapai & Rute</TableHead>
-                    <TableHead>Hotel</TableHead>
-                    <TableHead>Harga Mulai</TableHead>
+                    <TableHead>Hotel Makkah</TableHead>
+                    <TableHead>Hotel Madinah</TableHead>
+                    <TableHead>Harga per Kamar</TableHead>
                     <TableHead className="text-center">Kuota</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Aksi</TableHead>
@@ -331,32 +332,62 @@ export default function AdminDepartures() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="text-xs space-y-0.5">
-                          {dep.hotel_makkah ? (
-                            <p>
-                              <span className="text-muted-foreground">M:</span> {dep.hotel_makkah.name} ({dep.hotel_makkah.star_rating}⭐)
-                            </p>
-                          ) : (
-                            <p className="text-muted-foreground">Makkah: -</p>
-                          )}
-                          {dep.hotel_madinah ? (
-                            <p>
-                              <span className="text-muted-foreground">D:</span> {dep.hotel_madinah.name} ({dep.hotel_madinah.star_rating}⭐)
-                            </p>
-                          ) : (
-                            <p className="text-muted-foreground">Madinah: -</p>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {dep.price_quad > 0 ? (
-                          <div>
-                            <p className="font-medium">{formatCurrency(dep.price_quad)}</p>
-                            <p className="text-xs text-muted-foreground">Quad</p>
+                        {dep.hotel_makkah ? (
+                          <div className="flex items-start gap-2">
+                            <Hotel className="h-4 w-4 text-amber-600 mt-0.5" />
+                            <div>
+                              <p className="text-sm font-medium">{dep.hotel_makkah.name}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {'⭐'.repeat(dep.hotel_makkah.star_rating || 0)}
+                              </p>
+                            </div>
                           </div>
                         ) : (
-                          <span className="text-muted-foreground">-</span>
+                          <span className="text-muted-foreground text-sm">Belum diatur</span>
                         )}
+                      </TableCell>
+                      <TableCell>
+                        {dep.hotel_madinah ? (
+                          <div className="flex items-start gap-2">
+                            <Hotel className="h-4 w-4 text-emerald-600 mt-0.5" />
+                            <div>
+                              <p className="text-sm font-medium">{dep.hotel_madinah.name}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {'⭐'.repeat(dep.hotel_madinah.star_rating || 0)}
+                              </p>
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">Belum diatur</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Quad:</span>
+                            <span className="font-medium">
+                              {dep.price_quad > 0 ? formatCurrency(dep.price_quad) : '-'}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Triple:</span>
+                            <span className="font-medium">
+                              {dep.price_triple > 0 ? formatCurrency(dep.price_triple) : '-'}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Double:</span>
+                            <span className="font-medium">
+                              {dep.price_double > 0 ? formatCurrency(dep.price_double) : '-'}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Single:</span>
+                            <span className="font-medium">
+                              {dep.price_single > 0 ? formatCurrency(dep.price_single) : '-'}
+                            </span>
+                          </div>
+                        </div>
                       </TableCell>
                       <TableCell className="text-center">
                         <div className="flex items-center justify-center gap-1">
