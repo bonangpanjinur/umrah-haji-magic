@@ -620,6 +620,115 @@ export type Database = {
         }
         Relationships: []
       }
+      bus_assignments: {
+        Row: {
+          arrival_point: string | null
+          bus_number: string
+          bus_provider_id: string | null
+          capacity: number | null
+          created_at: string | null
+          departure_id: string
+          departure_point: string | null
+          departure_time: string | null
+          driver_name: string | null
+          driver_phone: string | null
+          id: string
+          notes: string | null
+          route_type: string | null
+        }
+        Insert: {
+          arrival_point?: string | null
+          bus_number: string
+          bus_provider_id?: string | null
+          capacity?: number | null
+          created_at?: string | null
+          departure_id: string
+          departure_point?: string | null
+          departure_time?: string | null
+          driver_name?: string | null
+          driver_phone?: string | null
+          id?: string
+          notes?: string | null
+          route_type?: string | null
+        }
+        Update: {
+          arrival_point?: string | null
+          bus_number?: string
+          bus_provider_id?: string | null
+          capacity?: number | null
+          created_at?: string | null
+          departure_id?: string
+          departure_point?: string | null
+          departure_time?: string | null
+          driver_name?: string | null
+          driver_phone?: string | null
+          id?: string
+          notes?: string | null
+          route_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bus_assignments_bus_provider_id_fkey"
+            columns: ["bus_provider_id"]
+            isOneToOne: false
+            referencedRelation: "bus_providers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bus_assignments_departure_id_fkey"
+            columns: ["departure_id"]
+            isOneToOne: false
+            referencedRelation: "departures"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bus_assignments_departure_id_fkey"
+            columns: ["departure_id"]
+            isOneToOne: false
+            referencedRelation: "v_financial_summary"
+            referencedColumns: ["departure_id"]
+          },
+        ]
+      }
+      bus_passengers: {
+        Row: {
+          bus_assignment_id: string
+          created_at: string | null
+          customer_id: string
+          id: string
+          seat_number: string | null
+        }
+        Insert: {
+          bus_assignment_id: string
+          created_at?: string | null
+          customer_id: string
+          id?: string
+          seat_number?: string | null
+        }
+        Update: {
+          bus_assignment_id?: string
+          created_at?: string | null
+          customer_id?: string
+          id?: string
+          seat_number?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bus_passengers_bus_assignment_id_fkey"
+            columns: ["bus_assignment_id"]
+            isOneToOne: false
+            referencedRelation: "bus_assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bus_passengers_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bus_providers: {
         Row: {
           contact_person: string | null
@@ -710,6 +819,9 @@ export type Database = {
           file_url: string
           id: string
           notes: string | null
+          ocr_confidence: number | null
+          ocr_data: Json | null
+          ocr_processed_at: string | null
           status: Database["public"]["Enums"]["document_status"] | null
           updated_at: string | null
           verified_at: string | null
@@ -723,6 +835,9 @@ export type Database = {
           file_url: string
           id?: string
           notes?: string | null
+          ocr_confidence?: number | null
+          ocr_data?: Json | null
+          ocr_processed_at?: string | null
           status?: Database["public"]["Enums"]["document_status"] | null
           updated_at?: string | null
           verified_at?: string | null
@@ -736,6 +851,9 @@ export type Database = {
           file_url?: string
           id?: string
           notes?: string | null
+          ocr_confidence?: number | null
+          ocr_data?: Json | null
+          ocr_processed_at?: string | null
           status?: Database["public"]["Enums"]["document_status"] | null
           updated_at?: string | null
           verified_at?: string | null
@@ -1029,7 +1147,10 @@ export type Database = {
           distributed_by: string | null
           equipment_id: string
           id: string
+          notes: string | null
           quantity: number | null
+          returned_at: string | null
+          status: string | null
         }
         Insert: {
           customer_id: string
@@ -1038,7 +1159,10 @@ export type Database = {
           distributed_by?: string | null
           equipment_id: string
           id?: string
+          notes?: string | null
           quantity?: number | null
+          returned_at?: string | null
+          status?: string | null
         }
         Update: {
           customer_id?: string
@@ -1047,7 +1171,10 @@ export type Database = {
           distributed_by?: string | null
           equipment_id?: string
           id?: string
+          notes?: string | null
           quantity?: number | null
+          returned_at?: string | null
+          status?: string | null
         }
         Relationships: [
           {
@@ -1778,6 +1905,54 @@ export type Database = {
           title?: string
           type?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      offline_content: {
+        Row: {
+          arabic_text: string | null
+          audio_url: string | null
+          category: string
+          content: string | null
+          created_at: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean | null
+          latin_text: string | null
+          sort_order: number | null
+          title: string
+          translation: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          arabic_text?: string | null
+          audio_url?: string | null
+          category: string
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          latin_text?: string | null
+          sort_order?: number | null
+          title: string
+          translation?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          arabic_text?: string | null
+          audio_url?: string | null
+          category?: string
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          latin_text?: string | null
+          sort_order?: number | null
+          title?: string
+          translation?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -3141,6 +3316,7 @@ export type Database = {
         | "verified"
         | "rejected"
         | "expired"
+      equipment_distribution_status: "pending" | "distributed" | "returned"
       gender_type: "male" | "female"
       lead_status:
         | "new"
@@ -3307,6 +3483,7 @@ export const Constants = {
         "rejected",
         "expired",
       ],
+      equipment_distribution_status: ["pending", "distributed", "returned"],
       gender_type: ["male", "female"],
       lead_status: [
         "new",
