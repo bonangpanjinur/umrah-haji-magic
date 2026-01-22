@@ -374,15 +374,7 @@ export default function PackageDetail() {
 
           {/* Sidebar - Booking Form */}
           <div className="lg:col-span-1">
-            <PackageBookingForm 
-              packageId={pkg.id}
-              prices={{
-                quad: pkg.price_quad,
-                triple: pkg.price_triple,
-                double: pkg.price_double,
-                single: pkg.price_single,
-              }}
-            />
+            <PackageBookingForm packageId={pkg.id} />
           </div>
         </div>
       </div>
