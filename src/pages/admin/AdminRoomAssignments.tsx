@@ -34,14 +34,35 @@ interface Passenger {
 
 export default function AdminRoomAssignments() {
   const queryClient = useQueryClient();
+  const [selectedPackage, setSelectedPackage] = useState<string>("");
   const [selectedDeparture, setSelectedDeparture] = useState<string>("");
   const [pairingDialogOpen, setPairingDialogOpen] = useState(false);
   const [selectedPassenger, setSelectedPassenger] = useState<Passenger | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Fetch departures
+  // Fetch packages that have departures
+  const { data: packages, isLoading: loadingPackages } = useQuery({
+    queryKey: ['packages-for-rooms'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('packages')
+        .select(`
+          id,
+          name,
+          code
+        `)
+        .eq('is_active', true)
+        .order('name', { ascending: true });
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Fetch departures for selected package
   const { data: departures, isLoading: loadingDepartures } = useQuery({
-    queryKey: ['departures-for-rooms'],
+    queryKey: ['departures-for-rooms', selectedPackage],
+    enabled: !!selectedPackage,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('departures')
@@ -49,9 +70,9 @@ export default function AdminRoomAssignments() {
           id,
           departure_date,
           return_date,
-          status,
-          package:packages(name)
+          status
         `)
+        .eq('package_id', selectedPackage)
         .gte('departure_date', new Date().toISOString().split('T')[0])
         .order('departure_date', { ascending: true });
 
@@ -59,6 +80,12 @@ export default function AdminRoomAssignments() {
       return data;
     },
   });
+
+  // Reset departure when package changes
+  const handlePackageChange = (packageId: string) => {
+    setSelectedPackage(packageId);
+    setSelectedDeparture("");
+  };
 
   // Fetch passengers with double/sharing room preference
   const { data: passengers, isLoading: loadingPassengers } = useQuery({
@@ -205,18 +232,51 @@ export default function AdminRoomAssignments() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <Select value={selectedDeparture} onValueChange={setSelectedDeparture}>
-            <SelectTrigger className="w-full md:w-[400px]">
-              <SelectValue placeholder="Pilih keberangkatan..." />
-            </SelectTrigger>
-            <SelectContent>
-              {departures?.map((dep) => (
-                <SelectItem key={dep.id} value={dep.id}>
-                  {dep.package?.name} - {formatDate(dep.departure_date)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="flex flex-col md:flex-row gap-4">
+            {/* Package Selector */}
+            <div className="flex-1">
+              <Label className="text-sm text-muted-foreground mb-2 block">1. Pilih Paket</Label>
+              <Select value={selectedPackage} onValueChange={handlePackageChange}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih paket..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {packages?.map((pkg) => (
+                    <SelectItem key={pkg.id} value={pkg.id}>
+                      {pkg.name} ({pkg.code})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Departure Selector */}
+            <div className="flex-1">
+              <Label className="text-sm text-muted-foreground mb-2 block">2. Pilih Keberangkatan</Label>
+              <Select 
+                value={selectedDeparture} 
+                onValueChange={setSelectedDeparture}
+                disabled={!selectedPackage}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={selectedPackage ? "Pilih keberangkatan..." : "Pilih paket terlebih dahulu"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {departures?.length === 0 ? (
+                    <div className="px-2 py-4 text-sm text-muted-foreground text-center">
+                      Tidak ada keberangkatan untuk paket ini
+                    </div>
+                  ) : (
+                    departures?.map((dep) => (
+                      <SelectItem key={dep.id} value={dep.id}>
+                        {formatDate(dep.departure_date)} - {formatDate(dep.return_date)}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
