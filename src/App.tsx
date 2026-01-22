@@ -77,6 +77,7 @@ import EquipmentPage from "./pages/operational/EquipmentPage";
 import BusManagementPage from "./pages/operational/BusManagementPage";
 // Admin Advanced
 import AdminOfflineContent from "./pages/admin/AdminOfflineContent";
+import AdminDocumentGenerator from "./pages/admin/AdminDocumentGenerator";
 // Jamaah PWA
 import JamaahDoaPanduan from "./pages/jamaah/JamaahDoaPanduan";
 // Agent
@@ -202,6 +203,7 @@ const App = () => (
               <Route path="haji" element={<AdminHajiManagement />} />
               <Route path="itinerary-templates" element={<AdminItineraryTemplates />} />
               <Route path="offline-content" element={<AdminOfflineContent />} />
+              <Route path="documents-generator" element={<AdminDocumentGenerator />} />
               {/* Security */}
               <Route path="security" element={<AdminSecurityAudit />} />
               <Route path="2fa" element={<Admin2FASettings />} />

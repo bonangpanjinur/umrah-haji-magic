@@ -9,7 +9,7 @@ import {
   FileBarChart, BarChart3, Target, KeyRound, BedDouble, Plane,
   PiggyBank, FileCheck, Building2, DollarSign, Truck, Gift,
   HeadphonesIcon, Palette, ShieldCheck, Key, MessageSquare,
-  UserCog, BookOpen, MapPin, TrendingUp
+  UserCog, BookOpen, MapPin, TrendingUp, FileText
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -79,6 +79,13 @@ const NAV_GROUPS = [
     items: [
       { label: 'Master Data', icon: Settings, path: '/admin/master-data' },
       { label: 'Cabang', icon: Building2, path: '/admin/branches' },
+    ]
+  },
+  {
+    label: 'Dokumen & Surat',
+    items: [
+      { label: 'Generate Surat', icon: FileText, path: '/admin/documents-generator' },
+      { label: 'Konten Offline', icon: BookOpen, path: '/admin/offline-content' },
     ]
   },
   {
