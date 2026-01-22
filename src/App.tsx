@@ -53,6 +53,11 @@ import AgentDashboard from "./pages/agent/AgentDashboard";
 import AgentRegister from "./pages/agent/AgentRegister";
 import AgentCommissions from "./pages/agent/AgentCommissions";
 import AgentPackages from "./pages/agent/AgentPackages";
+// Savings (Customer)
+import SavingsPackages from "./pages/savings/SavingsPackages";
+import SavingsRegister from "./pages/savings/SavingsRegister";
+import SavingsSuccess from "./pages/savings/SavingsSuccess";
+import MySavings from "./pages/customer/MySavings";
 
 const queryClient = new QueryClient();
 
@@ -75,6 +80,20 @@ const App = () => (
             <Route path="/auth/reset-password" element={<ResetPassword />} />
             <Route path="/packages" element={<PackageList />} />
             <Route path="/packages/:id" element={<PackageDetail />} />
+            
+            {/* Savings Public Routes */}
+            <Route path="/savings" element={<SavingsPackages />} />
+            <Route path="/savings/register/:packageId" element={<SavingsRegister />} />
+            <Route path="/savings/success/:planId" element={
+              <ProtectedRoute>
+                <SavingsSuccess />
+              </ProtectedRoute>
+            } />
+            <Route path="/customer/my-savings" element={
+              <ProtectedRoute>
+                <MySavings />
+              </ProtectedRoute>
+            } />
             
             {/* Customer Protected Routes */}
             <Route path="/booking/:packageId" element={
