@@ -52,6 +52,12 @@ import AdminSupportTickets from "./pages/admin/AdminSupportTickets";
 // Security
 import AdminSecurityAudit from "./pages/admin/AdminSecurityAudit";
 import Admin2FASettings from "./pages/admin/Admin2FASettings";
+// WhatsApp
+import AdminWhatsApp from "./pages/admin/AdminWhatsApp";
+// Jamaah Portal (PWA)
+import JamaahPortal from "./pages/jamaah/JamaahPortal";
+import JamaahDigitalID from "./pages/jamaah/JamaahDigitalID";
+import JamaahItinerary from "./pages/jamaah/JamaahItinerary";
 // Operational
 import OperationalLayout from "./pages/operational/OperationalLayout";
 import OperationalDashboard from "./pages/operational/OperationalDashboard";
@@ -109,6 +115,11 @@ const App = () => (
                 <MySavings />
               </ProtectedRoute>
             } />
+            
+            {/* Jamaah Portal (PWA) */}
+            <Route path="/jamaah" element={<ProtectedRoute><JamaahPortal /></ProtectedRoute>} />
+            <Route path="/jamaah/digital-id" element={<ProtectedRoute><JamaahDigitalID /></ProtectedRoute>} />
+            <Route path="/jamaah/itinerary" element={<ProtectedRoute><JamaahItinerary /></ProtectedRoute>} />
             
             {/* Customer Protected Routes */}
             <Route path="/booking/:packageId" element={
@@ -174,6 +185,8 @@ const App = () => (
               {/* Security */}
               <Route path="security" element={<AdminSecurityAudit />} />
               <Route path="2fa" element={<Admin2FASettings />} />
+              {/* WhatsApp */}
+              <Route path="whatsapp" element={<AdminWhatsApp />} />
               <Route path="appearance" element={<AdminAppearance />} />
               <Route path="settings" element={<AdminSettings />} />
             </Route>
