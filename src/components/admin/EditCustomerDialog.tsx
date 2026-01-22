@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useEffect, useRef } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -23,7 +24,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Loader2, Pencil } from "lucide-react";
+import { Loader2, Pencil, Upload, FileText, CheckCircle, Clock, XCircle, Eye, Trash2 } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 
 type Customer = Database["public"]["Tables"]["customers"]["Row"];
@@ -37,6 +38,7 @@ interface EditCustomerDialogProps {
 
 export function EditCustomerDialog({ customer, trigger, onSuccess }: EditCustomerDialogProps) {
   const [open, setOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("personal");
   const queryClient = useQueryClient();
 
   const [formData, setFormData] = useState({
@@ -68,6 +70,40 @@ export function EditCustomerDialog({ customer, trigger, onSuccess }: EditCustome
     emergency_contact_name: "",
     emergency_contact_phone: "",
     emergency_contact_relation: "",
+  });
+
+  const [uploading, setUploading] = useState<Record<string, boolean>>({});
+
+  // Fetch document types
+  const { data: documentTypes } = useQuery({
+    queryKey: ["document-types"],
+    enabled: open,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("document_types")
+        .select("*")
+        .order("name");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Fetch existing documents for this customer
+  const { data: existingDocs, refetch: refetchDocs } = useQuery({
+    queryKey: ["customer-documents", customer.id],
+    enabled: open,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("customer_documents")
+        .select(`
+          *,
+          document_type:document_types(id, name, code)
+        `)
+        .eq("customer_id", customer.id)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
   });
 
   // Populate form when customer changes
@@ -137,6 +173,68 @@ export function EditCustomerDialog({ customer, trigger, onSuccess }: EditCustome
     },
   });
 
+  // Upload document mutation
+  const handleDocumentUpload = async (file: File, documentTypeId: string) => {
+    setUploading(prev => ({ ...prev, [documentTypeId]: true }));
+
+    try {
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${customer.id}/${documentTypeId}-${Date.now()}.${fileExt}`;
+
+      // Upload to storage
+      const { error: uploadError } = await supabase.storage
+        .from("customer-documents")
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from("customer-documents")
+        .getPublicUrl(fileName);
+
+      // Check if document already exists
+      const existingDoc = existingDocs?.find(d => d.document_type_id === documentTypeId);
+
+      if (existingDoc) {
+        // Update existing document
+        const { error: updateError } = await supabase
+          .from("customer_documents")
+          .update({
+            file_url: urlData.publicUrl,
+            file_name: file.name,
+            status: "uploaded",
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", existingDoc.id);
+
+        if (updateError) throw updateError;
+      } else {
+        // Insert new document
+        const { error: insertError } = await supabase
+          .from("customer_documents")
+          .insert({
+            customer_id: customer.id,
+            document_type_id: documentTypeId,
+            file_url: urlData.publicUrl,
+            file_name: file.name,
+            status: "uploaded",
+          });
+
+        if (insertError) throw insertError;
+      }
+
+      toast.success("Dokumen berhasil diupload");
+      refetchDocs();
+      queryClient.invalidateQueries({ queryKey: ["admin-customer-documents"] });
+    } catch (error: any) {
+      console.error("Upload error:", error);
+      toast.error(error.message || "Gagal upload dokumen");
+    } finally {
+      setUploading(prev => ({ ...prev, [documentTypeId]: false }));
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     updateMutation.mutate(formData);
@@ -144,6 +242,19 @@ export function EditCustomerDialog({ customer, trigger, onSuccess }: EditCustome
 
   const handleChange = (field: keyof typeof formData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "verified":
+        return <Badge className="bg-green-100 text-green-800"><CheckCircle className="h-3 w-3 mr-1" />Terverifikasi</Badge>;
+      case "rejected":
+        return <Badge className="bg-red-100 text-red-800"><XCircle className="h-3 w-3 mr-1" />Ditolak</Badge>;
+      case "uploaded":
+        return <Badge className="bg-blue-100 text-blue-800"><Clock className="h-3 w-3 mr-1" />Menunggu Verifikasi</Badge>;
+      default:
+        return <Badge className="bg-amber-100 text-amber-800"><Clock className="h-3 w-3 mr-1" />Pending</Badge>;
+    }
   };
 
   return (
@@ -160,17 +271,18 @@ export function EditCustomerDialog({ customer, trigger, onSuccess }: EditCustome
         <DialogHeader>
           <DialogTitle>Edit Data Jamaah</DialogTitle>
           <DialogDescription>
-            Perbarui informasi jamaah. Pastikan data yang diisi sudah benar.
+            Perbarui informasi dan dokumen jamaah. Pastikan data yang diisi sudah benar.
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit}>
-          <Tabs defaultValue="personal" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="personal">Data Diri</TabsTrigger>
               <TabsTrigger value="contact">Kontak</TabsTrigger>
               <TabsTrigger value="passport">Paspor</TabsTrigger>
               <TabsTrigger value="emergency">Darurat</TabsTrigger>
+              <TabsTrigger value="documents">Dokumen</TabsTrigger>
             </TabsList>
 
             {/* Data Diri Tab */}
@@ -445,6 +557,141 @@ export function EditCustomerDialog({ customer, trigger, onSuccess }: EditCustome
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+            </TabsContent>
+
+            {/* Dokumen Tab */}
+            <TabsContent value="documents" className="space-y-4 mt-4">
+              <div className="space-y-4">
+                {documentTypes?.map((docType) => {
+                  const existingDoc = existingDocs?.find(d => d.document_type_id === docType.id);
+                  const isUploading = uploading[docType.id];
+
+                  return (
+                    <div key={docType.id} className="p-4 border rounded-lg">
+                      <div className="flex items-center justify-between mb-3">
+                        <div>
+                          <Label className="text-sm font-medium">{docType.name}</Label>
+                          {docType.is_required && (
+                            <Badge variant="outline" className="ml-2 text-xs">Wajib</Badge>
+                          )}
+                        </div>
+                        {existingDoc && getStatusBadge(existingDoc.status || "pending")}
+                      </div>
+
+                      {existingDoc ? (
+                        <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <FileText className="h-8 w-8 text-muted-foreground" />
+                            <div>
+                              <p className="text-sm font-medium">{existingDoc.file_name || "Dokumen"}</p>
+                              <p className="text-xs text-muted-foreground">
+                                Upload: {new Date(existingDoc.created_at || "").toLocaleDateString("id-ID")}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => window.open(existingDoc.file_url, "_blank")}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Label htmlFor={`replace-${docType.id}`} className="cursor-pointer">
+                              <Button type="button" variant="outline" size="sm" asChild disabled={isUploading}>
+                                <span>
+                                  {isUploading ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <>
+                                      <Upload className="h-4 w-4 mr-1" />
+                                      Ganti
+                                    </>
+                                  )}
+                                </span>
+                              </Button>
+                            </Label>
+                            <input
+                              id={`replace-${docType.id}`}
+                              type="file"
+                              accept="image/*,.pdf"
+                              className="hidden"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  if (file.size > 5 * 1024 * 1024) {
+                                    toast.error("Ukuran file maksimal 5MB");
+                                    return;
+                                  }
+                                  handleDocumentUpload(file, docType.id);
+                                }
+                                e.target.value = "";
+                              }}
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="border-2 border-dashed rounded-lg p-6 text-center">
+                          <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                          <p className="text-sm text-muted-foreground mb-3">
+                            Belum ada dokumen
+                          </p>
+                          <Label htmlFor={`upload-${docType.id}`} className="cursor-pointer">
+                            <Button type="button" variant="outline" size="sm" asChild disabled={isUploading}>
+                              <span>
+                                {isUploading ? (
+                                  <>
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                    Mengupload...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Upload className="h-4 w-4 mr-2" />
+                                    Upload {docType.name}
+                                  </>
+                                )}
+                              </span>
+                            </Button>
+                          </Label>
+                          <input
+                            id={`upload-${docType.id}`}
+                            type="file"
+                            accept="image/*,.pdf"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                if (file.size > 5 * 1024 * 1024) {
+                                  toast.error("Ukuran file maksimal 5MB");
+                                  return;
+                                }
+                                handleDocumentUpload(file, docType.id);
+                              }
+                              e.target.value = "";
+                            }}
+                          />
+                          <p className="text-xs text-muted-foreground mt-2">
+                            Format: JPG, PNG, PDF (Maks 5MB)
+                          </p>
+                        </div>
+                      )}
+
+                      {existingDoc?.notes && existingDoc.status === "rejected" && (
+                        <div className="mt-2 p-2 bg-red-50 rounded text-sm text-red-700">
+                          <strong>Alasan penolakan:</strong> {existingDoc.notes}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+
+                {(!documentTypes || documentTypes.length === 0) && (
+                  <p className="text-muted-foreground text-center py-4">
+                    Tidak ada jenis dokumen yang dikonfigurasi
+                  </p>
+                )}
               </div>
             </TabsContent>
           </Tabs>
