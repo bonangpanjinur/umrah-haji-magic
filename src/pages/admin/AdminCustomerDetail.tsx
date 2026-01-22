@@ -22,11 +22,12 @@ import { formatCurrency } from "@/lib/format";
 import {
   ArrowLeft, User, Phone, Mail, MapPin, Calendar,
   FileText, CreditCard, Eye, ExternalLink, CheckCircle,
-  Clock, XCircle, AlertCircle, ShieldCheck, ShieldX, Loader2, Star
+  Clock, XCircle, AlertCircle, ShieldCheck, ShieldX, Loader2, Star, Pencil
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useState } from "react";
 import { toast } from "sonner";
+import { EditCustomerDialog } from "@/components/admin/EditCustomerDialog";
 
 const STATUS_CONFIG = {
   pending: { label: "Menunggu", color: "bg-amber-100 text-amber-800", icon: Clock },
@@ -392,11 +393,21 @@ export default function AdminCustomerDetail() {
 
       {/* Customer Info Card */}
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <User className="h-5 w-5" />
             Informasi Pribadi
           </CardTitle>
+          <EditCustomerDialog 
+            customer={customer} 
+            onSuccess={() => queryClient.invalidateQueries({ queryKey: ['admin-customer', customerId] })}
+            trigger={
+              <Button variant="outline" size="sm">
+                <Pencil className="h-4 w-4 mr-2" />
+                Edit Data
+              </Button>
+            }
+          />
         </CardHeader>
         <CardContent>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
