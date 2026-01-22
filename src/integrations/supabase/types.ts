@@ -712,6 +712,7 @@ export type Database = {
       }
       departures: {
         Row: {
+          airline_id: string | null
           arrival_airport_id: string | null
           booked_count: number | null
           created_at: string | null
@@ -719,9 +720,15 @@ export type Database = {
           departure_date: string
           departure_time: string | null
           flight_number: string | null
+          hotel_madinah_id: string | null
+          hotel_makkah_id: string | null
           id: string
           muthawif_id: string | null
-          package_id: string
+          package_id: string | null
+          price_double: number | null
+          price_quad: number | null
+          price_single: number | null
+          price_triple: number | null
           quota: number
           return_date: string
           status: string | null
@@ -729,6 +736,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          airline_id?: string | null
           arrival_airport_id?: string | null
           booked_count?: number | null
           created_at?: string | null
@@ -736,9 +744,15 @@ export type Database = {
           departure_date: string
           departure_time?: string | null
           flight_number?: string | null
+          hotel_madinah_id?: string | null
+          hotel_makkah_id?: string | null
           id?: string
           muthawif_id?: string | null
-          package_id: string
+          package_id?: string | null
+          price_double?: number | null
+          price_quad?: number | null
+          price_single?: number | null
+          price_triple?: number | null
           quota?: number
           return_date: string
           status?: string | null
@@ -746,6 +760,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          airline_id?: string | null
           arrival_airport_id?: string | null
           booked_count?: number | null
           created_at?: string | null
@@ -753,9 +768,15 @@ export type Database = {
           departure_date?: string
           departure_time?: string | null
           flight_number?: string | null
+          hotel_madinah_id?: string | null
+          hotel_makkah_id?: string | null
           id?: string
           muthawif_id?: string | null
-          package_id?: string
+          package_id?: string | null
+          price_double?: number | null
+          price_quad?: number | null
+          price_single?: number | null
+          price_triple?: number | null
           quota?: number
           return_date?: string
           status?: string | null
@@ -763,6 +784,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "departures_airline_id_fkey"
+            columns: ["airline_id"]
+            isOneToOne: false
+            referencedRelation: "airlines"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "departures_arrival_airport_id_fkey"
             columns: ["arrival_airport_id"]
@@ -775,6 +803,20 @@ export type Database = {
             columns: ["departure_airport_id"]
             isOneToOne: false
             referencedRelation: "airports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "departures_hotel_madinah_id_fkey"
+            columns: ["hotel_madinah_id"]
+            isOneToOne: false
+            referencedRelation: "hotels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "departures_hotel_makkah_id_fkey"
+            columns: ["hotel_makkah_id"]
+            isOneToOne: false
+            referencedRelation: "hotels"
             referencedColumns: ["id"]
           },
           {
