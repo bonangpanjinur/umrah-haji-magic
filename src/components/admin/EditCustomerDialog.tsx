@@ -1,6 +1,8 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { addMonths, differenceInDays, format, parseISO, isAfter, isBefore } from "date-fns";
+import { id as idLocale } from "date-fns/locale";
 import {
   Dialog,
   DialogContent,
@@ -15,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Select,
   SelectContent,
@@ -24,7 +27,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Loader2, Pencil, Upload, FileText, CheckCircle, Clock, XCircle, Eye, Trash2 } from "lucide-react";
+import { Loader2, Pencil, Upload, FileText, CheckCircle, Clock, XCircle, Eye, Trash2, AlertTriangle, AlertCircle } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 
 type Customer = Database["public"]["Tables"]["customers"]["Row"];
@@ -105,6 +108,87 @@ export function EditCustomerDialog({ customer, trigger, onSuccess }: EditCustome
       return data;
     },
   });
+
+  // Fetch upcoming departures for this customer to validate passport expiry
+  const { data: upcomingDepartures } = useQuery({
+    queryKey: ["customer-departures", customer.id],
+    enabled: open,
+    queryFn: async () => {
+      const today = new Date().toISOString().split("T")[0];
+      const { data, error } = await supabase
+        .from("booking_passengers")
+        .select(`
+          booking:bookings!inner(
+            id,
+            departure:departures!inner(
+              id,
+              departure_date,
+              package:packages(name)
+            )
+          )
+        `)
+        .eq("customer_id", customer.id)
+        .gte("booking.departure.departure_date", today);
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Calculate passport validation status
+  const passportValidation = useMemo(() => {
+    if (!formData.passport_expiry || !upcomingDepartures?.length) {
+      return null;
+    }
+
+    const passportExpiry = parseISO(formData.passport_expiry);
+    const today = new Date();
+
+    // Check if passport is already expired
+    if (isBefore(passportExpiry, today)) {
+      return {
+        type: "error" as const,
+        message: "Paspor sudah kadaluarsa! Segera perpanjang paspor.",
+        icon: AlertCircle,
+      };
+    }
+
+    // Check against each upcoming departure
+    const invalidDepartures: { date: string; packageName: string; daysShort: number }[] = [];
+    
+    upcomingDepartures.forEach((item: any) => {
+      const departure = item.booking?.departure;
+      if (!departure?.departure_date) return;
+
+      const departureDate = parseISO(departure.departure_date);
+      const minValidDate = addMonths(departureDate, 6);
+
+      if (isBefore(passportExpiry, minValidDate)) {
+        const daysShort = differenceInDays(minValidDate, passportExpiry);
+        invalidDepartures.push({
+          date: format(departureDate, "d MMMM yyyy", { locale: idLocale }),
+          packageName: departure.package?.name || "Paket",
+          daysShort,
+        });
+      }
+    });
+
+    if (invalidDepartures.length > 0) {
+      const first = invalidDepartures[0];
+      return {
+        type: "warning" as const,
+        message: `Paspor harus berlaku minimal 6 bulan dari keberangkatan ${first.date} (${first.packageName}). Kurang ${first.daysShort} hari.`,
+        icon: AlertTriangle,
+        departures: invalidDepartures,
+      };
+    }
+
+    // Passport is valid for all departures
+    return {
+      type: "success" as const,
+      message: "Masa berlaku paspor valid untuk semua keberangkatan yang terdaftar.",
+      icon: CheckCircle,
+    };
+  }, [formData.passport_expiry, upcomingDepartures]);
 
   // Populate form when customer changes
   useEffect(() => {
@@ -445,6 +529,47 @@ export function EditCustomerDialog({ customer, trigger, onSuccess }: EditCustome
 
             {/* Paspor Tab */}
             <TabsContent value="passport" className="space-y-4 mt-4">
+              {/* Passport Validation Alert */}
+              {passportValidation && (
+                <Alert 
+                  variant={passportValidation.type === "error" ? "destructive" : "default"}
+                  className={
+                    passportValidation.type === "warning" 
+                      ? "border-amber-500 bg-amber-50 dark:bg-amber-950/30" 
+                      : passportValidation.type === "success"
+                      ? "border-green-500 bg-green-50 dark:bg-green-950/30"
+                      : ""
+                  }
+                >
+                  <passportValidation.icon className={`h-4 w-4 ${
+                    passportValidation.type === "warning" 
+                      ? "text-amber-600" 
+                      : passportValidation.type === "success"
+                      ? "text-green-600"
+                      : ""
+                  }`} />
+                  <AlertDescription className={
+                    passportValidation.type === "warning" 
+                      ? "text-amber-800 dark:text-amber-200" 
+                      : passportValidation.type === "success"
+                      ? "text-green-800 dark:text-green-200"
+                      : ""
+                  }>
+                    {passportValidation.message}
+                    {passportValidation.type === "warning" && passportValidation.departures && passportValidation.departures.length > 1 && (
+                      <div className="mt-2 text-sm">
+                        <strong>Keberangkatan lain yang terpengaruh:</strong>
+                        <ul className="list-disc ml-4 mt-1">
+                          {passportValidation.departures.slice(1).map((dep, idx) => (
+                            <li key={idx}>{dep.packageName} - {dep.date} (kurang {dep.daysShort} hari)</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </AlertDescription>
+                </Alert>
+              )}
+
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="passport_number">Nomor Paspor</Label>
@@ -462,6 +587,13 @@ export function EditCustomerDialog({ customer, trigger, onSuccess }: EditCustome
                     type="date"
                     value={formData.passport_expiry}
                     onChange={(e) => handleChange("passport_expiry", e.target.value)}
+                    className={
+                      passportValidation?.type === "error" 
+                        ? "border-destructive" 
+                        : passportValidation?.type === "warning"
+                        ? "border-amber-500"
+                        : ""
+                    }
                   />
                 </div>
               </div>
