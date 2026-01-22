@@ -2,8 +2,8 @@ import { useState } from "react";
 import { Outlet, Link, useLocation, Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { 
-  ClipboardList, Users, Luggage, QrCode, 
-  Menu, X, LogOut, Home 
+  ClipboardList, Luggage, QrCode, 
+  Menu, X, LogOut, Home, BedDouble, ScanLine
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -11,6 +11,8 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { label: "Dashboard", href: "/operational", icon: Home },
   { label: "Manifest", href: "/operational/manifest", icon: ClipboardList },
+  { label: "Rooming List", href: "/operational/rooming", icon: BedDouble },
+  { label: "QR Code Jamaah", href: "/operational/qrcode", icon: ScanLine },
   { label: "Check-in", href: "/operational/checkin", icon: QrCode },
   { label: "Luggage", href: "/operational/luggage", icon: Luggage },
 ];

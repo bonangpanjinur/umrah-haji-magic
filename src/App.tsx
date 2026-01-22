@@ -42,12 +42,21 @@ import AdminDepartures from "./pages/admin/AdminDepartures";
 import AdminSavingsPlans from "./pages/admin/AdminSavingsPlans";
 import AdminDocumentVerification from "./pages/admin/AdminDocumentVerification";
 import AdminAppearance from "./pages/admin/AdminAppearance";
+import AdminBranches from "./pages/admin/AdminBranches";
+// Finance 2.0
+import AdminFinancePL from "./pages/admin/AdminFinancePL";
+import AdminVendors from "./pages/admin/AdminVendors";
+// Engagement
+import AdminLoyalty from "./pages/admin/AdminLoyalty";
+import AdminSupportTickets from "./pages/admin/AdminSupportTickets";
 // Operational
 import OperationalLayout from "./pages/operational/OperationalLayout";
 import OperationalDashboard from "./pages/operational/OperationalDashboard";
 import ManifestPage from "./pages/operational/ManifestPage";
 import CheckinPage from "./pages/operational/CheckinPage";
 import LuggagePage from "./pages/operational/LuggagePage";
+import RoomingListPage from "./pages/operational/RoomingListPage";
+import QRCodePage from "./pages/operational/QRCodePage";
 // Agent
 import AgentLayout from "./pages/agent/AgentLayout";
 import AgentDashboard from "./pages/agent/AgentDashboard";
@@ -55,6 +64,7 @@ import AgentRegister from "./pages/agent/AgentRegister";
 import AgentJamaah from "./pages/agent/AgentJamaah";
 import AgentCommissions from "./pages/agent/AgentCommissions";
 import AgentPackages from "./pages/agent/AgentPackages";
+import AgentWallet from "./pages/agent/AgentWallet";
 // Savings (Customer)
 import SavingsPackages from "./pages/savings/SavingsPackages";
 import SavingsRegister from "./pages/savings/SavingsRegister";
@@ -137,15 +147,22 @@ const App = () => (
               <Route path="departures" element={<AdminDepartures />} />
               <Route path="savings" element={<AdminSavingsPlans />} />
               <Route path="master-data" element={<AdminMasterData />} />
+              <Route path="branches" element={<AdminBranches />} />
               <Route path="bookings" element={<AdminBookings />} />
               <Route path="bookings/:id" element={<AdminBookingDetail />} />
               <Route path="payments" element={<AdminPayments />} />
+              {/* Finance 2.0 */}
+              <Route path="finance" element={<AdminFinancePL />} />
+              <Route path="vendors" element={<AdminVendors />} />
               <Route path="customers" element={<AdminCustomers />} />
               <Route path="customers/:id" element={<AdminCustomerDetail />} />
               <Route path="documents" element={<AdminDocumentVerification />} />
               <Route path="users" element={<AdminUsers />} />
               <Route path="permissions" element={<AdminRolePermissions />} />
               <Route path="agents" element={<AdminAgents />} />
+              {/* Engagement */}
+              <Route path="loyalty" element={<AdminLoyalty />} />
+              <Route path="support" element={<AdminSupportTickets />} />
               <Route path="leads" element={<AdminLeads />} />
               <Route path="leads/analytics" element={<AdminLeadAnalytics />} />
               <Route path="leads/:id" element={<AdminLeadDetail />} />
@@ -165,6 +182,8 @@ const App = () => (
               <Route path="manifest" element={<ManifestPage />} />
               <Route path="checkin" element={<CheckinPage />} />
               <Route path="luggage" element={<LuggagePage />} />
+              <Route path="rooming" element={<RoomingListPage />} />
+              <Route path="qrcode" element={<QRCodePage />} />
             </Route>
             
             {/* Agent Routes - Protected with agent role */}
@@ -177,6 +196,7 @@ const App = () => (
               <Route path="register" element={<AgentRegister />} />
               <Route path="jamaah" element={<AgentJamaah />} />
               <Route path="commissions" element={<AgentCommissions />} />
+              <Route path="wallet" element={<AgentWallet />} />
               <Route path="packages" element={<AgentPackages />} />
             </Route>
             
