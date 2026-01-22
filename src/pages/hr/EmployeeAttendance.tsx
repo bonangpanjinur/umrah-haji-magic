@@ -6,8 +6,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
-import { MapPin, Clock, Camera, CheckCircle, LogIn, LogOut, Loader2, WifiOff, Wifi } from "lucide-react";
+import { MapPin, Clock, Camera, CheckCircle, LogIn, LogOut, Loader2, WifiOff, Wifi, ShieldCheck, ShieldAlert } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 
@@ -16,6 +17,12 @@ interface LocationData {
   lng: number;
   accuracy: number;
   address?: string;
+}
+
+interface FaceVerificationResult {
+  verified: boolean;
+  confidence: number;
+  reason?: string;
 }
 
 export default function EmployeeAttendance() {
@@ -27,6 +34,8 @@ export default function EmployeeAttendance() {
   const [isCapturing, setIsCapturing] = useState(false);
   const [capturedPhoto, setCapturedPhoto] = useState<string | null>(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [faceVerification, setFaceVerification] = useState<FaceVerificationResult | null>(null);
+  const [isVerifying, setIsVerifying] = useState(false);
 
   // Monitor online status
   useEffect(() => {
@@ -51,7 +60,7 @@ export default function EmployeeAttendance() {
         .eq("user_id", user.id)
         .maybeSingle();
       if (error) throw error;
-      return data as any;
+      return data as unknown as { id: string; full_name: string; employee_code: string; photo_url?: string } | null;
     },
     enabled: !!user?.id,
   });
@@ -70,7 +79,12 @@ export default function EmployeeAttendance() {
         .is("departure_id", null)
         .maybeSingle();
       if (error) throw error;
-      return data as any;
+      return data as unknown as { 
+        id: string; 
+        check_in_time?: string; 
+        check_out_time?: string; 
+        status?: string;
+      } | null;
     },
     enabled: !!employee?.id,
   });
@@ -139,8 +153,8 @@ export default function EmployeeAttendance() {
     }
   };
 
-  // Capture photo
-  const capturePhoto = () => {
+  // Capture photo and verify face
+  const capturePhoto = async () => {
     if (!videoRef.current) return;
 
     const canvas = document.createElement("canvas");
@@ -156,8 +170,52 @@ export default function EmployeeAttendance() {
       const stream = videoRef.current.srcObject as MediaStream;
       stream?.getTracks().forEach((track) => track.stop());
       setIsCapturing(false);
+
+      // Verify face with AI
+      await verifyFace(photo);
     }
   };
+
+  // Face verification with AI
+  const verifyFace = async (photo: string) => {
+    setIsVerifying(true);
+    setFaceVerification(null);
+
+    try {
+      const { data, error } = await supabase.functions.invoke("verify-face", {
+        body: {
+          employee_id: employee?.id,
+          captured_image: photo,
+          stored_photo_url: (employee as any)?.photo_url,
+        },
+      });
+
+      if (error) throw error;
+
+      setFaceVerification({
+        verified: data.verified,
+        confidence: data.confidence,
+        reason: data.reason,
+      });
+
+      if (data.verified) {
+        toast.success("Wajah terverifikasi!");
+      } else {
+        toast.warning(data.reason || "Wajah tidak terverifikasi");
+      }
+    } catch (error) {
+      console.error("Face verification failed:", error);
+      // Allow attendance even if verification fails
+      setFaceVerification({
+        verified: false,
+        confidence: 0,
+        reason: "Verifikasi wajah gagal, lanjutkan manual",
+      });
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
 
   // Check-in mutation
   const checkInMutation = useMutation({
@@ -239,14 +297,14 @@ export default function EmployeeAttendance() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Avatar className="h-12 w-12 border-2 border-primary-foreground/20">
-              <AvatarImage src={(employee as any)?.photo_url || ""} />
+              <AvatarImage src={employee?.photo_url || ""} />
               <AvatarFallback className="bg-primary-foreground/10">
-                {(employee as any)?.full_name?.[0] || "E"}
+                {employee?.full_name?.[0] || "E"}
               </AvatarFallback>
             </Avatar>
             <div>
-              <p className="font-semibold">{(employee as any)?.full_name}</p>
-              <p className="text-xs opacity-80">{(employee as any)?.employee_code}</p>
+              <p className="font-semibold">{employee?.full_name}</p>
+              <p className="text-xs opacity-80">{employee?.employee_code}</p>
             </div>
           </div>
           <div className="flex items-center gap-1 text-sm">
@@ -370,10 +428,49 @@ export default function EmployeeAttendance() {
                 </Button>
               </div>
             ) : capturedPhoto ? (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <img src={capturedPhoto} alt="Captured" className="w-full rounded-lg" />
+                
+                {/* Face Verification Status */}
+                {isVerifying ? (
+                  <div className="flex items-center gap-2 p-3 rounded-lg bg-muted">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span className="text-sm">Memverifikasi wajah...</span>
+                    <Progress value={50} className="flex-1" />
+                  </div>
+                ) : faceVerification ? (
+                  <div className={`flex items-center gap-2 p-3 rounded-lg ${
+                    faceVerification.verified 
+                      ? "bg-green-50 border border-green-200" 
+                      : "bg-amber-50 border border-amber-200"
+                  }`}>
+                    {faceVerification.verified ? (
+                      <ShieldCheck className="h-5 w-5 text-green-600" />
+                    ) : (
+                      <ShieldAlert className="h-5 w-5 text-amber-600" />
+                    )}
+                    <div className="flex-1">
+                      <p className={`text-sm font-medium ${
+                        faceVerification.verified ? "text-green-700" : "text-amber-700"
+                      }`}>
+                        {faceVerification.verified ? "Wajah Terverifikasi" : "Tidak Terverifikasi"}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Confidence: {(faceVerification.confidence * 100).toFixed(0)}%
+                      </p>
+                    </div>
+                  </div>
+                ) : null}
+
                 <div className="flex gap-2">
-                  <Button variant="outline" onClick={() => setCapturedPhoto(null)} className="flex-1">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      setCapturedPhoto(null);
+                      setFaceVerification(null);
+                    }} 
+                    className="flex-1"
+                  >
                     Ulangi
                   </Button>
                   <Badge variant="default" className="flex items-center gap-1">

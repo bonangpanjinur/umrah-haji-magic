@@ -8,7 +8,8 @@ import {
   Settings, LogOut, Menu, X, Shield, UserCheck,
   FileBarChart, BarChart3, Target, KeyRound, BedDouble, Plane,
   PiggyBank, FileCheck, Building2, DollarSign, Truck, Gift,
-  HeadphonesIcon, Palette, ShieldCheck, Key, MessageSquare
+  HeadphonesIcon, Palette, ShieldCheck, Key, MessageSquare,
+  UserCog, BookOpen, MapPin, TrendingUp
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -35,6 +36,7 @@ const NAV_GROUPS = [
     items: [
       { label: 'Paket', icon: Package, path: '/admin/packages' },
       { label: 'Keberangkatan', icon: Plane, path: '/admin/departures' },
+      { label: 'Template Itinerary', icon: MapPin, path: '/admin/itinerary-templates' },
       { label: 'Tabungan', icon: PiggyBank, path: '/admin/savings' },
       { label: 'Kamar', icon: BedDouble, path: '/admin/room-assignments' },
     ]
@@ -54,6 +56,14 @@ const NAV_GROUPS = [
       { label: 'Dokumen', icon: FileCheck, path: '/admin/documents' },
       { label: 'Agent', icon: UserCheck, path: '/admin/agents' },
       { label: 'Loyalty', icon: Gift, path: '/admin/loyalty' },
+      { label: 'Haji', icon: BookOpen, path: '/admin/haji' },
+    ]
+  },
+  {
+    label: 'SDM (HR)',
+    allowedRoles: ['super_admin', 'owner', 'branch_manager'],
+    items: [
+      { label: 'Karyawan', icon: UserCog, path: '/admin/hr' },
     ]
   },
   {
@@ -80,6 +90,7 @@ const NAV_GROUPS = [
       { label: 'Security Audit', icon: ShieldCheck, path: '/admin/security' },
       { label: '2FA Settings', icon: Key, path: '/admin/2fa' },
       { label: 'Laporan', icon: FileBarChart, path: '/admin/reports' },
+      { label: 'Laporan Lanjutan', icon: TrendingUp, path: '/admin/advanced-reports' },
       { label: 'Tampilan', icon: Palette, path: '/admin/appearance' },
       { label: 'Pengaturan', icon: Settings, path: '/admin/settings' },
     ]
