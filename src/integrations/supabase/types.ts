@@ -1635,6 +1635,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      agent_can_access_customer: {
+        Args: { _customer_id: string; _user_id: string }
+        Returns: boolean
+      }
       generate_booking_code: { Args: never; Returns: string }
       generate_payment_code: { Args: never; Returns: string }
       generate_savings_payment_code: { Args: never; Returns: string }
