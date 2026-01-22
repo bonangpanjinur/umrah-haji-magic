@@ -73,6 +73,12 @@ import CheckinPage from "./pages/operational/CheckinPage";
 import LuggagePage from "./pages/operational/LuggagePage";
 import RoomingListPage from "./pages/operational/RoomingListPage";
 import QRCodePage from "./pages/operational/QRCodePage";
+import EquipmentPage from "./pages/operational/EquipmentPage";
+import BusManagementPage from "./pages/operational/BusManagementPage";
+// Admin Advanced
+import AdminOfflineContent from "./pages/admin/AdminOfflineContent";
+// Jamaah PWA
+import JamaahDoaPanduan from "./pages/jamaah/JamaahDoaPanduan";
 // Agent
 import AgentLayout from "./pages/agent/AgentLayout";
 import AgentDashboard from "./pages/agent/AgentDashboard";
@@ -126,6 +132,7 @@ const App = () => (
             {/* Jamaah Portal (PWA) */}
             <Route path="/jamaah" element={<ProtectedRoute><JamaahPortal /></ProtectedRoute>} />
             <Route path="/jamaah/digital-id" element={<ProtectedRoute><JamaahDigitalID /></ProtectedRoute>} />
+            <Route path="/jamaah/doa-panduan" element={<ProtectedRoute><JamaahDoaPanduan /></ProtectedRoute>} />
             <Route path="/jamaah/itinerary" element={<ProtectedRoute><JamaahItinerary /></ProtectedRoute>} />
             
             {/* Customer Protected Routes */}
@@ -194,6 +201,7 @@ const App = () => (
               <Route path="hr" element={<AdminHR />} />
               <Route path="haji" element={<AdminHajiManagement />} />
               <Route path="itinerary-templates" element={<AdminItineraryTemplates />} />
+              <Route path="offline-content" element={<AdminOfflineContent />} />
               {/* Security */}
               <Route path="security" element={<AdminSecurityAudit />} />
               <Route path="2fa" element={<Admin2FASettings />} />
@@ -215,6 +223,8 @@ const App = () => (
               <Route path="luggage" element={<LuggagePage />} />
               <Route path="rooming" element={<RoomingListPage />} />
               <Route path="qrcode" element={<QRCodePage />} />
+              <Route path="equipment" element={<EquipmentPage />} />
+              <Route path="bus" element={<BusManagementPage />} />
             </Route>
             
             {/* HR Routes */}

@@ -3,7 +3,7 @@ import { Outlet, Link, useLocation, Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { 
   ClipboardList, Luggage, QrCode, 
-  Menu, X, LogOut, Home, BedDouble, ScanLine
+  Menu, X, LogOut, Home, BedDouble, ScanLine, Package, Bus
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -15,6 +15,8 @@ const navItems = [
   { label: "QR Code Jamaah", href: "/operational/qrcode", icon: ScanLine },
   { label: "Check-in", href: "/operational/checkin", icon: QrCode },
   { label: "Luggage", href: "/operational/luggage", icon: Luggage },
+  { label: "Perlengkapan", href: "/operational/equipment", icon: Package },
+  { label: "Manajemen Bus", href: "/operational/bus", icon: Bus },
 ];
 
 export default function OperationalLayout() {
