@@ -48,8 +48,9 @@ async function sendViaFonnte(apiKey: string, phone: string, message: string): Pr
       return { success: true };
     }
     return { success: false, error: data.reason || data.message || "Unknown error" };
-  } catch (error) {
-    return { success: false, error: error.message };
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    return { success: false, error: errorMessage };
   }
 }
 
@@ -74,8 +75,9 @@ async function sendViaWablas(apiKey: string, phone: string, message: string): Pr
       return { success: true };
     }
     return { success: false, error: data.message || "Unknown error" };
-  } catch (error) {
-    return { success: false, error: error.message };
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    return { success: false, error: errorMessage };
   }
 }
 

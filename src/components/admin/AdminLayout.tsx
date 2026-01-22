@@ -8,7 +8,7 @@ import {
   Settings, LogOut, Menu, X, Shield, UserCheck,
   FileBarChart, BarChart3, Target, KeyRound, BedDouble, Plane,
   PiggyBank, FileCheck, Building2, DollarSign, Truck, Gift,
-  HeadphonesIcon, Palette, ShieldCheck, Key
+  HeadphonesIcon, Palette, ShieldCheck, Key, MessageSquare
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -57,9 +57,10 @@ const NAV_GROUPS = [
     ]
   },
   {
-    label: 'Support & Helpdesk',
+    label: 'Support & Komunikasi',
     items: [
       { label: 'Tiket Support', icon: HeadphonesIcon, path: '/admin/support' },
+      { label: 'WhatsApp', icon: MessageSquare, path: '/admin/whatsapp' },
     ]
   },
   {
