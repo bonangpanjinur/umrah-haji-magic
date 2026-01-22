@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { IndonesiaLocationSelect } from "@/components/ui/indonesia-location-select";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
@@ -495,35 +496,21 @@ export function EditCustomerDialog({ customer, trigger, onSuccess }: EditCustome
                   rows={3}
                 />
               </div>
-              <div className="grid gap-4 sm:grid-cols-3">
-                <div className="space-y-2">
-                  <Label htmlFor="city">Kota/Kabupaten</Label>
-                  <Input
-                    id="city"
-                    value={formData.city}
-                    onChange={(e) => handleChange("city", e.target.value)}
-                    placeholder="Kota"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="province">Provinsi</Label>
-                  <Input
-                    id="province"
-                    value={formData.province}
-                    onChange={(e) => handleChange("province", e.target.value)}
-                    placeholder="Provinsi"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="postal_code">Kode Pos</Label>
-                  <Input
-                    id="postal_code"
-                    value={formData.postal_code}
-                    onChange={(e) => handleChange("postal_code", e.target.value)}
-                    placeholder="12345"
-                    maxLength={5}
-                  />
-                </div>
+              <IndonesiaLocationSelect
+                province={formData.province}
+                city={formData.city}
+                onProvinceChange={(value) => handleChange("province", value)}
+                onCityChange={(value) => handleChange("city", value)}
+              />
+              <div className="space-y-2">
+                <Label htmlFor="postal_code">Kode Pos</Label>
+                <Input
+                  id="postal_code"
+                  value={formData.postal_code}
+                  onChange={(e) => handleChange("postal_code", e.target.value)}
+                  placeholder="12345"
+                  maxLength={5}
+                />
               </div>
             </TabsContent>
 
