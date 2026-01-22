@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Menu, X, User, ChevronDown, LogOut, LayoutDashboard } from 'lucide-react';
+import { Menu, X, User, ChevronDown, LogOut, LayoutDashboard, PiggyBank, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -14,7 +14,7 @@ import { useAuth } from '@/hooks/useAuth';
 const navLinks = [
   { href: '/', label: 'Beranda' },
   { href: '/packages', label: 'Paket Umroh' },
-  { href: '/departures', label: 'Jadwal Keberangkatan' },
+  { href: '/savings', label: 'Tabungan Umroh' },
   { href: '/about', label: 'Tentang Kami' },
   { href: '/contact', label: 'Hubungi Kami' },
 ];
@@ -82,6 +82,18 @@ export function Navbar() {
                     <Link to={getDashboardLink()} className="flex items-center gap-2">
                       <LayoutDashboard className="h-4 w-4" />
                       Dashboard
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/my-bookings" className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4" />
+                      Booking Saya
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/customer/my-savings" className="flex items-center gap-2">
+                      <PiggyBank className="h-4 w-4" />
+                      Tabungan Saya
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
