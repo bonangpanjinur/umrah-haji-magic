@@ -30,9 +30,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { formatCurrency, formatPackageType, formatDate } from "@/lib/format";
-import { ArrowLeft, Plus, Edit, Trash2, Calendar, Users, Plane } from "lucide-react";
+import { ArrowLeft, Link2, Edit, Trash2, Calendar, Users, Plane } from "lucide-react";
 import { useState } from "react";
-import { DepartureForm } from "@/components/admin/forms/DepartureForm";
+import { LinkDepartureForm } from "@/components/admin/forms/LinkDepartureForm";
 import { PackageForm } from "@/components/admin/forms/PackageForm";
 import { toast } from "sonner";
 
@@ -41,9 +41,8 @@ export default function AdminPackageDetail() {
   const queryClient = useQueryClient();
   
   const [isPackageFormOpen, setIsPackageFormOpen] = useState(false);
-  const [isDepartureFormOpen, setIsDepartureFormOpen] = useState(false);
-  const [editingDeparture, setEditingDeparture] = useState<any>(null);
-  const [deleteDeparture, setDeleteDeparture] = useState<any>(null);
+  const [isLinkDepartureOpen, setIsLinkDepartureOpen] = useState(false);
+  const [unlinkDeparture, setUnlinkDeparture] = useState<any>(null);
 
   const { data: packageData, isLoading } = useQuery({
     queryKey: ['admin-package', id],
@@ -85,30 +84,25 @@ export default function AdminPackageDetail() {
     enabled: !!id,
   });
 
-  const deleteDepartureMutation = useMutation({
+  const unlinkDepartureMutation = useMutation({
     mutationFn: async (departureId: string) => {
-      const { error } = await supabase.from('departures').delete().eq('id', departureId);
+      const { error } = await supabase
+        .from('departures')
+        .update({ package_id: null })
+        .eq('id', departureId);
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("Jadwal berhasil dihapus");
+      toast.success("Keberangkatan berhasil dilepas dari paket");
       queryClient.invalidateQueries({ queryKey: ['admin-departures', id] });
-      setDeleteDeparture(null);
+      setUnlinkDeparture(null);
     },
     onError: (error: any) => {
-      toast.error(error.message || "Gagal menghapus jadwal");
+      toast.error(error.message || "Gagal melepas keberangkatan");
     },
   });
 
-  const handleEditDeparture = (departure: any) => {
-    setEditingDeparture(departure);
-    setIsDepartureFormOpen(true);
-  };
-
-  const handleDepartureFormClose = () => {
-    setIsDepartureFormOpen(false);
-    setEditingDeparture(null);
-  };
+  const linkedDepartureIds = departures?.map(d => d.id) || [];
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -292,9 +286,9 @@ export default function AdminPackageDetail() {
             <Calendar className="h-5 w-5" />
             Jadwal Keberangkatan
           </CardTitle>
-          <Button onClick={() => setIsDepartureFormOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Tambah Jadwal
+          <Button onClick={() => setIsLinkDepartureOpen(true)}>
+            <Link2 className="h-4 w-4 mr-2" />
+            Hubungkan Keberangkatan
           </Button>
         </CardHeader>
         <CardContent>
@@ -303,7 +297,10 @@ export default function AdminPackageDetail() {
           ) : !departures || departures.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>Belum ada jadwal keberangkatan</p>
+              <p>Belum ada jadwal keberangkatan terhubung</p>
+              <p className="text-sm mt-1">
+                Buat jadwal di menu <strong>Keberangkatan</strong>, lalu hubungkan ke paket ini
+              </p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -352,23 +349,15 @@ export default function AdminPackageDetail() {
                       </TableCell>
                       <TableCell>{getStatusBadge(departure.status)}</TableCell>
                       <TableCell className="text-right">
-                        <div className="flex justify-end gap-1">
-                          <Button 
-                            variant="ghost" 
-                            size="icon"
-                            onClick={() => handleEditDeparture(departure)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="icon"
-                            className="text-destructive hover:text-destructive"
-                            onClick={() => setDeleteDeparture(departure)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => setUnlinkDeparture(departure)}
+                          title="Lepas dari paket"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -396,40 +385,38 @@ export default function AdminPackageDetail() {
         </DialogContent>
       </Dialog>
 
-      {/* Departure Form Dialog */}
-      <Dialog open={isDepartureFormOpen} onOpenChange={handleDepartureFormClose}>
+      {/* Link Departure Dialog */}
+      <Dialog open={isLinkDepartureOpen} onOpenChange={setIsLinkDepartureOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>
-              {editingDeparture ? 'Edit Jadwal' : 'Tambah Jadwal Keberangkatan'}
-            </DialogTitle>
+            <DialogTitle>Hubungkan Keberangkatan</DialogTitle>
           </DialogHeader>
-          <DepartureForm
-            departureData={editingDeparture}
-            packageId={id}
-            onSuccess={handleDepartureFormClose}
-            onCancel={handleDepartureFormClose}
+          <LinkDepartureForm
+            packageId={id!}
+            linkedDepartureIds={linkedDepartureIds}
+            onSuccess={() => setIsLinkDepartureOpen(false)}
+            onCancel={() => setIsLinkDepartureOpen(false)}
           />
         </DialogContent>
       </Dialog>
 
-      {/* Delete Departure Confirmation */}
-      <AlertDialog open={!!deleteDeparture} onOpenChange={() => setDeleteDeparture(null)}>
+      {/* Unlink Departure Confirmation */}
+      <AlertDialog open={!!unlinkDeparture} onOpenChange={() => setUnlinkDeparture(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Hapus Jadwal?</AlertDialogTitle>
+            <AlertDialogTitle>Lepas Keberangkatan?</AlertDialogTitle>
             <AlertDialogDescription>
-              Anda yakin ingin menghapus jadwal keberangkatan tanggal {deleteDeparture && formatDate(deleteDeparture.departure_date)}? 
-              Tindakan ini tidak dapat dibatalkan.
+              Anda yakin ingin melepas jadwal keberangkatan tanggal {unlinkDeparture && formatDate(unlinkDeparture.departure_date)} dari paket ini? 
+              Jadwal tidak akan dihapus, hanya dilepas dari paket.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Batal</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => deleteDeparture && deleteDepartureMutation.mutate(deleteDeparture.id)}
+              onClick={() => unlinkDeparture && unlinkDepartureMutation.mutate(unlinkDeparture.id)}
             >
-              Hapus
+              Lepas
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
