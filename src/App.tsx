@@ -49,6 +49,9 @@ import AdminVendors from "./pages/admin/AdminVendors";
 // Engagement
 import AdminLoyalty from "./pages/admin/AdminLoyalty";
 import AdminSupportTickets from "./pages/admin/AdminSupportTickets";
+// Security
+import AdminSecurityAudit from "./pages/admin/AdminSecurityAudit";
+import Admin2FASettings from "./pages/admin/Admin2FASettings";
 // Operational
 import OperationalLayout from "./pages/operational/OperationalLayout";
 import OperationalDashboard from "./pages/operational/OperationalDashboard";
@@ -168,6 +171,9 @@ const App = () => (
               <Route path="leads/:id" element={<AdminLeadDetail />} />
               <Route path="room-assignments" element={<AdminRoomAssignments />} />
               <Route path="reports" element={<AdminReports />} />
+              {/* Security */}
+              <Route path="security" element={<AdminSecurityAudit />} />
+              <Route path="2fa" element={<Admin2FASettings />} />
               <Route path="appearance" element={<AdminAppearance />} />
               <Route path="settings" element={<AdminSettings />} />
             </Route>

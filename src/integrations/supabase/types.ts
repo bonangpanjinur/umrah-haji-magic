@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      activity_logs: {
+        Row: {
+          action: string
+          created_at: string | null
+          device_info: Json | null
+          failure_reason: string | null
+          id: string
+          ip_address: unknown
+          location_info: Json | null
+          status: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          device_info?: Json | null
+          failure_reason?: string | null
+          id?: string
+          ip_address?: unknown
+          location_info?: Json | null
+          status?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          device_info?: Json | null
+          failure_reason?: string | null
+          id?: string
+          ip_address?: unknown
+          location_info?: Json | null
+          status?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       agent_commissions: {
         Row: {
           agent_id: string
@@ -299,41 +338,67 @@ export type Database = {
       audit_logs: {
         Row: {
           action: string
+          action_type: string | null
+          branch_id: string | null
           created_at: string | null
+          entity_id: string | null
+          entity_name: string | null
           id: string
           ip_address: string | null
+          metadata: Json | null
           new_data: Json | null
           old_data: Json | null
           record_id: string | null
+          severity: string | null
           table_name: string | null
           user_agent: string | null
           user_id: string | null
         }
         Insert: {
           action: string
+          action_type?: string | null
+          branch_id?: string | null
           created_at?: string | null
+          entity_id?: string | null
+          entity_name?: string | null
           id?: string
           ip_address?: string | null
+          metadata?: Json | null
           new_data?: Json | null
           old_data?: Json | null
           record_id?: string | null
+          severity?: string | null
           table_name?: string | null
           user_agent?: string | null
           user_id?: string | null
         }
         Update: {
           action?: string
+          action_type?: string | null
+          branch_id?: string | null
           created_at?: string | null
+          entity_id?: string | null
+          entity_name?: string | null
           id?: string
           ip_address?: string | null
+          metadata?: Json | null
           new_data?: Json | null
           old_data?: Json | null
           record_id?: string | null
+          severity?: string | null
           table_name?: string | null
           user_agent?: string | null
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "audit_logs_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       booking_passengers: {
         Row: {
@@ -1181,6 +1246,36 @@ export type Database = {
           },
         ]
       }
+      login_attempts: {
+        Row: {
+          created_at: string | null
+          email: string
+          failure_reason: string | null
+          id: string
+          ip_address: unknown
+          is_successful: boolean | null
+          user_agent: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          failure_reason?: string | null
+          id?: string
+          ip_address?: unknown
+          is_successful?: boolean | null
+          user_agent?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          failure_reason?: string | null
+          id?: string
+          ip_address?: unknown
+          is_successful?: boolean | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       loyalty_points: {
         Row: {
           current_points: number | null
@@ -1438,6 +1533,45 @@ export type Database = {
           message?: string
           title?: string
           type?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      otp_codes: {
+        Row: {
+          attempts: number | null
+          code: string
+          created_at: string | null
+          expires_at: string
+          id: string
+          is_used: boolean | null
+          max_attempts: number | null
+          purpose: string
+          used_at: string | null
+          user_id: string
+        }
+        Insert: {
+          attempts?: number | null
+          code: string
+          created_at?: string | null
+          expires_at: string
+          id?: string
+          is_used?: boolean | null
+          max_attempts?: number | null
+          purpose: string
+          used_at?: string | null
+          user_id: string
+        }
+        Update: {
+          attempts?: number | null
+          code?: string
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          is_used?: boolean | null
+          max_attempts?: number | null
+          purpose?: string
+          used_at?: string | null
           user_id?: string
         }
         Relationships: []
@@ -2203,6 +2337,45 @@ export type Database = {
           },
         ]
       }
+      user_2fa_settings: {
+        Row: {
+          backup_codes: string[] | null
+          created_at: string | null
+          id: string
+          is_enabled: boolean | null
+          last_verified_at: string | null
+          method: string | null
+          phone_number: string | null
+          secret_key: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          backup_codes?: string[] | null
+          created_at?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          last_verified_at?: string | null
+          method?: string | null
+          phone_number?: string | null
+          secret_key?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          backup_codes?: string[] | null
+          created_at?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          last_verified_at?: string | null
+          method?: string | null
+          phone_number?: string | null
+          secret_key?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           branch_id: string | null
@@ -2521,6 +2694,7 @@ export type Database = {
       generate_referral_code: { Args: never; Returns: string }
       generate_savings_payment_code: { Args: never; Returns: string }
       generate_ticket_code: { Args: never; Returns: string }
+      get_failed_attempts: { Args: { _email: string }; Returns: number }
       get_user_branch_id: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
@@ -2529,7 +2703,30 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_account_locked: { Args: { _email: string }; Returns: boolean }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
+      log_activity: {
+        Args: {
+          _action: string
+          _device_info?: Json
+          _failure_reason?: string
+          _status?: string
+        }
+        Returns: string
+      }
+      log_audit_action: {
+        Args: {
+          _action: string
+          _action_type: string
+          _metadata?: Json
+          _new_data?: Json
+          _old_data?: Json
+          _record_id: string
+          _severity?: string
+          _table_name: string
+        }
+        Returns: string
+      }
       user_belongs_to_branch: {
         Args: { _branch_id: string; _user_id: string }
         Returns: boolean
