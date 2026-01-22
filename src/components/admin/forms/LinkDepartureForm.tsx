@@ -2,11 +2,11 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { formatDate } from "@/lib/format";
+import { formatDate, formatCurrency } from "@/lib/format";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Plane, Users, Calendar } from "lucide-react";
+import { Plane, Users, Calendar, Hotel } from "lucide-react";
 
 interface LinkDepartureFormProps {
   packageId: string;
@@ -34,6 +34,9 @@ export function LinkDepartureForm({
           *,
           departure_airport:airports!departures_departure_airport_id_fkey(code, city),
           arrival_airport:airports!departures_arrival_airport_id_fkey(code, city),
+          airline:airlines(code, name),
+          hotel_makkah:hotels!departures_hotel_makkah_id_fkey(name, star_rating),
+          hotel_madinah:hotels!departures_hotel_madinah_id_fkey(name, star_rating),
           package:packages(id, name)
         `)
         .or(`package_id.is.null,package_id.eq.${packageId}`)
@@ -71,6 +74,7 @@ export function LinkDepartureForm({
       toast.success("Jadwal keberangkatan berhasil diperbarui");
       queryClient.invalidateQueries({ queryKey: ['admin-departures', packageId] });
       queryClient.invalidateQueries({ queryKey: ['available-departures'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-all-departures'] });
       queryClient.invalidateQueries({ queryKey: ['departures'] });
       onSuccess();
     },
@@ -128,7 +132,7 @@ export function LinkDepartureForm({
             {linkedDepartures.length > 0 && (
               <>
                 <p className="text-xs font-medium text-muted-foreground px-2 pt-2">
-                  Terhubung ke paket ini
+                  Terhubung ke paket ini ({linkedDepartures.length})
                 </p>
                 {linkedDepartures.map((departure) => (
                   <DepartureItem
@@ -146,7 +150,7 @@ export function LinkDepartureForm({
             {unlinkedDepartures.length > 0 && (
               <>
                 <p className="text-xs font-medium text-muted-foreground px-2 pt-2">
-                  Tersedia (belum terhubung)
+                  Tersedia (belum terhubung) ({unlinkedDepartures.length})
                 </p>
                 {unlinkedDepartures.map((departure) => (
                   <DepartureItem
@@ -200,12 +204,17 @@ function DepartureItem({
         onCheckedChange={onToggle}
         className="mt-0.5"
       />
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 space-y-1">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="font-medium">{formatDate(departure.departure_date)}</span>
           {getStatusBadge(departure.status)}
         </div>
-        <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1">
+        
+        {/* Flight info */}
+        <div className="flex items-center gap-3 text-sm text-muted-foreground">
+          {departure.airline && (
+            <span className="font-medium text-foreground">{departure.airline.name}</span>
+          )}
           <span className="flex items-center gap-1">
             {departure.departure_airport?.code || '-'}
             <Plane className="h-3 w-3" />
@@ -216,9 +225,25 @@ function DepartureItem({
             {departure.booked_count || 0}/{departure.quota}
           </span>
         </div>
-        {departure.flight_number && (
-          <p className="text-xs text-muted-foreground mt-1">
-            {departure.flight_number} • {departure.departure_time || '-'}
+
+        {/* Hotel info */}
+        {(departure.hotel_makkah || departure.hotel_madinah) && (
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Hotel className="h-3 w-3" />
+            {departure.hotel_makkah && (
+              <span>M: {departure.hotel_makkah.name}</span>
+            )}
+            {departure.hotel_makkah && departure.hotel_madinah && <span>•</span>}
+            {departure.hotel_madinah && (
+              <span>D: {departure.hotel_madinah.name}</span>
+            )}
+          </div>
+        )}
+
+        {/* Price info */}
+        {departure.price_quad > 0 && (
+          <p className="text-xs text-muted-foreground">
+            Mulai <span className="font-medium text-foreground">{formatCurrency(departure.price_quad)}</span>/orang
           </p>
         )}
       </div>

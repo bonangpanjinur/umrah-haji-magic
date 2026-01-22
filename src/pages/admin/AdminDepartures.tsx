@@ -11,12 +11,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { DepartureForm } from "@/components/admin/forms/DepartureForm";
-import { formatDate } from "@/lib/format";
+import { formatDate, formatCurrency } from "@/lib/format";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { 
   Calendar, Plus, Search, Plane, Users, Edit, Trash2, 
-  Eye, Filter, CalendarDays 
+  CalendarDays, Hotel, Building2, Link2Off
 } from "lucide-react";
 
 export default function AdminDepartures() {
@@ -24,6 +24,7 @@ export default function AdminDepartures() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [monthFilter, setMonthFilter] = useState<string>("all");
+  const [linkedFilter, setLinkedFilter] = useState<string>("all");
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingDeparture, setEditingDeparture] = useState<any>(null);
   const [deleteDeparture, setDeleteDeparture] = useState<any>(null);
@@ -38,6 +39,9 @@ export default function AdminDepartures() {
           package:packages(id, name, code, package_type),
           departure_airport:airports!departures_departure_airport_id_fkey(code, name),
           arrival_airport:airports!departures_arrival_airport_id_fkey(code, name),
+          airline:airlines(code, name),
+          hotel_makkah:hotels!departures_hotel_makkah_id_fkey(name, star_rating),
+          hotel_madinah:hotels!departures_hotel_madinah_id_fkey(name, star_rating),
           muthawif:muthawifs(name),
           team_leader:customers!departures_team_leader_id_fkey(full_name)
         `)
@@ -77,7 +81,8 @@ export default function AdminDepartures() {
       const matchesSearch = 
         dep.package?.name?.toLowerCase().includes(search) ||
         dep.package?.code?.toLowerCase().includes(search) ||
-        dep.flight_number?.toLowerCase().includes(search);
+        dep.flight_number?.toLowerCase().includes(search) ||
+        dep.airline?.name?.toLowerCase().includes(search);
       if (!matchesSearch) return false;
     }
     
@@ -86,6 +91,10 @@ export default function AdminDepartures() {
     
     // Month filter
     if (monthFilter !== "all" && !dep.departure_date.startsWith(monthFilter)) return false;
+    
+    // Linked filter
+    if (linkedFilter === "linked" && !dep.package_id) return false;
+    if (linkedFilter === "unlinked" && dep.package_id) return false;
     
     return true;
   });
@@ -118,9 +127,9 @@ export default function AdminDepartures() {
   // Stats
   const stats = {
     total: departures?.length || 0,
+    linked: departures?.filter(d => d.package_id).length || 0,
+    unlinked: departures?.filter(d => !d.package_id).length || 0,
     open: departures?.filter(d => d.status === 'open').length || 0,
-    full: departures?.filter(d => d.status === 'full').length || 0,
-    totalQuota: departures?.reduce((sum, d) => sum + (d.quota || 0), 0) || 0,
     totalBooked: departures?.reduce((sum, d) => sum + (d.booked_count || 0), 0) || 0,
   };
 
@@ -129,23 +138,45 @@ export default function AdminDepartures() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Jadwal Keberangkatan</h1>
-          <p className="text-muted-foreground">Kelola semua jadwal keberangkatan</p>
+          <p className="text-muted-foreground">Kelola semua jadwal keberangkatan secara independen</p>
         </div>
         <Button onClick={() => setIsFormOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
-          Tambah Jadwal
+          Tambah Keberangkatan
         </Button>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <CalendarDays className="h-8 w-8 text-primary" />
               <div>
                 <p className="text-2xl font-bold">{stats.total}</p>
-                <p className="text-sm text-muted-foreground">Total Jadwal</p>
+                <p className="text-sm text-muted-foreground">Total</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <Building2 className="h-8 w-8 text-blue-500" />
+              <div>
+                <p className="text-2xl font-bold">{stats.linked}</p>
+                <p className="text-sm text-muted-foreground">Terhubung</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <Link2Off className="h-8 w-8 text-orange-500" />
+              <div>
+                <p className="text-2xl font-bold">{stats.unlinked}</p>
+                <p className="text-sm text-muted-foreground">Belum Terhubung</p>
               </div>
             </div>
           </CardContent>
@@ -164,21 +195,10 @@ export default function AdminDepartures() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <Users className="h-8 w-8 text-blue-500" />
+              <Users className="h-8 w-8 text-purple-500" />
               <div>
                 <p className="text-2xl font-bold">{stats.totalBooked}</p>
                 <p className="text-sm text-muted-foreground">Total Jamaah</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <Plane className="h-8 w-8 text-orange-500" />
-              <div>
-                <p className="text-2xl font-bold">{stats.totalQuota}</p>
-                <p className="text-sm text-muted-foreground">Total Kuota</p>
               </div>
             </div>
           </CardContent>
@@ -192,12 +212,22 @@ export default function AdminDepartures() {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Cari paket atau no. penerbangan..."
+                placeholder="Cari paket, maskapai, atau no. penerbangan..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
               />
             </div>
+            <Select value={linkedFilter} onValueChange={setLinkedFilter}>
+              <SelectTrigger className="w-full sm:w-44">
+                <SelectValue placeholder="Hubungan" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Semua</SelectItem>
+                <SelectItem value="linked">Terhubung Paket</SelectItem>
+                <SelectItem value="unlinked">Belum Terhubung</SelectItem>
+              </SelectContent>
+            </Select>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-full sm:w-40">
                 <SelectValue placeholder="Status" />
@@ -236,7 +266,7 @@ export default function AdminDepartures() {
             <div className="text-center py-12">
               <Calendar className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <p className="text-muted-foreground">
-                {searchTerm || statusFilter !== 'all' || monthFilter !== 'all' 
+                {searchTerm || statusFilter !== 'all' || monthFilter !== 'all' || linkedFilter !== 'all'
                   ? 'Tidak ada jadwal yang cocok dengan filter.' 
                   : 'Belum ada jadwal keberangkatan.'}
               </p>
@@ -246,30 +276,19 @@ export default function AdminDepartures() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Paket</TableHead>
                     <TableHead>Tanggal</TableHead>
-                    <TableHead>Rute</TableHead>
-                    <TableHead>Penerbangan</TableHead>
+                    <TableHead>Paket</TableHead>
+                    <TableHead>Maskapai & Rute</TableHead>
+                    <TableHead>Hotel</TableHead>
+                    <TableHead>Harga Mulai</TableHead>
                     <TableHead className="text-center">Kuota</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Muthawif</TableHead>
                     <TableHead className="text-right">Aksi</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredDepartures.map((dep) => (
                     <TableRow key={dep.id}>
-                      <TableCell>
-                        <div>
-                          <Link 
-                            to={`/admin/packages/${dep.package?.id}`}
-                            className="font-medium hover:text-primary hover:underline"
-                          >
-                            {dep.package?.name}
-                          </Link>
-                          <p className="text-xs text-muted-foreground">{dep.package?.code}</p>
-                        </div>
-                      </TableCell>
                       <TableCell>
                         <div>
                           <p className="font-medium">{formatDate(dep.departure_date)}</p>
@@ -279,19 +298,65 @@ export default function AdminDepartures() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-1">
-                          <span className="font-medium">{dep.departure_airport?.code || '-'}</span>
-                          <Plane className="h-3 w-3 text-muted-foreground" />
-                          <span className="font-medium">{dep.arrival_airport?.code || '-'}</span>
+                        {dep.package ? (
+                          <div>
+                            <Link 
+                              to={`/admin/packages/${dep.package.id}`}
+                              className="font-medium hover:text-primary hover:underline"
+                            >
+                              {dep.package.name}
+                            </Link>
+                            <p className="text-xs text-muted-foreground">{dep.package.code}</p>
+                          </div>
+                        ) : (
+                          <Badge variant="outline" className="text-orange-600 border-orange-300">
+                            <Link2Off className="h-3 w-3 mr-1" />
+                            Belum Terhubung
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          {dep.airline && (
+                            <p className="text-sm font-medium">{dep.airline.name}</p>
+                          )}
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <span>{dep.departure_airport?.code || '-'}</span>
+                            <Plane className="h-3 w-3" />
+                            <span>{dep.arrival_airport?.code || '-'}</span>
+                            {dep.flight_number && (
+                              <span className="ml-1">• {dep.flight_number}</span>
+                            )}
+                          </div>
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div>
-                          <p>{dep.flight_number || '-'}</p>
-                          {dep.departure_time && (
-                            <p className="text-xs text-muted-foreground">{dep.departure_time}</p>
+                        <div className="text-xs space-y-0.5">
+                          {dep.hotel_makkah ? (
+                            <p>
+                              <span className="text-muted-foreground">M:</span> {dep.hotel_makkah.name} ({dep.hotel_makkah.star_rating}⭐)
+                            </p>
+                          ) : (
+                            <p className="text-muted-foreground">Makkah: -</p>
+                          )}
+                          {dep.hotel_madinah ? (
+                            <p>
+                              <span className="text-muted-foreground">D:</span> {dep.hotel_madinah.name} ({dep.hotel_madinah.star_rating}⭐)
+                            </p>
+                          ) : (
+                            <p className="text-muted-foreground">Madinah: -</p>
                           )}
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        {dep.price_quad > 0 ? (
+                          <div>
+                            <p className="font-medium">{formatCurrency(dep.price_quad)}</p>
+                            <p className="text-xs text-muted-foreground">Quad</p>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
                       </TableCell>
                       <TableCell className="text-center">
                         <div className="flex items-center justify-center gap-1">
@@ -302,16 +367,6 @@ export default function AdminDepartures() {
                         </div>
                       </TableCell>
                       <TableCell>{getStatusBadge(dep.status)}</TableCell>
-                      <TableCell>
-                        <div className="text-sm">
-                          <p>{dep.muthawif?.name || '-'}</p>
-                          {dep.team_leader && (
-                            <p className="text-xs text-muted-foreground">
-                              TL: {dep.team_leader.full_name}
-                            </p>
-                          )}
-                        </div>
-                      </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
                           <Button variant="ghost" size="icon" onClick={() => handleEdit(dep)}>
@@ -341,7 +396,7 @@ export default function AdminDepartures() {
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {editingDeparture ? 'Edit Jadwal' : 'Tambah Jadwal Baru'}
+              {editingDeparture ? 'Edit Keberangkatan' : 'Tambah Keberangkatan Baru'}
             </DialogTitle>
           </DialogHeader>
           <DepartureForm
@@ -356,7 +411,7 @@ export default function AdminDepartures() {
       <AlertDialog open={!!deleteDeparture} onOpenChange={() => setDeleteDeparture(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Hapus Jadwal?</AlertDialogTitle>
+            <AlertDialogTitle>Hapus Keberangkatan?</AlertDialogTitle>
             <AlertDialogDescription>
               Anda yakin ingin menghapus jadwal keberangkatan tanggal {deleteDeparture && formatDate(deleteDeparture.departure_date)}? 
               Tindakan ini tidak dapat dibatalkan.
