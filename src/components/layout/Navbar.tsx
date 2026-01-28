@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Menu, X, User, ChevronDown, LogOut, LayoutDashboard, PiggyBank, Calendar } from 'lucide-react';
+import { Menu, X, User, ChevronDown, LogOut, LayoutDashboard, Wallet, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -92,7 +92,7 @@ export function Navbar() {
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link to="/customer/my-savings" className="flex items-center gap-2">
-                      <PiggyBank className="h-4 w-4" />
+                      <Wallet className="h-4 w-4" />
                       Tabungan Saya
                     </Link>
                   </DropdownMenuItem>

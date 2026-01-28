@@ -186,7 +186,7 @@ export function useBookingWizardDynamic(
       const mainRoomType = (Object.entries(roomCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || 'quad') as RoomType;
       const basePrice = priceMap[mainRoomType];
 
-      // 4. Create booking
+      // 4. Create booking (remaining_amount is auto-calculated from total_price - paid_amount)
       const { data: booking, error: bookingError } = await supabase
         .from('bookings')
         .insert({
@@ -200,7 +200,6 @@ export function useBookingWizardDynamic(
           infant_count: infantCount,
           base_price: basePrice,
           total_price: totalPrice,
-          remaining_amount: totalPrice,
           notes: formData.notes,
         })
         .select('id, booking_code')

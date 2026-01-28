@@ -16,7 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { formatCurrency } from '@/lib/format';
 import { toast } from 'sonner';
 import { 
-  PiggyBank, Calendar, Receipt, Upload, 
+  Wallet, Calendar, Receipt, Upload, 
   CheckCircle, Clock, AlertCircle, Plus, Eye
 } from 'lucide-react';
 
@@ -152,7 +152,7 @@ export default function MySavings() {
     return (
       <DynamicPublicLayout>
         <div className="container mx-auto px-4 py-16 text-center">
-          <PiggyBank className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+          <Wallet className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
           <h1 className="text-2xl font-bold mb-4">Silakan Login</h1>
           <p className="text-muted-foreground mb-6">
             Login untuk melihat tabungan umroh Anda
@@ -171,7 +171,7 @@ export default function MySavings() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-2xl font-bold flex items-center gap-3">
-              <PiggyBank className="h-8 w-8 text-primary" />
+              <Wallet className="h-8 w-8 text-primary" />
               Tabungan Saya
             </h1>
             <p className="text-muted-foreground">
@@ -195,7 +195,7 @@ export default function MySavings() {
         ) : savingsPlans.length === 0 ? (
           <Card>
             <CardContent className="py-16 text-center">
-              <PiggyBank className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+              <Wallet className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
               <h3 className="text-lg font-semibold mb-2">Belum Ada Tabungan</h3>
               <p className="text-muted-foreground mb-6">
                 Mulai perjalanan ibadah Anda dengan mendaftar tabungan umroh
