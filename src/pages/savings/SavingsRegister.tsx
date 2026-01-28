@@ -110,7 +110,7 @@ export default function SavingsRegister() {
       const targetDateCalc = new Date();
       targetDateCalc.setMonth(targetDateCalc.getMonth() + tenorMonths);
 
-      // Create savings plan
+      // Create savings plan (remaining_amount is auto-calculated by database)
       const { data: savingsPlan, error: savingsError } = await supabase
         .from('savings_plans')
         .insert({
@@ -121,7 +121,6 @@ export default function SavingsRegister() {
           tenor_months: tenorMonths,
           target_date: targetDateCalc.toISOString().split('T')[0],
           paid_amount: 0,
-          remaining_amount: targetAmount,
           status: 'active',
         })
         .select()
