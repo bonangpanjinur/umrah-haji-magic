@@ -16,7 +16,7 @@ import { Separator } from '@/components/ui/separator';
 import { formatCurrency, formatPackageType } from '@/lib/format';
 import { toast } from 'sonner';
 import { 
-  ChevronLeft, Clock, Plane, Building2, PiggyBank, 
+  ChevronLeft, Clock, Plane, Building2, Wallet, 
   Calculator, Calendar, User, Phone, AlertCircle, Check
 } from 'lucide-react';
 
@@ -202,7 +202,7 @@ export default function SavingsRegister() {
 
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-2xl font-bold mb-8 flex items-center gap-3">
-          <PiggyBank className="h-8 w-8 text-primary" />
+          <Wallet className="h-8 w-8 text-primary" />
           Daftar Tabungan Umroh
         </h1>
 
@@ -427,7 +427,7 @@ export default function SavingsRegister() {
                       'Memproses...'
                     ) : (
                       <>
-                        <PiggyBank className="h-4 w-4 mr-2" />
+                        <Wallet className="h-4 w-4 mr-2" />
                         Daftar Sekarang
                       </>
                     )}

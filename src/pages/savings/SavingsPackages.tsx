@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatCurrency, formatPackageType } from '@/lib/format';
 import { 
-  PiggyBank, Clock, Building2, Plane, 
+  Wallet, Clock, Building2, Plane, 
   Calculator, TrendingUp, Shield, CheckCircle 
 } from 'lucide-react';
 
@@ -40,7 +40,7 @@ export default function SavingsPackages() {
       <section className="bg-gradient-to-br from-primary to-primary/80 py-16">
         <div className="container mx-auto px-4 text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white/20 mb-6">
-            <PiggyBank className="h-8 w-8 text-white" />
+            <Wallet className="h-8 w-8 text-white" />
           </div>
           <h1 className="text-3xl md:text-4xl font-bold text-white mb-4">
             Tabungan Umroh
@@ -170,7 +170,7 @@ export default function SavingsPackages() {
                   <CardFooter>
                     <Button asChild className="w-full">
                       <Link to={`/savings/register/${pkg.id}`}>
-                        <PiggyBank className="h-4 w-4 mr-2" />
+                        <Wallet className="h-4 w-4 mr-2" />
                         Mulai Menabung
                       </Link>
                     </Button>
@@ -181,7 +181,7 @@ export default function SavingsPackages() {
           ) : (
             <div className="text-center py-16">
               <div className="w-24 h-24 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-                <PiggyBank className="h-12 w-12 text-muted-foreground" />
+                <Wallet className="h-12 w-12 text-muted-foreground" />
               </div>
               <h3 className="text-lg font-semibold mb-2">Belum Ada Paket Tersedia</h3>
               <p className="text-muted-foreground">
