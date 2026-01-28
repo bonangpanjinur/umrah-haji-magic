@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatCurrency } from '@/lib/format';
 import { 
-  CheckCircle, PiggyBank, Calendar, Receipt,
+  CheckCircle, Wallet, Calendar, Receipt,
   Home, User, ArrowRight
 } from 'lucide-react';
 
@@ -79,7 +79,7 @@ export default function SavingsSuccess() {
           <Card className="text-left mb-8">
             <CardHeader className="bg-primary text-primary-foreground rounded-t-lg">
               <CardTitle className="flex items-center gap-2">
-                <PiggyBank className="h-5 w-5" />
+                <Wallet className="h-5 w-5" />
                 Ringkasan Tabungan
               </CardTitle>
             </CardHeader>
