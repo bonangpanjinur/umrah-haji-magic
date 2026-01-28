@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { PublicLayout } from '@/components/layout/PublicLayout';
+import { DynamicPublicLayout } from '@/components/layout/DynamicPublicLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -150,7 +150,7 @@ export default function MySavings() {
 
   if (!user) {
     return (
-      <PublicLayout>
+      <DynamicPublicLayout>
         <div className="container mx-auto px-4 py-16 text-center">
           <PiggyBank className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
           <h1 className="text-2xl font-bold mb-4">Silakan Login</h1>
@@ -161,12 +161,12 @@ export default function MySavings() {
             <Link to="/auth/login?redirect=/customer/my-savings">Login</Link>
           </Button>
         </div>
-      </PublicLayout>
+      </DynamicPublicLayout>
     );
   }
 
   return (
-    <PublicLayout>
+    <DynamicPublicLayout>
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-8">
           <div>
@@ -373,6 +373,6 @@ export default function MySavings() {
           </div>
         )}
       </div>
-    </PublicLayout>
+    </DynamicPublicLayout>
   );
 }

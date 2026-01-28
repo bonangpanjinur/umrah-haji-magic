@@ -1,18 +1,23 @@
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Palette, Type, Layout, Image, Settings2 } from "lucide-react";
+import { Palette, Type, Layout, Image, Settings2, Eye, Sliders } from "lucide-react";
 import { ThemeSelector } from "@/components/admin/appearance/ThemeSelector";
 import { ColorSettings } from "@/components/admin/appearance/ColorSettings";
 import { TypographySettings } from "@/components/admin/appearance/TypographySettings";
 import { BrandingSettings } from "@/components/admin/appearance/BrandingSettings";
 import { PageBuilder } from "@/components/admin/appearance/PageBuilder";
+import { LivePreview } from "@/components/admin/appearance/LivePreview";
+import { CustomSectionEditor } from "@/components/admin/appearance/CustomSectionEditor";
 import { useWebsiteSettings, useThemePresets } from "@/hooks/useWebsiteSettings";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { ExternalLink } from "lucide-react";
 
 export default function AdminAppearance() {
   const { data: settings, isLoading: loadingSettings } = useWebsiteSettings();
   const { data: presets, isLoading: loadingPresets } = useThemePresets();
   const [activeTab, setActiveTab] = useState("themes");
+  const [showPreview, setShowPreview] = useState(false);
 
   if (loadingSettings || loadingPresets) {
     return (
@@ -25,15 +30,34 @@ export default function AdminAppearance() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Pengaturan Tampilan</h1>
-        <p className="text-muted-foreground">
-          Kustomisasi tema, warna, font, dan layout website publik
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Pengaturan Tampilan</h1>
+          <p className="text-muted-foreground">
+            Kustomisasi tema, warna, font, dan layout website publik (White Label)
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button 
+            variant={showPreview ? "default" : "outline"} 
+            onClick={() => setShowPreview(!showPreview)}
+          >
+            <Eye className="h-4 w-4 mr-2" />
+            {showPreview ? "Sembunyikan Preview" : "Tampilkan Preview"}
+          </Button>
+          <Button variant="outline" asChild>
+            <a href="/" target="_blank" rel="noopener noreferrer">
+              <ExternalLink className="h-4 w-4 mr-2" />
+              Buka Website
+            </a>
+          </Button>
+        </div>
       </div>
 
+      {showPreview && <LivePreview className="mb-6" />}
+
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-grid">
+        <TabsList className="grid w-full grid-cols-6 lg:w-auto lg:inline-grid">
           <TabsTrigger value="themes" className="gap-2">
             <Palette className="h-4 w-4" />
             <span className="hidden sm:inline">Tema</span>
@@ -53,6 +77,10 @@ export default function AdminAppearance() {
           <TabsTrigger value="layout" className="gap-2">
             <Layout className="h-4 w-4" />
             <span className="hidden sm:inline">Layout</span>
+          </TabsTrigger>
+          <TabsTrigger value="sections" className="gap-2">
+            <Sliders className="h-4 w-4" />
+            <span className="hidden sm:inline">Sections</span>
           </TabsTrigger>
         </TabsList>
 
@@ -76,6 +104,10 @@ export default function AdminAppearance() {
 
         <TabsContent value="layout">
           {settings && <PageBuilder settings={settings} />}
+        </TabsContent>
+
+        <TabsContent value="sections">
+          {settings && <CustomSectionEditor settings={settings} />}
         </TabsContent>
       </Tabs>
     </div>

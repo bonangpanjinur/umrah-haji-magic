@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { PublicLayout } from '@/components/layout/PublicLayout';
+import { DynamicPublicLayout } from '@/components/layout/DynamicPublicLayout';
 import { PackageSearch } from '@/components/packages/PackageSearch';
 import { PackageCard } from '@/components/packages/PackageCard';
 import { usePackages } from '@/hooks/usePackages';
@@ -45,7 +45,7 @@ export default function PackageList() {
   });
 
   return (
-    <PublicLayout>
+    <DynamicPublicLayout>
       {/* Header */}
       <section className="bg-primary py-16">
         <div className="container mx-auto px-4 text-center">
@@ -178,6 +178,6 @@ export default function PackageList() {
           </div>
         </div>
       </section>
-    </PublicLayout>
+    </DynamicPublicLayout>
   );
 }

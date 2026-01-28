@@ -1,7 +1,7 @@
 import { Link, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { PublicLayout } from '@/components/layout/PublicLayout';
+import { DynamicPublicLayout } from '@/components/layout/DynamicPublicLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -36,32 +36,32 @@ export default function SavingsSuccess() {
 
   if (isLoading) {
     return (
-      <PublicLayout>
+      <DynamicPublicLayout>
         <div className="container mx-auto px-4 py-16">
           <div className="max-w-2xl mx-auto">
             <Skeleton className="h-48 w-full mb-6" />
             <Skeleton className="h-32 w-full" />
           </div>
         </div>
-      </PublicLayout>
+      </DynamicPublicLayout>
     );
   }
 
   if (!plan) {
     return (
-      <PublicLayout>
+      <DynamicPublicLayout>
         <div className="container mx-auto px-4 py-16 text-center">
           <h1 className="text-2xl font-bold mb-4">Data Tidak Ditemukan</h1>
           <Button asChild>
             <Link to="/savings">Kembali ke Daftar Paket</Link>
           </Button>
         </div>
-      </PublicLayout>
+      </DynamicPublicLayout>
     );
   }
 
   return (
-    <PublicLayout>
+    <DynamicPublicLayout>
       <div className="container mx-auto px-4 py-16">
         <div className="max-w-2xl mx-auto text-center">
           {/* Success Icon */}
@@ -193,6 +193,6 @@ export default function SavingsSuccess() {
           </div>
         </div>
       </div>
-    </PublicLayout>
+    </DynamicPublicLayout>
   );
 }
