@@ -1,7 +1,7 @@
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { PublicLayout } from '@/components/layout/PublicLayout';
+import { DynamicPublicLayout } from '@/components/layout/DynamicPublicLayout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -40,7 +40,7 @@ export default function PackageDetail() {
 
   if (isLoading) {
     return (
-      <PublicLayout>
+      <DynamicPublicLayout>
         <div className="container mx-auto px-4 py-8">
           <Skeleton className="h-8 w-48 mb-4" />
           <Skeleton className="h-[400px] w-full rounded-xl mb-8" />
@@ -53,13 +53,13 @@ export default function PackageDetail() {
             <Skeleton className="h-[300px]" />
           </div>
         </div>
-      </PublicLayout>
+      </DynamicPublicLayout>
     );
   }
 
   if (!pkg) {
     return (
-      <PublicLayout>
+      <DynamicPublicLayout>
         <div className="container mx-auto px-4 py-16 text-center">
           <h1 className="text-2xl font-bold mb-4">Paket Tidak Ditemukan</h1>
           <p className="text-muted-foreground mb-8">
@@ -69,7 +69,7 @@ export default function PackageDetail() {
             <Link to="/packages">Kembali ke Katalog</Link>
           </Button>
         </div>
-      </PublicLayout>
+      </DynamicPublicLayout>
     );
   }
 
@@ -83,7 +83,7 @@ export default function PackageDetail() {
     .sort((a: any, b: any) => new Date(a.departure_date).getTime() - new Date(b.departure_date).getTime());
 
   return (
-    <PublicLayout>
+    <DynamicPublicLayout>
       {/* Breadcrumb */}
       <div className="bg-muted/30 border-b">
         <div className="container mx-auto px-4 py-3">
@@ -378,6 +378,6 @@ export default function PackageDetail() {
           </div>
         </div>
       </div>
-    </PublicLayout>
+    </DynamicPublicLayout>
   );
 }

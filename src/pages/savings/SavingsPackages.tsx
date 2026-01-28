@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { PublicLayout } from '@/components/layout/PublicLayout';
+import { DynamicPublicLayout } from '@/components/layout/DynamicPublicLayout';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -35,7 +35,7 @@ export default function SavingsPackages() {
   });
 
   return (
-    <PublicLayout>
+    <DynamicPublicLayout>
       {/* Hero Section */}
       <section className="bg-gradient-to-br from-primary to-primary/80 py-16">
         <div className="container mx-auto px-4 text-center">
@@ -204,6 +204,6 @@ export default function SavingsPackages() {
           </Button>
         </div>
       </section>
-    </PublicLayout>
+    </DynamicPublicLayout>
   );
 }

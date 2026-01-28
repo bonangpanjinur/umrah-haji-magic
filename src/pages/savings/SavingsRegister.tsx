@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { PublicLayout } from '@/components/layout/PublicLayout';
+import { DynamicPublicLayout } from '@/components/layout/DynamicPublicLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -160,7 +160,7 @@ export default function SavingsRegister() {
 
   if (isLoading) {
     return (
-      <PublicLayout>
+      <DynamicPublicLayout>
         <div className="container mx-auto px-4 py-8">
           <Skeleton className="h-8 w-48 mb-8" />
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -171,25 +171,25 @@ export default function SavingsRegister() {
             <Skeleton className="h-96" />
           </div>
         </div>
-      </PublicLayout>
+      </DynamicPublicLayout>
     );
   }
 
   if (!pkg) {
     return (
-      <PublicLayout>
+      <DynamicPublicLayout>
         <div className="container mx-auto px-4 py-16 text-center">
           <h1 className="text-2xl font-bold mb-4">Paket Tidak Ditemukan</h1>
           <Button asChild>
             <Link to="/savings">Kembali ke Daftar Paket</Link>
           </Button>
         </div>
-      </PublicLayout>
+      </DynamicPublicLayout>
     );
   }
 
   return (
-    <PublicLayout>
+    <DynamicPublicLayout>
       {/* Breadcrumb */}
       <div className="bg-muted/30 border-b">
         <div className="container mx-auto px-4 py-3">
@@ -444,6 +444,6 @@ export default function SavingsRegister() {
           </div>
         </form>
       </div>
-    </PublicLayout>
+    </DynamicPublicLayout>
   );
 }
