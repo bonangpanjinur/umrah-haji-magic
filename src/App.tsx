@@ -93,6 +93,9 @@ import SavingsPackages from "./pages/savings/SavingsPackages";
 import SavingsRegister from "./pages/savings/SavingsRegister";
 import SavingsSuccess from "./pages/savings/SavingsSuccess";
 import MySavings from "./pages/customer/MySavings";
+// Public Pages
+import AboutPage from "./pages/public/AboutPage";
+import ContactPage from "./pages/public/ContactPage";
 
 const queryClient = new QueryClient();
 
@@ -115,6 +118,8 @@ const App = () => (
             <Route path="/auth/reset-password" element={<ResetPassword />} />
             <Route path="/packages" element={<PackageList />} />
             <Route path="/packages/:id" element={<PackageDetail />} />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/contact" element={<ContactPage />} />
             
             {/* Savings Public Routes */}
             <Route path="/savings" element={<SavingsPackages />} />
