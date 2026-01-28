@@ -3228,16 +3228,16 @@ export type Database = {
     Views: {
       v_financial_summary: {
         Row: {
+          booked_count: number | null
           collected_amount: number | null
           departure_date: string | null
           departure_id: string | null
-          gross_revenue: number | null
           net_profit: number | null
           outstanding_amount: number | null
           package_name: string | null
+          quota: number | null
           return_date: string | null
-          total_bookings: number | null
-          total_pax: number | null
+          total_revenue: number | null
           total_vendor_costs: number | null
         }
         Relationships: []
