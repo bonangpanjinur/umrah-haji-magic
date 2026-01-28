@@ -7,7 +7,7 @@ import {
   LayoutDashboard, Package, Users, Calendar, CreditCard, 
   Settings, LogOut, Menu, X, Shield, UserCheck,
   FileBarChart, BarChart3, Target, KeyRound, BedDouble, Plane,
-  PiggyBank, FileCheck, Building2, DollarSign, Truck, Gift,
+  Wallet, FileCheck, Building2, DollarSign, Truck, Gift,
   HeadphonesIcon, Palette, ShieldCheck, Key, MessageSquare,
   UserCog, BookOpen, MapPin, TrendingUp, FileText
 } from "lucide-react";
@@ -37,7 +37,7 @@ const NAV_GROUPS = [
       { label: 'Paket', icon: Package, path: '/admin/packages' },
       { label: 'Keberangkatan', icon: Plane, path: '/admin/departures' },
       { label: 'Template Itinerary', icon: MapPin, path: '/admin/itinerary-templates' },
-      { label: 'Tabungan', icon: PiggyBank, path: '/admin/savings' },
+      { label: 'Tabungan', icon: Wallet, path: '/admin/savings' },
       { label: 'Kamar', icon: BedDouble, path: '/admin/room-assignments' },
     ]
   },

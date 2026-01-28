@@ -14,7 +14,7 @@ import { Label } from "@/components/ui/label";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { toast } from "sonner";
 import { 
-  PiggyBank, Plus, Search, TrendingUp, Users, CheckCircle, 
+  Wallet, Plus, Search, TrendingUp, Users, CheckCircle, 
   Clock, Eye, CreditCard, AlertCircle
 } from "lucide-react";
 
@@ -164,7 +164,7 @@ export default function AdminSavingsPlans() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <PiggyBank className="h-8 w-8 text-primary" />
+              <Wallet className="h-8 w-8 text-primary" />
               <div>
                 <p className="text-2xl font-bold">{stats.total}</p>
                 <p className="text-sm text-muted-foreground">Total Tabungan</p>
@@ -245,7 +245,7 @@ export default function AdminSavingsPlans() {
             </div>
           ) : !filteredPlans || filteredPlans.length === 0 ? (
             <div className="text-center py-12">
-              <PiggyBank className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <Wallet className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <p className="text-muted-foreground">
                 {searchTerm || statusFilter !== 'all' 
                   ? 'Tidak ada tabungan yang cocok dengan filter.' 
