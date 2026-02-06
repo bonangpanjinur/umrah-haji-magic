@@ -24,7 +24,9 @@ import {
   Mail,
   User,
   Users,
-  Briefcase
+  Briefcase,
+  Ticket,
+  Award
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -33,11 +35,15 @@ import {
   generatePassportLetter,
   generateInvoice,
   generateGeneralLetter,
+  generateETicket,
+  generateUmrahCertificate,
   type LeaveLetterData,
   type JamaahLeaveLetterData,
   type PassportLetterData,
   type InvoiceData,
-  type GeneralLetterData
+  type GeneralLetterData,
+  type ETicketData,
+  type UmrahCertificateData
 } from '@/lib/document-generator';
 
 interface Employee {
@@ -103,6 +109,16 @@ const AdminDocumentGenerator = () => {
     signatoryPosition: ''
   });
 
+  // E-Ticket form state
+  const [eticketForm, setEticketForm] = useState({
+    bookingId: ''
+  });
+
+  // Certificate form state
+  const [certificateForm, setCertificateForm] = useState({
+    bookingId: ''
+  });
+
   // Fetch employees for employee leave letter
   const { data: employees } = useQuery<Employee[]>({
     queryKey: ['employees-for-letter'],
@@ -134,23 +150,30 @@ const AdminDocumentGenerator = () => {
     }
   });
 
-  // Fetch bookings for invoice
+  // Fetch bookings for invoice, e-ticket, certificate
   const { data: bookings } = useQuery({
-    queryKey: ['bookings-for-invoice'],
+    queryKey: ['bookings-for-documents'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('bookings')
         .select(`
           *,
-          customer:customers(full_name, address, phone, email),
+          customer:customers(id, full_name, address, phone, email, nik, birth_place, birth_date, passport_number),
           departure:departures(
             departure_date,
             return_date,
+            departure_time,
+            flight_number,
+            airline:airlines(name, code),
+            departure_airport:airports!departures_departure_airport_id_fkey(name, city, code),
+            arrival_airport:airports!departures_arrival_airport_id_fkey(name, city, code),
+            hotel_makkah:hotels!departures_hotel_makkah_id_fkey(name),
+            hotel_madinah:hotels!departures_hotel_madinah_id_fkey(name),
             package:packages(name, price_quad, price_triple, price_double, price_single)
           )
         `)
         .order('created_at', { ascending: false })
-        .limit(50);
+        .limit(100);
       if (error) throw error;
       return data;
     }
@@ -335,6 +358,78 @@ const AdminDocumentGenerator = () => {
     return doc;
   };
 
+  // Handle E-Ticket Generation
+  const handleGenerateETicket = () => {
+    const booking = bookings?.find(b => b.id === eticketForm.bookingId);
+    if (!booking) {
+      toast.error('Pilih booking terlebih dahulu');
+      return;
+    }
+
+    const customer = booking.customer as any;
+    const departure = booking.departure as any;
+    const pkg = departure?.package as any;
+    const airline = departure?.airline as any;
+    const depAirport = departure?.departure_airport as any;
+    const arrAirport = departure?.arrival_airport as any;
+    const hotelMakkah = departure?.hotel_makkah as any;
+    const hotelMadinah = departure?.hotel_madinah as any;
+
+    const roomTypeLabels: Record<string, string> = {
+      quad: 'Quad (4 orang)',
+      triple: 'Triple (3 orang)',
+      double: 'Double (2 orang)',
+      single: 'Single (1 orang)'
+    };
+
+    const data: ETicketData = {
+      bookingCode: booking.booking_code,
+      passengerName: customer?.full_name || '-',
+      passportNumber: customer?.passport_number || '-',
+      packageName: pkg?.name || 'Paket Umrah',
+      departureDate: new Date(departure?.departure_date),
+      returnDate: new Date(departure?.return_date),
+      departureAirport: depAirport ? `${depAirport.name} (${depAirport.code})` : '-',
+      arrivalAirport: arrAirport ? `${arrAirport.name} (${arrAirport.code})` : '-',
+      flightNumber: departure?.flight_number,
+      airline: airline?.name,
+      departureTime: departure?.departure_time,
+      hotelMakkah: hotelMakkah?.name,
+      hotelMadinah: hotelMadinah?.name,
+      roomType: roomTypeLabels[booking.room_type] || booking.room_type
+    };
+
+    const doc = generateETicket(data);
+    return doc;
+  };
+
+  // Handle Umrah Certificate Generation
+  const handleGenerateCertificate = () => {
+    const booking = bookings?.find(b => b.id === certificateForm.bookingId);
+    if (!booking) {
+      toast.error('Pilih booking terlebih dahulu');
+      return;
+    }
+
+    const customer = booking.customer as any;
+    const departure = booking.departure as any;
+    const pkg = departure?.package as any;
+
+    const data: UmrahCertificateData = {
+      participantName: customer?.full_name || '-',
+      passportNumber: customer?.passport_number || '-',
+      birthPlace: customer?.birth_place || '-',
+      birthDate: customer?.birth_date ? new Date(customer.birth_date) : new Date(),
+      packageName: pkg?.name || 'Paket Umrah',
+      departureDate: new Date(departure?.departure_date),
+      returnDate: new Date(departure?.return_date),
+      certificateNumber: `CERT-${booking.booking_code}`
+    };
+
+    const doc = generateUmrahCertificate(data);
+    return doc;
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -343,26 +438,34 @@ const AdminDocumentGenerator = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="jamaah-leave" className="flex items-center gap-2">
+        <TabsList className="grid w-full grid-cols-7">
+          <TabsTrigger value="jamaah-leave" className="flex items-center gap-1">
             <Users className="h-4 w-4" />
-            <span className="hidden sm:inline">Cuti Jamaah</span>
+            <span className="hidden lg:inline">Cuti Jamaah</span>
           </TabsTrigger>
-          <TabsTrigger value="employee-leave" className="flex items-center gap-2">
+          <TabsTrigger value="employee-leave" className="flex items-center gap-1">
             <Briefcase className="h-4 w-4" />
-            <span className="hidden sm:inline">Cuti Karyawan</span>
+            <span className="hidden lg:inline">Cuti Karyawan</span>
           </TabsTrigger>
-          <TabsTrigger value="passport" className="flex items-center gap-2">
+          <TabsTrigger value="passport" className="flex items-center gap-1">
             <Plane className="h-4 w-4" />
-            <span className="hidden sm:inline">Surat Paspor</span>
+            <span className="hidden lg:inline">Paspor</span>
           </TabsTrigger>
-          <TabsTrigger value="invoice" className="flex items-center gap-2">
+          <TabsTrigger value="invoice" className="flex items-center gap-1">
             <Receipt className="h-4 w-4" />
-            <span className="hidden sm:inline">Invoice</span>
+            <span className="hidden lg:inline">Invoice</span>
           </TabsTrigger>
-          <TabsTrigger value="general" className="flex items-center gap-2">
+          <TabsTrigger value="eticket" className="flex items-center gap-1">
+            <Ticket className="h-4 w-4" />
+            <span className="hidden lg:inline">E-Ticket</span>
+          </TabsTrigger>
+          <TabsTrigger value="certificate" className="flex items-center gap-1">
+            <Award className="h-4 w-4" />
+            <span className="hidden lg:inline">Sertifikat</span>
+          </TabsTrigger>
+          <TabsTrigger value="general" className="flex items-center gap-1">
             <FileText className="h-4 w-4" />
-            <span className="hidden sm:inline">Surat Umum</span>
+            <span className="hidden lg:inline">Surat Umum</span>
           </TabsTrigger>
         </TabsList>
 
@@ -797,6 +900,188 @@ const AdminDocumentGenerator = () => {
                   if (doc) {
                     const booking = bookings?.find(b => b.id === invoiceForm.bookingId);
                     handlePrepareSend(doc, `invoice-${booking?.booking_code || 'new'}`);
+                  }
+                }}>
+                  <Send className="h-4 w-4 mr-2" />
+                  Kirim via Email
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* E-Ticket Tab */}
+        <TabsContent value="eticket">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Ticket className="h-5 w-5" />
+                Generate E-Ticket
+              </CardTitle>
+              <CardDescription>
+                Buat e-ticket untuk jamaah yang akan berangkat umrah
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="col-span-2 space-y-2">
+                  <Label>Pilih Booking</Label>
+                  <Select
+                    value={eticketForm.bookingId}
+                    onValueChange={(value) => setEticketForm({ ...eticketForm, bookingId: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Pilih booking jamaah" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {bookings?.map((booking) => {
+                        const customer = booking.customer as any;
+                        const departure = booking.departure as any;
+                        return (
+                          <SelectItem key={booking.id} value={booking.id}>
+                            {booking.booking_code} - {customer?.full_name || 'N/A'} 
+                            {departure?.departure_date ? ` (${format(new Date(departure.departure_date), 'd MMM yyyy', { locale: id })})` : ''}
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {eticketForm.bookingId && (() => {
+                  const booking = bookings?.find(b => b.id === eticketForm.bookingId);
+                  const customer = booking?.customer as any;
+                  const departure = booking?.departure as any;
+                  const pkg = departure?.package as any;
+                  const airline = departure?.airline as any;
+                  
+                  return (
+                    <>
+                      <div className="col-span-2 p-4 bg-muted rounded-lg">
+                        <h4 className="font-semibold mb-2">Preview Data E-Ticket:</h4>
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                          <div><span className="text-muted-foreground">Nama:</span> {customer?.full_name}</div>
+                          <div><span className="text-muted-foreground">Paspor:</span> {customer?.passport_number || '-'}</div>
+                          <div><span className="text-muted-foreground">Paket:</span> {pkg?.name || '-'}</div>
+                          <div><span className="text-muted-foreground">Tipe Kamar:</span> {booking?.room_type}</div>
+                          <div><span className="text-muted-foreground">Berangkat:</span> {departure?.departure_date ? format(new Date(departure.departure_date), 'd MMM yyyy', { locale: id }) : '-'}</div>
+                          <div><span className="text-muted-foreground">Kembali:</span> {departure?.return_date ? format(new Date(departure.return_date), 'd MMM yyyy', { locale: id }) : '-'}</div>
+                          <div><span className="text-muted-foreground">Maskapai:</span> {airline?.name || '-'}</div>
+                          <div><span className="text-muted-foreground">No. Penerbangan:</span> {departure?.flight_number || '-'}</div>
+                        </div>
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
+
+              <div className="flex gap-2 pt-4">
+                <Button onClick={() => {
+                  const doc = handleGenerateETicket();
+                  if (doc) {
+                    const booking = bookings?.find(b => b.id === eticketForm.bookingId);
+                    handleDownloadPdf(doc, `eticket-${booking?.booking_code || 'new'}`);
+                  }
+                }}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Download E-Ticket
+                </Button>
+                <Button variant="outline" onClick={() => {
+                  const doc = handleGenerateETicket();
+                  if (doc) {
+                    const booking = bookings?.find(b => b.id === eticketForm.bookingId);
+                    handlePrepareSend(doc, `eticket-${booking?.booking_code || 'new'}`);
+                  }
+                }}>
+                  <Send className="h-4 w-4 mr-2" />
+                  Kirim via Email
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Certificate Tab */}
+        <TabsContent value="certificate">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Award className="h-5 w-5" />
+                Sertifikat Umrah
+              </CardTitle>
+              <CardDescription>
+                Buat sertifikat untuk jamaah yang telah selesai menunaikan ibadah umrah
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="col-span-2 space-y-2">
+                  <Label>Pilih Booking (Jamaah yang sudah kembali)</Label>
+                  <Select
+                    value={certificateForm.bookingId}
+                    onValueChange={(value) => setCertificateForm({ ...certificateForm, bookingId: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Pilih jamaah yang sudah kembali" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {bookings?.filter(booking => {
+                        const departure = booking.departure as any;
+                        if (!departure?.return_date) return false;
+                        return new Date(departure.return_date) <= new Date();
+                      }).map((booking) => {
+                        const customer = booking.customer as any;
+                        const departure = booking.departure as any;
+                        return (
+                          <SelectItem key={booking.id} value={booking.id}>
+                            {booking.booking_code} - {customer?.full_name || 'N/A'}
+                            {departure?.return_date ? ` (Kembali: ${format(new Date(departure.return_date), 'd MMM yyyy', { locale: id })})` : ''}
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">Hanya menampilkan jamaah yang sudah kembali dari umrah</p>
+                </div>
+
+                {certificateForm.bookingId && (() => {
+                  const booking = bookings?.find(b => b.id === certificateForm.bookingId);
+                  const customer = booking?.customer as any;
+                  const departure = booking?.departure as any;
+                  const pkg = departure?.package as any;
+                  
+                  return (
+                    <div className="col-span-2 p-4 bg-muted rounded-lg">
+                      <h4 className="font-semibold mb-2">Preview Data Sertifikat:</h4>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div><span className="text-muted-foreground">Nama:</span> {customer?.full_name}</div>
+                        <div><span className="text-muted-foreground">Paspor:</span> {customer?.passport_number || '-'}</div>
+                        <div><span className="text-muted-foreground">TTL:</span> {customer?.birth_place}, {customer?.birth_date ? format(new Date(customer.birth_date), 'd MMM yyyy', { locale: id }) : '-'}</div>
+                        <div><span className="text-muted-foreground">Paket:</span> {pkg?.name || '-'}</div>
+                        <div><span className="text-muted-foreground">Periode:</span> {departure?.departure_date ? format(new Date(departure.departure_date), 'd MMM', { locale: id }) : ''} - {departure?.return_date ? format(new Date(departure.return_date), 'd MMM yyyy', { locale: id }) : '-'}</div>
+                        <div><span className="text-muted-foreground">No. Sertifikat:</span> CERT-{booking?.booking_code}</div>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+
+              <div className="flex gap-2 pt-4">
+                <Button onClick={() => {
+                  const doc = handleGenerateCertificate();
+                  if (doc) {
+                    const booking = bookings?.find(b => b.id === certificateForm.bookingId);
+                    handleDownloadPdf(doc, `sertifikat-umrah-${booking?.booking_code || 'new'}`);
+                  }
+                }}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Download Sertifikat
+                </Button>
+                <Button variant="outline" onClick={() => {
+                  const doc = handleGenerateCertificate();
+                  if (doc) {
+                    const booking = bookings?.find(b => b.id === certificateForm.bookingId);
+                    handlePrepareSend(doc, `sertifikat-umrah-${booking?.booking_code || 'new'}`);
                   }
                 }}>
                   <Send className="h-4 w-4 mr-2" />
