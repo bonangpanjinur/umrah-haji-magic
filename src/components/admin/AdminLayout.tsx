@@ -9,7 +9,7 @@ import {
   FileBarChart, BarChart3, Target, KeyRound, BedDouble, Plane,
   Wallet, FileCheck, Building2, DollarSign, Truck, Gift,
   HeadphonesIcon, Palette, ShieldCheck, Key, MessageSquare,
-  UserCog, BookOpen, MapPin, TrendingUp, FileText
+  UserCog, BookOpen, MapPin, TrendingUp, FileText, Share2
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -56,6 +56,7 @@ const NAV_GROUPS = [
       { label: 'Dokumen', icon: FileCheck, path: '/admin/documents' },
       { label: 'Agent', icon: UserCheck, path: '/admin/agents' },
       { label: 'Loyalty', icon: Gift, path: '/admin/loyalty' },
+      { label: 'Referral', icon: Share2, path: '/admin/referrals' },
       { label: 'Haji', icon: BookOpen, path: '/admin/haji' },
     ]
   },

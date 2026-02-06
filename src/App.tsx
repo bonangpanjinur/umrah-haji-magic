@@ -48,6 +48,7 @@ import AdminFinancePL from "./pages/admin/AdminFinancePL";
 import AdminVendors from "./pages/admin/AdminVendors";
 // Engagement
 import AdminLoyalty from "./pages/admin/AdminLoyalty";
+import AdminReferrals from "./pages/admin/AdminReferrals";
 import AdminSupportTickets from "./pages/admin/AdminSupportTickets";
 // Security
 import AdminSecurityAudit from "./pages/admin/AdminSecurityAudit";
@@ -196,6 +197,7 @@ const App = () => (
               <Route path="agents" element={<AdminAgents />} />
               {/* Engagement */}
               <Route path="loyalty" element={<AdminLoyalty />} />
+              <Route path="referrals" element={<AdminReferrals />} />
               <Route path="support" element={<AdminSupportTickets />} />
               <Route path="leads" element={<AdminLeads />} />
               <Route path="leads/analytics" element={<AdminLeadAnalytics />} />

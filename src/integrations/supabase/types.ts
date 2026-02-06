@@ -2631,29 +2631,32 @@ export type Database = {
       referral_codes: {
         Row: {
           code: string
+          commission_rate: number | null
           created_at: string | null
           customer_id: string
           id: string
           is_active: boolean | null
-          total_bonus_earned: number | null
+          total_commission: number | null
           total_referrals: number | null
         }
         Insert: {
           code: string
+          commission_rate?: number | null
           created_at?: string | null
           customer_id: string
           id?: string
           is_active?: boolean | null
-          total_bonus_earned?: number | null
+          total_commission?: number | null
           total_referrals?: number | null
         }
         Update: {
           code?: string
+          commission_rate?: number | null
           created_at?: string | null
           customer_id?: string
           id?: string
           is_active?: boolean | null
-          total_bonus_earned?: number | null
+          total_commission?: number | null
           total_referrals?: number | null
         }
         Relationships: [
@@ -2661,6 +2664,64 @@ export type Database = {
             foreignKeyName: "referral_codes_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: true
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referral_usages: {
+        Row: {
+          booking_amount: number
+          booking_id: string
+          commission_amount: number
+          commission_status: string | null
+          created_at: string | null
+          id: string
+          paid_at: string | null
+          referral_code_id: string
+          referred_customer_id: string
+        }
+        Insert: {
+          booking_amount: number
+          booking_id: string
+          commission_amount: number
+          commission_status?: string | null
+          created_at?: string | null
+          id?: string
+          paid_at?: string | null
+          referral_code_id: string
+          referred_customer_id: string
+        }
+        Update: {
+          booking_amount?: number
+          booking_id?: string
+          commission_amount?: number
+          commission_status?: string | null
+          created_at?: string | null
+          id?: string
+          paid_at?: string | null
+          referral_code_id?: string
+          referred_customer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_usages_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referral_usages_referral_code_id_fkey"
+            columns: ["referral_code_id"]
+            isOneToOne: false
+            referencedRelation: "referral_codes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referral_usages_referred_customer_id_fkey"
+            columns: ["referred_customer_id"]
+            isOneToOne: false
             referencedRelation: "customers"
             referencedColumns: ["id"]
           },
@@ -3625,7 +3686,6 @@ export type Database = {
       generate_booking_code: { Args: never; Returns: string }
       generate_employee_code: { Args: never; Returns: string }
       generate_payment_code: { Args: never; Returns: string }
-      generate_referral_code: { Args: never; Returns: string }
       generate_savings_payment_code: { Args: never; Returns: string }
       generate_ticket_code: { Args: never; Returns: string }
       get_failed_attempts: { Args: { _email: string }; Returns: number }
