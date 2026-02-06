@@ -380,13 +380,89 @@ export default function AdminHajiManagement() {
         </TabsContent>
 
         {/* Waiting List Tab */}
-        <TabsContent value="waiting">
-          <Card className="p-8 text-center">
-            <Clock className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">Fitur tracking waiting list akan segera tersedia</p>
-            <p className="text-sm text-muted-foreground mt-2">
-              Tracking posisi antrian untuk haji reguler
-            </p>
+        <TabsContent value="waiting" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Estimasi Keberangkatan</CardTitle>
+              <CardDescription>
+                Berdasarkan tipe haji dan tahun pendaftaran
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="grid grid-cols-3 gap-4 p-4 bg-muted rounded-lg">
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-primary">~22 thn</p>
+                    <p className="text-sm text-muted-foreground">Haji Reguler</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-amber-500">~5 thn</p>
+                    <p className="text-sm text-muted-foreground">Haji Plus</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-green-500">~1 thn</p>
+                    <p className="text-sm text-muted-foreground">Haji Furoda</p>
+                  </div>
+                </div>
+
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Jamaah</TableHead>
+                      <TableHead>No. Porsi</TableHead>
+                      <TableHead>Tipe</TableHead>
+                      <TableHead>Tahun Daftar</TableHead>
+                      <TableHead>Est. Berangkat</TableHead>
+                      <TableHead>Sisa Waktu</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {registrations
+                      .filter(r => r.status === 'waiting' || r.status === 'registered')
+                      .slice(0, 20)
+                      .map((reg) => {
+                        const currentYear = new Date().getFullYear();
+                        const yearsLeft = (reg.estimated_departure_year || currentYear + 20) - currentYear;
+                        
+                        return (
+                          <TableRow key={reg.id}>
+                            <TableCell>
+                              <p className="font-medium">{reg.customer?.full_name || "Unknown"}</p>
+                            </TableCell>
+                            <TableCell className="font-mono">{reg.portion_number || "-"}</TableCell>
+                            <TableCell>
+                              <Badge variant="outline">{hajiTypeLabels[reg.haji_type]}</Badge>
+                            </TableCell>
+                            <TableCell>{reg.registration_year}</TableCell>
+                            <TableCell className="font-semibold">
+                              {reg.estimated_departure_year || "-"}
+                            </TableCell>
+                            <TableCell>
+                              {yearsLeft > 0 ? (
+                                <Badge variant={yearsLeft <= 3 ? "default" : "secondary"}>
+                                  ~{yearsLeft} tahun lagi
+                                </Badge>
+                              ) : (
+                                <Badge variant="default" className="bg-green-600">
+                                  <CheckCircle className="h-3 w-3 mr-1" />
+                                  Siap berangkat
+                                </Badge>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    {registrations.filter(r => r.status === 'waiting' || r.status === 'registered').length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                          Tidak ada jamaah dalam waiting list
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
