@@ -5,20 +5,21 @@ import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { 
-  User, CreditCard, Plane, MapPin, Phone, AlertCircle, 
+  User, CreditCard, Plane, MapPin, Phone,
   Calendar, Clock, Hotel, Users, FileText, QrCode,
-  Download, Share2, Wifi, WifiOff, Home, ChevronRight
+  Download, Share2, Wifi, WifiOff, Home, ChevronRight, Navigation
 } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { id } from "date-fns/locale";
 import { Link } from "react-router-dom";
 import { formatCurrency } from "@/lib/format";
+import { SOSButton } from "@/components/jamaah/SOSButton";
+import { LiveLocationShare } from "@/components/jamaah/LiveLocationShare";
 
 export default function JamaahPortal() {
   const { user } = useAuth();
@@ -126,20 +127,13 @@ export default function JamaahPortal() {
     setDeferredPrompt(null);
   };
 
-  const handleSOS = () => {
-    const message = encodeURIComponent(
-      `🆘 SOS DARURAT\n\nNama: ${customer?.full_name || "Jamaah"}\n` +
-      `Lokasi: [Bagikan lokasi Anda]\n` +
-      `Waktu: ${format(new Date(), "dd MMM yyyy HH:mm", { locale: id })}\n\n` +
-      `Mohon bantuan segera!`
-    );
-    window.open(`https://wa.me/6281234567890?text=${message}`, "_blank");
-  };
-
   const departure = booking?.departure;
   const daysUntilDeparture = departure?.departure_date 
     ? differenceInDays(new Date(departure.departure_date), new Date())
     : null;
+
+  // Get muthawif phone from departure
+  const muthawifPhone = departure?.muthawif?.phone || undefined;
 
   const paymentProgress = booking 
     ? ((booking.paid_amount || 0) / booking.total_price) * 100 
@@ -172,15 +166,11 @@ export default function JamaahPortal() {
               </p>
             </div>
           </div>
-          <Button
-            variant="destructive"
-            size="sm"
-            className="bg-red-600 hover:bg-red-700"
-            onClick={handleSOS}
-          >
-            <AlertCircle className="h-4 w-4 mr-1" />
-            SOS
-          </Button>
+          <SOSButton 
+            customerName={customer?.full_name || "Jamaah"}
+            muthawifPhone={muthawifPhone}
+            bookingCode={booking?.booking_code}
+          />
         </div>
       </div>
 
@@ -342,6 +332,16 @@ export default function JamaahPortal() {
               </div>
             </CardContent>
           </Card>
+        )}
+
+        {/* Live Location Sharing */}
+        {customer && (
+          <LiveLocationShare
+            customerId={customer.id}
+            departureId={booking?.departure_id}
+            customerName={customer.full_name}
+            muthawifPhone={muthawifPhone}
+          />
         )}
 
         {/* Emergency Contacts */}
