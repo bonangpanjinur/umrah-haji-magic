@@ -1641,6 +1641,70 @@ export type Database = {
         }
         Relationships: []
       }
+      jamaah_live_locations: {
+        Row: {
+          accuracy: number | null
+          created_at: string
+          customer_id: string
+          departure_id: string | null
+          heading: number | null
+          id: string
+          is_sharing: boolean | null
+          latitude: number
+          longitude: number
+          speed: number | null
+          updated_at: string
+        }
+        Insert: {
+          accuracy?: number | null
+          created_at?: string
+          customer_id: string
+          departure_id?: string | null
+          heading?: number | null
+          id?: string
+          is_sharing?: boolean | null
+          latitude: number
+          longitude: number
+          speed?: number | null
+          updated_at?: string
+        }
+        Update: {
+          accuracy?: number | null
+          created_at?: string
+          customer_id?: string
+          departure_id?: string | null
+          heading?: number | null
+          id?: string
+          is_sharing?: boolean | null
+          latitude?: number
+          longitude?: number
+          speed?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "jamaah_live_locations_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "jamaah_live_locations_departure_id_fkey"
+            columns: ["departure_id"]
+            isOneToOne: false
+            referencedRelation: "departures"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "jamaah_live_locations_departure_id_fkey"
+            columns: ["departure_id"]
+            isOneToOne: false
+            referencedRelation: "v_financial_summary"
+            referencedColumns: ["departure_id"]
+          },
+        ]
+      }
       jamaah_qr_codes: {
         Row: {
           created_at: string | null
