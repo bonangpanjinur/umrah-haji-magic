@@ -14,7 +14,8 @@ interface CompanyInfo {
 }
 
 // Letter data interfaces
-interface LeaveLetterData {
+// Surat Cuti Karyawan
+interface EmployeeLeaveLetterData {
   employeeName: string;
   employeePosition: string;
   employeeNik: string;
@@ -23,6 +24,26 @@ interface LeaveLetterData {
   reason: string;
   destination?: string;
 }
+
+// Surat Cuti Jamaah (untuk keperluan ibadah Umrah/Haji)
+interface JamaahLeaveLetterData {
+  jamaahName: string;
+  nik: string;
+  birthPlace: string;
+  birthDate: Date;
+  address: string;
+  employerName: string;
+  employerPosition?: string;
+  employerInstitution: string;
+  employerAddress: string;
+  startDate: Date;
+  endDate: Date;
+  purpose: string; // Umrah/Haji
+  departureDate?: Date;
+}
+
+// Legacy alias for backward compatibility
+interface LeaveLetterData extends EmployeeLeaveLetterData {}
 
 interface PassportLetterData {
   customerName: string;
@@ -136,7 +157,7 @@ function addFooter(doc: jsPDF, pageNum: number, totalPages: number) {
   doc.setTextColor(0);
 }
 
-// Generate Leave Letter (Surat Cuti)
+// Generate Employee Leave Letter (Surat Cuti Karyawan)
 export function generateLeaveLetter(
   data: LeaveLetterData,
   letterNumber: string,
@@ -155,14 +176,14 @@ export function generateLeaveLetter(
   y += 6;
   doc.text('Lampiran: -', pageWidth - 14, y, { align: 'right' });
   y += 6;
-  doc.text('Perihal: Permohonan Cuti', pageWidth - 14, y, { align: 'right' });
+  doc.text('Perihal: Permohonan Cuti Karyawan', pageWidth - 14, y, { align: 'right' });
   
   y += 15;
   
   // Title
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
-  doc.text('SURAT PERMOHONAN CUTI', pageWidth / 2, y, { align: 'center' });
+  doc.text('SURAT PERMOHONAN CUTI KARYAWAN', pageWidth / 2, y, { align: 'center' });
   y += 15;
   
   // Content
@@ -204,6 +225,97 @@ Demikian surat permohonan cuti ini saya ajukan. Atas perhatian dan persetujuan B
   doc.text('_______________________', 14, y);
   y += 5;
   doc.text('Atasan Langsung', 14, y);
+  
+  addFooter(doc, 1, 1);
+  
+  return doc;
+}
+
+// Generate Jamaah Leave Letter (Surat Keterangan Cuti Ibadah Umrah/Haji)
+export function generateJamaahLeaveLetter(
+  data: JamaahLeaveLetterData,
+  letterNumber: string,
+  company: CompanyInfo = defaultCompanyInfo
+): jsPDF {
+  const doc = new jsPDF();
+  let y = addLetterhead(doc, company);
+  
+  const pageWidth = doc.internal.pageSize.width;
+  
+  // Letter number and date
+  doc.setFontSize(11);
+  doc.text(`Nomor: ${letterNumber}`, 14, y);
+  y += 6;
+  doc.text(`Tanggal: ${format(new Date(), 'd MMMM yyyy', { locale: id })}`, 14, y);
+  y += 6;
+  doc.text('Lampiran: Fotokopi KTP, Paspor', 14, y);
+  y += 6;
+  doc.text(`Perihal: Permohonan Izin Cuti ${data.purpose}`, 14, y);
+  
+  y += 12;
+  
+  // Recipient (Employer)
+  doc.text('Kepada Yth.', 14, y);
+  y += 6;
+  doc.setFont('helvetica', 'bold');
+  doc.text(data.employerName, 14, y);
+  y += 6;
+  doc.setFont('helvetica', 'normal');
+  if (data.employerPosition) {
+    doc.text(data.employerPosition, 14, y);
+    y += 6;
+  }
+  doc.text(data.employerInstitution, 14, y);
+  y += 6;
+  doc.text(`di ${data.employerAddress}`, 14, y);
+  
+  y += 15;
+  
+  // Title
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.text('SURAT KETERANGAN CUTI IBADAH', pageWidth / 2, y, { align: 'center' });
+  y += 15;
+  
+  // Content
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'normal');
+  
+  const content = `Dengan hormat,
+
+Yang bertanda tangan di bawah ini, Direktur ${company.name}, dengan ini menerangkan bahwa:
+
+Nama Lengkap       : ${data.jamaahName}
+NIK                : ${data.nik}
+Tempat/Tgl Lahir   : ${data.birthPlace}, ${format(data.birthDate, 'd MMMM yyyy', { locale: id })}
+Alamat             : ${data.address}
+
+Adalah calon jamaah ${data.purpose} yang terdaftar di ${company.name} dan akan menunaikan ibadah ${data.purpose} ke Tanah Suci dengan jadwal sebagai berikut:
+
+Tanggal Berangkat  : ${format(data.startDate, 'd MMMM yyyy', { locale: id })}
+Tanggal Kembali    : ${format(data.endDate, 'd MMMM yyyy', { locale: id })}
+
+Sehubungan dengan hal tersebut, kami mohon kesediaan Bapak/Ibu untuk dapat memberikan izin cuti kepada yang bersangkutan selama menunaikan ibadah ${data.purpose}.
+
+Demikian surat keterangan ini kami sampaikan. Atas perhatian dan kerjasamanya, kami ucapkan terima kasih.`;
+
+  const lines = doc.splitTextToSize(content, pageWidth - 28);
+  doc.text(lines, 14, y);
+  
+  y += lines.length * 5 + 20;
+  
+  // Signature
+  doc.text(`Jakarta, ${format(new Date(), 'd MMMM yyyy', { locale: id })}`, pageWidth - 70, y);
+  y += 6;
+  doc.text('Hormat kami,', pageWidth - 70, y);
+  y += 6;
+  doc.setFont('helvetica', 'bold');
+  doc.text(company.name, pageWidth - 70, y);
+  y += 25;
+  doc.text('___________________', pageWidth - 70, y);
+  y += 5;
+  doc.setFont('helvetica', 'normal');
+  doc.text('Direktur', pageWidth - 70, y);
   
   addFooter(doc, 1, 1);
   
@@ -492,6 +604,8 @@ function formatCurrency(amount: number): string {
 export type {
   CompanyInfo,
   LeaveLetterData,
+  EmployeeLeaveLetterData,
+  JamaahLeaveLetterData,
   PassportLetterData,
   InvoiceData,
   GeneralLetterData
