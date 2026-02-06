@@ -3683,6 +3683,14 @@ export type Database = {
         Args: { _customer_id: string; _user_id: string }
         Returns: boolean
       }
+      estimate_haji_departure_year: {
+        Args: {
+          p_haji_type?: string
+          p_portion_number: string
+          p_registration_year: number
+        }
+        Returns: number
+      }
       generate_booking_code: { Args: never; Returns: string }
       generate_employee_code: { Args: never; Returns: string }
       generate_payment_code: { Args: never; Returns: string }

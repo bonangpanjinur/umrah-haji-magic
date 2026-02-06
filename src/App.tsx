@@ -94,6 +94,7 @@ import SavingsPackages from "./pages/savings/SavingsPackages";
 import SavingsRegister from "./pages/savings/SavingsRegister";
 import SavingsSuccess from "./pages/savings/SavingsSuccess";
 import MySavings from "./pages/customer/MySavings";
+import MyLoyalty from "./pages/customer/MyLoyalty";
 // Public Pages
 import AboutPage from "./pages/public/AboutPage";
 import ContactPage from "./pages/public/ContactPage";
@@ -133,6 +134,11 @@ const App = () => (
             <Route path="/customer/my-savings" element={
               <ProtectedRoute>
                 <MySavings />
+              </ProtectedRoute>
+            } />
+            <Route path="/customer/my-loyalty" element={
+              <ProtectedRoute>
+                <MyLoyalty />
               </ProtectedRoute>
             } />
             
