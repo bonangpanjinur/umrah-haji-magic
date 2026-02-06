@@ -22,11 +22,13 @@ interface Employee {
   full_name: string;
   email: string | null;
   phone: string | null;
-  position: string;
+  position: string | null;
   department: string | null;
   photo_url: string | null;
   is_active: boolean;
-  join_date: string | null;
+  hire_date: string | null;
+  gender: string | null;
+  salary: number | null;
 }
 
 interface AttendanceRecord {
@@ -35,10 +37,12 @@ interface AttendanceRecord {
   attendance_date: string;
   check_in_time: string | null;
   check_in_location: { lat: number; lng: number; address?: string } | null;
-  check_in_face_verified: boolean;
+  check_in_photo_url: string | null;
   check_out_time: string | null;
   check_out_location: { lat: number; lng: number; address?: string } | null;
+  check_out_photo_url: string | null;
   status: string;
+  verified_by: string | null;
   employee?: Employee;
 }
 
@@ -73,11 +77,11 @@ export default function AdminHR() {
     queryKey: ["employees"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("employees" as any)
+        .from("employees")
         .select("*")
         .order("full_name");
       if (error) throw error;
-      return data as unknown as Employee[];
+      return data as Employee[];
     },
   });
 
@@ -86,7 +90,7 @@ export default function AdminHR() {
     queryKey: ["attendance-records", attendanceDate],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("attendance_records" as any)
+        .from("attendance_records")
         .select("*, employee:employees(*)")
         .eq("attendance_date", attendanceDate)
         .order("check_in_time", { ascending: false });
@@ -98,27 +102,38 @@ export default function AdminHR() {
   // Save employee mutation
   const saveEmployeeMutation = useMutation({
     mutationFn: async (formData: FormData) => {
-      const employeeData = {
+      const genderValue = formData.get("gender") as string;
+      const employeeData: {
+        full_name: string;
+        email: string | null;
+        phone: string | null;
+        position: string | null;
+        department: string | null;
+        gender: "male" | "female" | null;
+        is_active: boolean;
+      } = {
         full_name: formData.get("full_name") as string,
         email: formData.get("email") as string || null,
         phone: formData.get("phone") as string || null,
-        position: formData.get("position") as string,
+        position: formData.get("position") as string || null,
         department: formData.get("department") as string || null,
+        gender: genderValue === "male" || genderValue === "female" ? genderValue : null,
         is_active: true,
       };
 
       if (editingEmployee?.id) {
         const { error } = await supabase
-          .from("employees" as any)
+          .from("employees")
           .update(employeeData)
           .eq("id", editingEmployee.id);
         if (error) throw error;
       } else {
-        // Generate employee code
-        const code = `EMP${format(new Date(), "yyMM")}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+        // Use database function to generate employee code
+        const { data: codeData } = await supabase.rpc("generate_employee_code");
+        const code = codeData || `EMP${format(new Date(), "yyMM")}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
         const { error } = await supabase
-          .from("employees" as any)
-          .insert({ ...employeeData, employee_code: code } as any);
+          .from("employees")
+          .insert([{ ...employeeData, employee_code: code }]);
         if (error) throw error;
       }
     },
@@ -391,9 +406,9 @@ export default function AdminHR() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {record.check_in_face_verified ? (
+                        {record.check_in_photo_url ? (
                           <Badge variant="outline" className="text-green-600">
-                            <Camera className="h-3 w-3 mr-1" /> Verified
+                            <Camera className="h-3 w-3 mr-1" /> Foto
                           </Badge>
                         ) : (
                           <span className="text-muted-foreground">-</span>

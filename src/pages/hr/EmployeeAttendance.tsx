@@ -55,12 +55,12 @@ export default function EmployeeAttendance() {
     queryFn: async () => {
       if (!user?.id) return null;
       const { data, error } = await supabase
-        .from("employees" as any)
+        .from("employees")
         .select("*")
         .eq("user_id", user.id)
         .maybeSingle();
       if (error) throw error;
-      return data as unknown as { id: string; full_name: string; employee_code: string; photo_url?: string } | null;
+      return data as { id: string; full_name: string; employee_code: string; photo_url?: string } | null;
     },
     enabled: !!user?.id,
   });
@@ -72,14 +72,13 @@ export default function EmployeeAttendance() {
       if (!employee?.id) return null;
       const today = format(new Date(), "yyyy-MM-dd");
       const { data, error } = await supabase
-        .from("attendance_records" as any)
+        .from("attendance_records")
         .select("*")
         .eq("employee_id", employee.id)
         .eq("attendance_date", today)
-        .is("departure_id", null)
         .maybeSingle();
       if (error) throw error;
-      return data as unknown as { 
+      return data as { 
         id: string; 
         check_in_time?: string; 
         check_out_time?: string; 
@@ -226,15 +225,16 @@ export default function EmployeeAttendance() {
       const now = new Date().toISOString();
       const isLate = new Date().getHours() >= 9; // After 9 AM is late
 
-      const { error } = await supabase.from("attendance_records" as any).insert({
+      const locationJson = JSON.parse(JSON.stringify({ lat: location.lat, lng: location.lng, address: location.address }));
+
+      const { error } = await supabase.from("attendance_records").insert([{
         employee_id: employee.id,
         attendance_date: today,
         check_in_time: now,
-        check_in_location: location,
+        check_in_location: locationJson,
         check_in_photo_url: capturedPhoto,
-        check_in_face_verified: !!capturedPhoto,
         status: isLate ? "late" : "present",
-      } as any);
+      }]);
 
       if (error) throw error;
     },
@@ -251,13 +251,14 @@ export default function EmployeeAttendance() {
     mutationFn: async () => {
       if (!todayAttendance?.id || !location) throw new Error("Data tidak lengkap");
 
+      const locationJson = JSON.parse(JSON.stringify({ lat: location.lat, lng: location.lng, address: location.address }));
+
       const { error } = await supabase
-        .from("attendance_records" as any)
+        .from("attendance_records")
         .update({
           check_out_time: new Date().toISOString(),
-          check_out_location: location,
+          check_out_location: locationJson,
           check_out_photo_url: capturedPhoto,
-          check_out_face_verified: !!capturedPhoto,
         })
         .eq("id", todayAttendance.id);
 

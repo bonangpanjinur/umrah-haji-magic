@@ -1,12 +1,70 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Building2, CreditCard, Bell } from "lucide-react";
+import { Building2, CreditCard, Bell, Plus, Trash2, Loader2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
 import ChangePassword from "@/components/settings/ChangePassword";
 import ProfileForm from "@/components/settings/ProfileForm";
+import { useCompanySettings, useBankAccounts, BankAccount } from "@/hooks/useCompanySettings";
 
 export default function AdminSettings() {
+  const { getSetting, updateMultipleSettings, isLoading, isUpdating } = useCompanySettings();
+  const { accounts, createAccount, updateAccount, deleteAccount, isLoading: loadingAccounts } = useBankAccounts();
+  
+  const [companyForm, setCompanyForm] = useState({
+    company_name: "",
+    company_phone: "",
+    company_email: "",
+    company_address: "",
+  });
+  const [formInitialized, setFormInitialized] = useState(false);
+  const [isBankDialogOpen, setIsBankDialogOpen] = useState(false);
+  const [editingBank, setEditingBank] = useState<BankAccount | null>(null);
+
+  // Initialize form when settings load
+  if (!isLoading && !formInitialized) {
+    setCompanyForm({
+      company_name: getSetting("company_name") || "",
+      company_phone: getSetting("company_phone") || "",
+      company_email: getSetting("company_email") || "",
+      company_address: getSetting("company_address") || "",
+    });
+    setFormInitialized(true);
+  }
+
+  const handleSaveCompany = () => {
+    updateMultipleSettings([
+      { key: "company_name", value: companyForm.company_name },
+      { key: "company_phone", value: companyForm.company_phone },
+      { key: "company_email", value: companyForm.company_email },
+      { key: "company_address", value: companyForm.company_address },
+    ]);
+  };
+
+  const handleSaveBank = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const data = {
+      bank_name: formData.get("bank_name") as string,
+      account_number: formData.get("account_number") as string,
+      account_name: formData.get("account_name") as string,
+      branch_name: (formData.get("branch_name") as string) || null,
+      is_active: true,
+      is_primary: formData.get("is_primary") === "on",
+    };
+
+    if (editingBank) {
+      updateAccount({ id: editingBank.id, ...data });
+    } else {
+      createAccount(data);
+    }
+    setIsBankDialogOpen(false);
+    setEditingBank(null);
+  };
+
   return (
     <div className="space-y-6 max-w-2xl">
       <div>
@@ -29,41 +87,128 @@ export default function AdminSettings() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div>
-            <Label htmlFor="company">Nama Perusahaan</Label>
-            <Input id="company" defaultValue="PT Umroh Haji Berkah" />
-          </div>
-          <div>
-            <Label htmlFor="phone">No. Telepon</Label>
-            <Input id="phone" defaultValue="0800-123-4567" />
-          </div>
-          <div>
-            <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" defaultValue="info@umrohtravel.com" />
-          </div>
-          <div>
-            <Label htmlFor="address">Alamat</Label>
-            <Input id="address" defaultValue="Jl. Masjid Raya No. 123, Jakarta" />
-          </div>
-          <Button>Simpan Perubahan</Button>
+          {isLoading ? (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Memuat...
+            </div>
+          ) : (
+            <>
+              <div>
+                <Label htmlFor="company_name">Nama Perusahaan</Label>
+                <Input
+                  id="company_name"
+                  value={companyForm.company_name}
+                  onChange={(e) => setCompanyForm((f) => ({ ...f, company_name: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label htmlFor="company_phone">No. Telepon</Label>
+                <Input
+                  id="company_phone"
+                  value={companyForm.company_phone}
+                  onChange={(e) => setCompanyForm((f) => ({ ...f, company_phone: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label htmlFor="company_email">Email</Label>
+                <Input
+                  id="company_email"
+                  type="email"
+                  value={companyForm.company_email}
+                  onChange={(e) => setCompanyForm((f) => ({ ...f, company_email: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label htmlFor="company_address">Alamat</Label>
+                <Input
+                  id="company_address"
+                  value={companyForm.company_address}
+                  onChange={(e) => setCompanyForm((f) => ({ ...f, company_address: e.target.value }))}
+                />
+              </div>
+              <Button onClick={handleSaveCompany} disabled={isUpdating}>
+                {isUpdating && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                Simpan Perubahan
+              </Button>
+            </>
+          )}
         </CardContent>
       </Card>
 
       {/* Bank Accounts */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <CreditCard className="h-5 w-5" />
-            Rekening Bank
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="p-4 border rounded-lg">
-            <p className="font-medium">Bank BCA</p>
-            <p className="text-lg font-mono">123-456-7890</p>
-            <p className="text-sm text-muted-foreground">a.n. PT Umroh Haji Berkah</p>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <CreditCard className="h-5 w-5" />
+              Rekening Bank
+            </CardTitle>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setEditingBank(null);
+                setIsBankDialogOpen(true);
+              }}
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Tambah
+            </Button>
           </div>
-          <Button variant="outline">Tambah Rekening</Button>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {loadingAccounts ? (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Memuat...
+            </div>
+          ) : accounts.length === 0 ? (
+            <p className="text-muted-foreground">Belum ada rekening bank</p>
+          ) : (
+            accounts.map((acc) => (
+              <div
+                key={acc.id}
+                className="p-4 border rounded-lg flex items-start justify-between"
+              >
+                <div>
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium">{acc.bank_name}</p>
+                    {acc.is_primary && (
+                      <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">
+                        Utama
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-lg font-mono">{acc.account_number}</p>
+                  <p className="text-sm text-muted-foreground">a.n. {acc.account_name}</p>
+                  {acc.branch_name && (
+                    <p className="text-xs text-muted-foreground">Cabang: {acc.branch_name}</p>
+                  )}
+                </div>
+                <div className="flex gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setEditingBank(acc);
+                      setIsBankDialogOpen(true);
+                    }}
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => deleteAccount(acc.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            ))
+          )}
         </CardContent>
       </Card>
 
@@ -81,6 +226,66 @@ export default function AdminSettings() {
           </p>
         </CardContent>
       </Card>
+
+      {/* Bank Account Dialog */}
+      <Dialog open={isBankDialogOpen} onOpenChange={setIsBankDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingBank ? "Edit Rekening" : "Tambah Rekening"}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSaveBank} className="space-y-4">
+            <div>
+              <Label htmlFor="bank_name">Nama Bank *</Label>
+              <Input
+                id="bank_name"
+                name="bank_name"
+                defaultValue={editingBank?.bank_name || ""}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="account_number">No. Rekening *</Label>
+              <Input
+                id="account_number"
+                name="account_number"
+                defaultValue={editingBank?.account_number || ""}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="account_name">Atas Nama *</Label>
+              <Input
+                id="account_name"
+                name="account_name"
+                defaultValue={editingBank?.account_name || ""}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="branch_name">Cabang (Opsional)</Label>
+              <Input
+                id="branch_name"
+                name="branch_name"
+                defaultValue={editingBank?.branch_name || ""}
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch
+                id="is_primary"
+                name="is_primary"
+                defaultChecked={editingBank?.is_primary || false}
+              />
+              <Label htmlFor="is_primary">Jadikan rekening utama</Label>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsBankDialogOpen(false)}>
+                Batal
+              </Button>
+              <Button type="submit">Simpan</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
