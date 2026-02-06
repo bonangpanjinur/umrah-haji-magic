@@ -37,7 +37,8 @@ import { toast } from "sonner";
 import { 
   CheckCircle, XCircle, Eye, Clock, 
   CreditCard, User, Calendar, ExternalLink,
-  Search, Filter, Download, AlertCircle, X, ImageIcon
+  Search, Filter, Download, AlertCircle, X, ImageIcon,
+  Bell, Send, Loader2
 } from "lucide-react";
 
 export default function AdminPayments() {
@@ -49,6 +50,7 @@ export default function AdminPayments() {
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [isSendingReminders, setIsSendingReminders] = useState(false);
 
   const { data: payments, isLoading } = useQuery({
     queryKey: ['admin-payments'],
@@ -198,10 +200,37 @@ export default function AdminPayments() {
           <h1 className="text-2xl font-bold">Verifikasi Pembayaran</h1>
           <p className="text-muted-foreground">Kelola dan verifikasi bukti pembayaran</p>
         </div>
-        <Button variant="outline">
-          <Download className="h-4 w-4 mr-2" />
-          Export
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            onClick={async () => {
+              setIsSendingReminders(true);
+              try {
+                const { data, error } = await supabase.functions.invoke('send-payment-reminder', {
+                  body: { reminder_type: 'all' }
+                });
+                if (error) throw error;
+                toast.success(`Reminder terkirim: ${data.summary?.sent || 0} berhasil, ${data.summary?.failed || 0} gagal`);
+              } catch (err: any) {
+                toast.error(err.message || 'Gagal mengirim reminder');
+              } finally {
+                setIsSendingReminders(false);
+              }
+            }}
+            disabled={isSendingReminders}
+          >
+            {isSendingReminders ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Bell className="h-4 w-4 mr-2" />
+            )}
+            Kirim Reminder
+          </Button>
+          <Button variant="outline">
+            <Download className="h-4 w-4 mr-2" />
+            Export
+          </Button>
+        </div>
       </div>
 
       {/* Stats */}
