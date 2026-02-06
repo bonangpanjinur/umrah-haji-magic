@@ -22,15 +22,19 @@ import {
   Plane,
   Receipt,
   Mail,
-  User
+  User,
+  Users,
+  Briefcase
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   generateLeaveLetter,
+  generateJamaahLeaveLetter,
   generatePassportLetter,
   generateInvoice,
   generateGeneralLetter,
   type LeaveLetterData,
+  type JamaahLeaveLetterData,
   type PassportLetterData,
   type InvoiceData,
   type GeneralLetterData
@@ -46,19 +50,31 @@ interface Employee {
 }
 
 const AdminDocumentGenerator = () => {
-  const [activeTab, setActiveTab] = useState('leave');
+  const [activeTab, setActiveTab] = useState('jamaah-leave');
   const [sendDialogOpen, setSendDialogOpen] = useState(false);
   const [sendEmail, setSendEmail] = useState('');
   const [currentPdfBlob, setCurrentPdfBlob] = useState<Blob | null>(null);
   const [currentFileName, setCurrentFileName] = useState('');
 
-  // Leave letter form state
-  const [leaveForm, setLeaveForm] = useState({
+  // Employee Leave letter form state
+  const [employeeLeaveForm, setEmployeeLeaveForm] = useState({
     employeeId: '',
     startDate: undefined as Date | undefined,
     endDate: undefined as Date | undefined,
     reason: '',
     destination: ''
+  });
+
+  // Jamaah Leave letter form state
+  const [jamaahLeaveForm, setJamaahLeaveForm] = useState({
+    customerId: '',
+    employerName: '',
+    employerPosition: '',
+    employerInstitution: '',
+    employerAddress: '',
+    startDate: undefined as Date | undefined,
+    endDate: undefined as Date | undefined,
+    purpose: 'Ibadah Umrah'
   });
 
   // Passport letter form state
@@ -87,12 +103,11 @@ const AdminDocumentGenerator = () => {
     signatoryPosition: ''
   });
 
-  // Fetch employees for leave letter (using raw query since employees table may not be typed)
+  // Fetch employees for employee leave letter
   const { data: employees } = useQuery<Employee[]>({
     queryKey: ['employees-for-letter'],
     queryFn: async () => {
       const { data, error } = await supabase.rpc('get_active_employees' as any).select('*');
-      // Fallback: direct query with type casting
       if (error) {
         const result = await supabase
           .from('employees' as any)
@@ -105,7 +120,7 @@ const AdminDocumentGenerator = () => {
     }
   });
 
-  // Fetch customers for passport letter
+  // Fetch customers for jamaah letters
   const { data: customers } = useQuery({
     queryKey: ['customers-for-letter'],
     queryFn: async () => {
@@ -130,6 +145,7 @@ const AdminDocumentGenerator = () => {
           customer:customers(full_name, address, phone, email),
           departure:departures(
             departure_date,
+            return_date,
             package:packages(name, price_quad, price_triple, price_double, price_single)
           )
         `)
@@ -165,14 +181,10 @@ const AdminDocumentGenerator = () => {
       toast.error('Email tujuan harus diisi');
       return;
     }
-
-    // In a real implementation, you would send this to an edge function
-    // For now, we'll simulate the send and allow download
     toast.success(`Dokumen akan dikirim ke ${sendEmail}`);
     setSendDialogOpen(false);
     setSendEmail('');
     
-    // Trigger download as fallback
     const url = URL.createObjectURL(currentPdfBlob);
     const a = document.createElement('a');
     a.href = url;
@@ -181,9 +193,10 @@ const AdminDocumentGenerator = () => {
     URL.revokeObjectURL(url);
   };
 
-  const handleGenerateLeaveLetter = () => {
-    const employee = employees?.find(e => e.id === leaveForm.employeeId);
-    if (!employee || !leaveForm.startDate || !leaveForm.endDate) {
+  // Handle Employee Leave Letter
+  const handleGenerateEmployeeLeaveLetter = () => {
+    const employee = employees?.find(e => e.id === employeeLeaveForm.employeeId);
+    if (!employee || !employeeLeaveForm.startDate || !employeeLeaveForm.endDate) {
       toast.error('Lengkapi semua data yang diperlukan');
       return;
     }
@@ -192,13 +205,40 @@ const AdminDocumentGenerator = () => {
       employeeName: employee.full_name,
       employeePosition: employee.position || 'Staff',
       employeeNik: employee.employee_id || '-',
-      startDate: leaveForm.startDate,
-      endDate: leaveForm.endDate,
-      reason: leaveForm.reason,
-      destination: leaveForm.destination
+      startDate: employeeLeaveForm.startDate,
+      endDate: employeeLeaveForm.endDate,
+      reason: employeeLeaveForm.reason,
+      destination: employeeLeaveForm.destination
     };
 
-    const doc = generateLeaveLetter(data, generateLetterNumber('CUTI'));
+    const doc = generateLeaveLetter(data, generateLetterNumber('CUTI-KRY'));
+    return doc;
+  };
+
+  // Handle Jamaah Leave Letter
+  const handleGenerateJamaahLeaveLetter = () => {
+    const customer = customers?.find(c => c.id === jamaahLeaveForm.customerId);
+    if (!customer || !jamaahLeaveForm.startDate || !jamaahLeaveForm.endDate || !jamaahLeaveForm.employerName) {
+      toast.error('Lengkapi semua data yang diperlukan (Jamaah, Tanggal, dan Data Pemberi Kerja)');
+      return;
+    }
+
+    const data: JamaahLeaveLetterData = {
+      jamaahName: customer.full_name,
+      nik: customer.nik || '-',
+      birthPlace: customer.birth_place || '-',
+      birthDate: customer.birth_date ? new Date(customer.birth_date) : new Date(),
+      address: customer.address || '-',
+      employerName: jamaahLeaveForm.employerName,
+      employerPosition: jamaahLeaveForm.employerPosition,
+      employerInstitution: jamaahLeaveForm.employerInstitution,
+      employerAddress: jamaahLeaveForm.employerAddress,
+      startDate: jamaahLeaveForm.startDate,
+      endDate: jamaahLeaveForm.endDate,
+      purpose: jamaahLeaveForm.purpose
+    };
+
+    const doc = generateJamaahLeaveLetter(data, generateLetterNumber('CUTI-JMH'));
     return doc;
   };
 
@@ -303,39 +343,207 @@ const AdminDocumentGenerator = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="leave" className="flex items-center gap-2">
-            <User className="h-4 w-4" />
-            Surat Cuti
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="jamaah-leave" className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            <span className="hidden sm:inline">Cuti Jamaah</span>
+          </TabsTrigger>
+          <TabsTrigger value="employee-leave" className="flex items-center gap-2">
+            <Briefcase className="h-4 w-4" />
+            <span className="hidden sm:inline">Cuti Karyawan</span>
           </TabsTrigger>
           <TabsTrigger value="passport" className="flex items-center gap-2">
             <Plane className="h-4 w-4" />
-            Surat Paspor
+            <span className="hidden sm:inline">Surat Paspor</span>
           </TabsTrigger>
           <TabsTrigger value="invoice" className="flex items-center gap-2">
             <Receipt className="h-4 w-4" />
-            Invoice
+            <span className="hidden sm:inline">Invoice</span>
           </TabsTrigger>
           <TabsTrigger value="general" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
-            Surat Umum
+            <span className="hidden sm:inline">Surat Umum</span>
           </TabsTrigger>
         </TabsList>
 
-        {/* Leave Letter Tab */}
-        <TabsContent value="leave">
+        {/* Jamaah Leave Letter Tab */}
+        <TabsContent value="jamaah-leave">
           <Card>
             <CardHeader>
-              <CardTitle>Surat Permohonan Cuti</CardTitle>
-              <CardDescription>Generate surat cuti untuk karyawan</CardDescription>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                Surat Keterangan Cuti Jamaah
+              </CardTitle>
+              <CardDescription>
+                Generate surat keterangan untuk izin cuti jamaah dari tempat kerja untuk menunaikan ibadah Umrah/Haji
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Data Jamaah */}
+                <div className="col-span-2">
+                  <h3 className="font-semibold text-sm text-muted-foreground mb-3">DATA JAMAAH</h3>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>Jamaah</Label>
+                  <Select
+                    value={jamaahLeaveForm.customerId}
+                    onValueChange={(value) => setJamaahLeaveForm({ ...jamaahLeaveForm, customerId: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Pilih jamaah" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {customers?.map((cust) => (
+                        <SelectItem key={cust.id} value={cust.id}>
+                          {cust.full_name} - {cust.nik || 'NIK belum diisi'}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Tujuan Ibadah</Label>
+                  <Select
+                    value={jamaahLeaveForm.purpose}
+                    onValueChange={(value) => setJamaahLeaveForm({ ...jamaahLeaveForm, purpose: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Ibadah Umrah">Ibadah Umrah</SelectItem>
+                      <SelectItem value="Ibadah Haji">Ibadah Haji</SelectItem>
+                      <SelectItem value="Ibadah Umrah dan Haji">Ibadah Umrah dan Haji</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Tanggal Berangkat</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !jamaahLeaveForm.startDate && "text-muted-foreground")}>
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {jamaahLeaveForm.startDate ? format(jamaahLeaveForm.startDate, "PPP", { locale: id }) : "Pilih tanggal"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={jamaahLeaveForm.startDate}
+                        onSelect={(date) => setJamaahLeaveForm({ ...jamaahLeaveForm, startDate: date })}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Tanggal Kembali</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !jamaahLeaveForm.endDate && "text-muted-foreground")}>
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {jamaahLeaveForm.endDate ? format(jamaahLeaveForm.endDate, "PPP", { locale: id }) : "Pilih tanggal"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={jamaahLeaveForm.endDate}
+                        onSelect={(date) => setJamaahLeaveForm({ ...jamaahLeaveForm, endDate: date })}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                {/* Data Pemberi Kerja */}
+                <div className="col-span-2 pt-4">
+                  <h3 className="font-semibold text-sm text-muted-foreground mb-3">DATA PENERIMA SURAT (PEMBERI KERJA)</h3>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Nama Pimpinan/HRD</Label>
+                  <Input
+                    value={jamaahLeaveForm.employerName}
+                    onChange={(e) => setJamaahLeaveForm({ ...jamaahLeaveForm, employerName: e.target.value })}
+                    placeholder="Nama penerima surat"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Jabatan (Opsional)</Label>
+                  <Input
+                    value={jamaahLeaveForm.employerPosition}
+                    onChange={(e) => setJamaahLeaveForm({ ...jamaahLeaveForm, employerPosition: e.target.value })}
+                    placeholder="Contoh: Kepala HRD"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Nama Instansi/Perusahaan</Label>
+                  <Input
+                    value={jamaahLeaveForm.employerInstitution}
+                    onChange={(e) => setJamaahLeaveForm({ ...jamaahLeaveForm, employerInstitution: e.target.value })}
+                    placeholder="Nama perusahaan/instansi"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Alamat Instansi</Label>
+                  <Input
+                    value={jamaahLeaveForm.employerAddress}
+                    onChange={(e) => setJamaahLeaveForm({ ...jamaahLeaveForm, employerAddress: e.target.value })}
+                    placeholder="Alamat perusahaan/instansi"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-4">
+                <Button onClick={() => {
+                  const doc = handleGenerateJamaahLeaveLetter();
+                  if (doc) {
+                    const customer = customers?.find(c => c.id === jamaahLeaveForm.customerId);
+                    handleDownloadPdf(doc, `surat-cuti-jamaah-${customer?.full_name?.replace(/\s+/g, '-').toLowerCase() || 'new'}`);
+                  }
+                }}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Download PDF
+                </Button>
+                <Button variant="outline" onClick={() => {
+                  const doc = handleGenerateJamaahLeaveLetter();
+                  if (doc) {
+                    const customer = customers?.find(c => c.id === jamaahLeaveForm.customerId);
+                    handlePrepareSend(doc, `surat-cuti-jamaah-${customer?.full_name?.replace(/\s+/g, '-').toLowerCase() || 'new'}`);
+                  }
+                }}>
+                  <Send className="h-4 w-4 mr-2" />
+                  Kirim via Email
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Employee Leave Letter Tab */}
+        <TabsContent value="employee-leave">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Briefcase className="h-5 w-5" />
+                Surat Permohonan Cuti Karyawan
+              </CardTitle>
+              <CardDescription>Generate surat cuti untuk karyawan internal perusahaan</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Karyawan</Label>
                   <Select
-                    value={leaveForm.employeeId}
-                    onValueChange={(value) => setLeaveForm({ ...leaveForm, employeeId: value })}
+                    value={employeeLeaveForm.employeeId}
+                    onValueChange={(value) => setEmployeeLeaveForm({ ...employeeLeaveForm, employeeId: value })}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Pilih karyawan" />
@@ -353,8 +561,8 @@ const AdminDocumentGenerator = () => {
                 <div className="space-y-2">
                   <Label>Alasan Cuti</Label>
                   <Input
-                    value={leaveForm.reason}
-                    onChange={(e) => setLeaveForm({ ...leaveForm, reason: e.target.value })}
+                    value={employeeLeaveForm.reason}
+                    onChange={(e) => setEmployeeLeaveForm({ ...employeeLeaveForm, reason: e.target.value })}
                     placeholder="Contoh: Keperluan keluarga"
                   />
                 </div>
@@ -363,16 +571,16 @@ const AdminDocumentGenerator = () => {
                   <Label>Tanggal Mulai</Label>
                   <Popover>
                     <PopoverTrigger asChild>
-                      <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !leaveForm.startDate && "text-muted-foreground")}>
+                      <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !employeeLeaveForm.startDate && "text-muted-foreground")}>
                         <CalendarIcon className="mr-2 h-4 w-4" />
-                        {leaveForm.startDate ? format(leaveForm.startDate, "PPP", { locale: id }) : "Pilih tanggal"}
+                        {employeeLeaveForm.startDate ? format(employeeLeaveForm.startDate, "PPP", { locale: id }) : "Pilih tanggal"}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0">
                       <Calendar
                         mode="single"
-                        selected={leaveForm.startDate}
-                        onSelect={(date) => setLeaveForm({ ...leaveForm, startDate: date })}
+                        selected={employeeLeaveForm.startDate}
+                        onSelect={(date) => setEmployeeLeaveForm({ ...employeeLeaveForm, startDate: date })}
                       />
                     </PopoverContent>
                   </Popover>
@@ -382,16 +590,16 @@ const AdminDocumentGenerator = () => {
                   <Label>Tanggal Selesai</Label>
                   <Popover>
                     <PopoverTrigger asChild>
-                      <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !leaveForm.endDate && "text-muted-foreground")}>
+                      <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !employeeLeaveForm.endDate && "text-muted-foreground")}>
                         <CalendarIcon className="mr-2 h-4 w-4" />
-                        {leaveForm.endDate ? format(leaveForm.endDate, "PPP", { locale: id }) : "Pilih tanggal"}
+                        {employeeLeaveForm.endDate ? format(employeeLeaveForm.endDate, "PPP", { locale: id }) : "Pilih tanggal"}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0">
                       <Calendar
                         mode="single"
-                        selected={leaveForm.endDate}
-                        onSelect={(date) => setLeaveForm({ ...leaveForm, endDate: date })}
+                        selected={employeeLeaveForm.endDate}
+                        onSelect={(date) => setEmployeeLeaveForm({ ...employeeLeaveForm, endDate: date })}
                       />
                     </PopoverContent>
                   </Popover>
@@ -400,8 +608,8 @@ const AdminDocumentGenerator = () => {
                 <div className="col-span-2 space-y-2">
                   <Label>Alamat Selama Cuti (Opsional)</Label>
                   <Input
-                    value={leaveForm.destination}
-                    onChange={(e) => setLeaveForm({ ...leaveForm, destination: e.target.value })}
+                    value={employeeLeaveForm.destination}
+                    onChange={(e) => setEmployeeLeaveForm({ ...employeeLeaveForm, destination: e.target.value })}
                     placeholder="Alamat tujuan selama cuti"
                   />
                 </div>
@@ -409,15 +617,15 @@ const AdminDocumentGenerator = () => {
 
               <div className="flex gap-2 pt-4">
                 <Button onClick={() => {
-                  const doc = handleGenerateLeaveLetter();
-                  if (doc) handleDownloadPdf(doc, `surat-cuti-${leaveForm.employeeId}`);
+                  const doc = handleGenerateEmployeeLeaveLetter();
+                  if (doc) handleDownloadPdf(doc, `surat-cuti-karyawan-${employeeLeaveForm.employeeId}`);
                 }}>
                   <Download className="h-4 w-4 mr-2" />
                   Download PDF
                 </Button>
                 <Button variant="outline" onClick={() => {
-                  const doc = handleGenerateLeaveLetter();
-                  if (doc) handlePrepareSend(doc, `surat-cuti-${leaveForm.employeeId}`);
+                  const doc = handleGenerateEmployeeLeaveLetter();
+                  if (doc) handlePrepareSend(doc, `surat-cuti-karyawan-${employeeLeaveForm.employeeId}`);
                 }}>
                   <Send className="h-4 w-4 mr-2" />
                   Kirim via Email
