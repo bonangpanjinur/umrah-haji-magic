@@ -10,13 +10,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import { DepartureForm } from "@/components/admin/forms/DepartureForm";
 import { formatDate, formatCurrency } from "@/lib/format";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { 
   Calendar, Plus, Search, Plane, Users, Edit, Trash2, 
-  CalendarDays, Hotel, Building2, Link2Off, MapPin
+  CalendarDays, Hotel, Building2, Link2Off, MapPin,
+  MessageCircle, Bell, Send
 } from "lucide-react";
 import { LinkItineraryForm } from "@/components/admin/forms/LinkItineraryForm";
 
@@ -64,8 +72,24 @@ export default function AdminDepartures() {
       queryClient.invalidateQueries({ queryKey: ['admin-all-departures'] });
       setDeleteDeparture(null);
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(error.message || "Gagal menghapus jadwal");
+    },
+  });
+
+  const sendNotificationMutation = useMutation({
+    mutationFn: async ({ departureId, type }: { departureId: string; type: string }) => {
+      const { data, error } = await supabase.functions.invoke('send-whatsapp-notification', {
+        body: { type, departure_id: departureId }
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data: { sent?: number; failed?: number; type?: string }) => {
+      toast.success(`Notifikasi berhasil dikirim: ${data.sent || 0} terkirim, ${data.failed || 0} gagal`);
+    },
+    onError: (error: Error) => {
+      toast.error("Gagal mengirim notifikasi: " + error.message);
     },
   });
 
@@ -402,6 +426,33 @@ export default function AdminDepartures() {
                       <TableCell>{getStatusBadge(dep.status)}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" title="Kirim Notifikasi">
+                                <MessageCircle className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem 
+                                onClick={() => sendNotificationMutation.mutate({ 
+                                  departureId: dep.id, 
+                                  type: 'departure_reminder' 
+                                })}
+                              >
+                                <Bell className="h-4 w-4 mr-2" />
+                                Kirim Reminder H-3
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={() => sendNotificationMutation.mutate({ 
+                                  departureId: dep.id, 
+                                  type: 'welcome_umrah' 
+                                })}
+                              >
+                                <Send className="h-4 w-4 mr-2" />
+                                Kirim Ucapan Selamat
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                           <Button 
                             variant="ghost" 
                             size="icon" 
