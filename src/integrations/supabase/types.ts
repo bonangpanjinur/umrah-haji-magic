@@ -342,6 +342,68 @@ export type Database = {
           },
         ]
       }
+      attendance_records: {
+        Row: {
+          attendance_date: string
+          check_in_location: Json | null
+          check_in_photo_url: string | null
+          check_in_time: string | null
+          check_out_location: Json | null
+          check_out_photo_url: string | null
+          check_out_time: string | null
+          created_at: string | null
+          employee_id: string
+          id: string
+          notes: string | null
+          status: string | null
+          updated_at: string | null
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          attendance_date?: string
+          check_in_location?: Json | null
+          check_in_photo_url?: string | null
+          check_in_time?: string | null
+          check_out_location?: Json | null
+          check_out_photo_url?: string | null
+          check_out_time?: string | null
+          created_at?: string | null
+          employee_id: string
+          id?: string
+          notes?: string | null
+          status?: string | null
+          updated_at?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          attendance_date?: string
+          check_in_location?: Json | null
+          check_in_photo_url?: string | null
+          check_in_time?: string | null
+          check_out_location?: Json | null
+          check_out_photo_url?: string | null
+          check_out_time?: string | null
+          created_at?: string | null
+          employee_id?: string
+          id?: string
+          notes?: string | null
+          status?: string | null
+          updated_at?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_records_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_logs: {
         Row: {
           action: string
@@ -1139,6 +1201,149 @@ export type Database = {
         }
         Relationships: []
       }
+      email_logs: {
+        Row: {
+          body_html: string | null
+          created_at: string | null
+          error_message: string | null
+          id: string
+          metadata: Json | null
+          recipient_email: string
+          recipient_name: string | null
+          reference_id: string | null
+          reference_type: string | null
+          sent_at: string | null
+          status: string | null
+          subject: string
+          template_type: string | null
+        }
+        Insert: {
+          body_html?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          recipient_email: string
+          recipient_name?: string | null
+          reference_id?: string | null
+          reference_type?: string | null
+          sent_at?: string | null
+          status?: string | null
+          subject: string
+          template_type?: string | null
+        }
+        Update: {
+          body_html?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          recipient_email?: string
+          recipient_name?: string | null
+          reference_id?: string | null
+          reference_type?: string | null
+          sent_at?: string | null
+          status?: string | null
+          subject?: string
+          template_type?: string | null
+        }
+        Relationships: []
+      }
+      employees: {
+        Row: {
+          address: string | null
+          bank_account_name: string | null
+          bank_account_number: string | null
+          bank_name: string | null
+          birth_date: string | null
+          branch_id: string | null
+          city: string | null
+          created_at: string | null
+          department: string | null
+          email: string | null
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
+          employee_code: string
+          full_name: string
+          gender: Database["public"]["Enums"]["gender_type"] | null
+          hire_date: string | null
+          id: string
+          is_active: boolean | null
+          notes: string | null
+          phone: string | null
+          photo_url: string | null
+          position: string | null
+          province: string | null
+          salary: number | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          address?: string | null
+          bank_account_name?: string | null
+          bank_account_number?: string | null
+          bank_name?: string | null
+          birth_date?: string | null
+          branch_id?: string | null
+          city?: string | null
+          created_at?: string | null
+          department?: string | null
+          email?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          employee_code: string
+          full_name: string
+          gender?: Database["public"]["Enums"]["gender_type"] | null
+          hire_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          notes?: string | null
+          phone?: string | null
+          photo_url?: string | null
+          position?: string | null
+          province?: string | null
+          salary?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          address?: string | null
+          bank_account_name?: string | null
+          bank_account_number?: string | null
+          bank_name?: string | null
+          birth_date?: string | null
+          branch_id?: string | null
+          city?: string | null
+          created_at?: string | null
+          department?: string | null
+          email?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          employee_code?: string
+          full_name?: string
+          gender?: Database["public"]["Enums"]["gender_type"] | null
+          hire_date?: string | null
+          id?: string
+          is_active?: boolean | null
+          notes?: string | null
+          phone?: string | null
+          photo_url?: string | null
+          position?: string | null
+          province?: string | null
+          salary?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employees_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       equipment_distributions: {
         Row: {
           customer_id: string
@@ -1494,6 +1699,62 @@ export type Database = {
             columns: ["package_interest"]
             isOneToOne: false
             referencedRelation: "packages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leave_requests: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string | null
+          employee_id: string
+          end_date: string
+          id: string
+          leave_type: string
+          reason: string | null
+          rejection_reason: string | null
+          start_date: string
+          status: string | null
+          total_days: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          employee_id: string
+          end_date: string
+          id?: string
+          leave_type: string
+          reason?: string | null
+          rejection_reason?: string | null
+          start_date: string
+          status?: string | null
+          total_days?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string | null
+          employee_id?: string
+          end_date?: string
+          id?: string
+          leave_type?: string
+          reason?: string | null
+          rejection_reason?: string | null
+          start_date?: string
+          status?: string | null
+          total_days?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leave_requests_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
             referencedColumns: ["id"]
           },
         ]
@@ -2111,6 +2372,53 @@ export type Database = {
             columns: ["muthawif_id"]
             isOneToOne: false
             referencedRelation: "muthawifs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_reminders: {
+        Row: {
+          booking_id: string
+          created_at: string | null
+          error_message: string | null
+          id: string
+          message_content: string | null
+          reminder_type: string
+          retry_count: number | null
+          scheduled_at: string
+          sent_at: string | null
+          status: string | null
+        }
+        Insert: {
+          booking_id: string
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          message_content?: string | null
+          reminder_type: string
+          retry_count?: number | null
+          scheduled_at: string
+          sent_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          booking_id?: string
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          message_content?: string | null
+          reminder_type?: string
+          retry_count?: number | null
+          scheduled_at?: string
+          sent_at?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_reminders_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
             referencedColumns: ["id"]
           },
         ]
@@ -3249,6 +3557,7 @@ export type Database = {
         Returns: boolean
       }
       generate_booking_code: { Args: never; Returns: string }
+      generate_employee_code: { Args: never; Returns: string }
       generate_payment_code: { Args: never; Returns: string }
       generate_referral_code: { Args: never; Returns: string }
       generate_savings_payment_code: { Args: never; Returns: string }
