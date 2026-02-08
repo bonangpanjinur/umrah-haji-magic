@@ -57,7 +57,7 @@ export default function AdminOfflineContent() {
     queryKey: ["offline-content", activeCategory],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("offline_content" as any)
+        .from("offline_content")
         .select("*")
         .eq("category", activeCategory)
         .order("sort_order");
@@ -71,13 +71,13 @@ export default function AdminOfflineContent() {
     mutationFn: async () => {
       if (editingContent) {
         const { error } = await supabase
-          .from("offline_content" as any)
+          .from("offline_content")
           .update(formData)
           .eq("id", editingContent.id);
         if (error) throw error;
       } else {
         const { error } = await supabase
-          .from("offline_content" as any)
+          .from("offline_content")
           .insert(formData);
         if (error) throw error;
       }
@@ -95,7 +95,7 @@ export default function AdminOfflineContent() {
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .from("offline_content" as any)
+        .from("offline_content")
         .delete()
         .eq("id", id);
       if (error) throw error;
@@ -110,7 +110,7 @@ export default function AdminOfflineContent() {
   const toggleActiveMutation = useMutation({
     mutationFn: async ({ id, is_active }: { id: string; is_active: boolean }) => {
       const { error } = await supabase
-        .from("offline_content" as any)
+        .from("offline_content")
         .update({ is_active })
         .eq("id", id);
       if (error) throw error;
