@@ -79,6 +79,7 @@ import BusManagementPage from "./pages/operational/BusManagementPage";
 // Admin Advanced
 import AdminOfflineContent from "./pages/admin/AdminOfflineContent";
 import AdminDocumentGenerator from "./pages/admin/AdminDocumentGenerator";
+import AdminScheduledReports from "./pages/admin/AdminScheduledReports";
 // Jamaah PWA
 import JamaahDoaPanduan from "./pages/jamaah/JamaahDoaPanduan";
 // Agent
@@ -211,6 +212,7 @@ const App = () => (
               <Route path="room-assignments" element={<AdminRoomAssignments />} />
               <Route path="reports" element={<AdminReports />} />
               <Route path="advanced-reports" element={<AdminAdvancedReports />} />
+              <Route path="scheduled-reports" element={<AdminScheduledReports />} />
               {/* HR & Haji */}
               <Route path="hr" element={<AdminHR />} />
               <Route path="haji" element={<AdminHajiManagement />} />

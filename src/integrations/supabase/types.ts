@@ -3117,6 +3117,95 @@ export type Database = {
           },
         ]
       }
+      scheduled_report_logs: {
+        Row: {
+          error_message: string | null
+          generated_at: string
+          id: string
+          recipients_sent: string[] | null
+          report_id: string
+          status: string
+        }
+        Insert: {
+          error_message?: string | null
+          generated_at?: string
+          id?: string
+          recipients_sent?: string[] | null
+          report_id: string
+          status?: string
+        }
+        Update: {
+          error_message?: string | null
+          generated_at?: string
+          id?: string
+          recipients_sent?: string[] | null
+          report_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scheduled_report_logs_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "scheduled_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scheduled_reports: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          day_of_month: number | null
+          day_of_week: number | null
+          filters: Json | null
+          frequency: string
+          id: string
+          is_active: boolean | null
+          last_run_at: string | null
+          name: string
+          next_run_at: string | null
+          recipients: string[]
+          report_type: string
+          time_of_day: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          day_of_month?: number | null
+          day_of_week?: number | null
+          filters?: Json | null
+          frequency?: string
+          id?: string
+          is_active?: boolean | null
+          last_run_at?: string | null
+          name: string
+          next_run_at?: string | null
+          recipients?: string[]
+          report_type?: string
+          time_of_day?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          day_of_month?: number | null
+          day_of_week?: number | null
+          filters?: Json | null
+          frequency?: string
+          id?: string
+          is_active?: boolean | null
+          last_run_at?: string | null
+          name?: string
+          next_run_at?: string | null
+          recipients?: string[]
+          report_type?: string
+          time_of_day?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       support_tickets: {
         Row: {
           assigned_to: string | null

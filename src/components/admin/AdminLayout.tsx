@@ -90,6 +90,15 @@ const NAV_GROUPS = [
     ]
   },
   {
+    label: 'Laporan',
+    allowedRoles: ['super_admin', 'owner', 'finance'],
+    items: [
+      { label: 'Laporan', icon: FileBarChart, path: '/admin/reports' },
+      { label: 'Laporan Lanjutan', icon: TrendingUp, path: '/admin/advanced-reports' },
+      { label: 'Laporan Terjadwal', icon: Calendar, path: '/admin/scheduled-reports' },
+    ]
+  },
+  {
     label: 'Pengaturan',
     allowedRoles: ['super_admin', 'owner'],
     items: [
@@ -97,8 +106,6 @@ const NAV_GROUPS = [
       { label: 'Hak Akses', icon: KeyRound, path: '/admin/permissions' },
       { label: 'Security Audit', icon: ShieldCheck, path: '/admin/security' },
       { label: '2FA Settings', icon: Key, path: '/admin/2fa' },
-      { label: 'Laporan', icon: FileBarChart, path: '/admin/reports' },
-      { label: 'Laporan Lanjutan', icon: TrendingUp, path: '/admin/advanced-reports' },
       { label: 'Tampilan', icon: Palette, path: '/admin/appearance' },
       { label: 'Pengaturan', icon: Settings, path: '/admin/settings' },
     ]

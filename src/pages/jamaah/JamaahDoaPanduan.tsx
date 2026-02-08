@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,13 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useNavigate } from "react-router-dom";
 import {
-  Book, BookOpen, ChevronDown, ChevronLeft, 
-  Search, Volume2, Star, Languages
+  Book, BookOpen, ChevronDown, ChevronLeft,
+  Search, Volume2, Star, Languages, WifiOff, Wifi,
+  Download, Check
 } from "lucide-react";
+import { toast } from "sonner";
 
 interface OfflineContent {
   id: string;
@@ -26,69 +27,179 @@ interface OfflineContent {
   sort_order: number;
 }
 
+const CACHE_KEY = "offline-content-cache";
+const CACHE_TIMESTAMP_KEY = "offline-content-timestamp";
+const FAVORITES_KEY = "favorite-doa";
+
+function getCachedContent(): Record<string, OfflineContent[]> {
+  try {
+    const cached = localStorage.getItem(CACHE_KEY);
+    return cached ? JSON.parse(cached) : {};
+  } catch {
+    return {};
+  }
+}
+
+function setCachedContent(category: string, data: OfflineContent[]) {
+  try {
+    const existing = getCachedContent();
+    existing[category] = data;
+    localStorage.setItem(CACHE_KEY, JSON.stringify(existing));
+    localStorage.setItem(CACHE_TIMESTAMP_KEY, new Date().toISOString());
+  } catch {
+    // Storage full - clear old data
+    localStorage.removeItem(CACHE_KEY);
+  }
+}
+
 export default function JamaahDoaPanduan() {
   const navigate = useNavigate();
   const [activeCategory, setActiveCategory] = useState("doa");
   const [searchTerm, setSearchTerm] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [isSynced, setIsSynced] = useState(false);
   const [favorites, setFavorites] = useState<string[]>(() => {
-    const saved = localStorage.getItem("favorite-doa");
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem(FAVORITES_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
   });
 
-  // Fetch content
+  // Monitor online status
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
+
+  // Fetch content with offline fallback
   const { data: contents, isLoading } = useQuery({
     queryKey: ["jamaah-offline-content", activeCategory],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("offline_content" as any)
-        .select("*")
-        .eq("category", activeCategory)
-        .eq("is_active", true)
-        .order("sort_order");
-      if (error) throw error;
-      return data as unknown as OfflineContent[];
+      try {
+        const { data, error } = await supabase
+          .from("offline_content")
+          .select("*")
+          .eq("category", activeCategory)
+          .eq("is_active", true)
+          .order("sort_order");
+        if (error) throw error;
+        const result = data as unknown as OfflineContent[];
+        // Cache for offline use
+        setCachedContent(activeCategory, result);
+        return result;
+      } catch {
+        // Fallback to cached data
+        const cached = getCachedContent();
+        return cached[activeCategory] || [];
+      }
     },
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
+
+  // Sync all categories for offline use
+  const syncAllContent = useCallback(async () => {
+    if (!isOnline) {
+      toast.error("Tidak ada koneksi internet");
+      return;
+    }
+    try {
+      const categories = ["doa", "panduan", "manasik", "tips"];
+      for (const cat of categories) {
+        const { data } = await supabase
+          .from("offline_content")
+          .select("*")
+          .eq("category", cat)
+          .eq("is_active", true)
+          .order("sort_order");
+        if (data) setCachedContent(cat, data as unknown as OfflineContent[]);
+      }
+      setIsSynced(true);
+      toast.success("Semua konten berhasil disimpan untuk offline");
+      setTimeout(() => setIsSynced(false), 3000);
+    } catch {
+      toast.error("Gagal menyimpan konten offline");
+    }
+  }, [isOnline]);
 
   const toggleFavorite = (id: string) => {
     const newFavorites = favorites.includes(id)
-      ? favorites.filter(f => f !== id)
+      ? favorites.filter((f) => f !== id)
       : [...favorites, id];
     setFavorites(newFavorites);
-    localStorage.setItem("favorite-doa", JSON.stringify(newFavorites));
+    localStorage.setItem(FAVORITES_KEY, JSON.stringify(newFavorites));
   };
 
-  const filteredContents = contents?.filter(c =>
+  const filteredContents = contents?.filter((c) =>
     c.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const playAudio = (url: string) => {
     const audio = new Audio(url);
-    audio.play();
+    audio.play().catch(() => toast.error("Audio tidak tersedia offline"));
   };
+
+  const lastSync = localStorage.getItem(CACHE_TIMESTAMP_KEY);
+  const cachedData = getCachedContent();
+  const hasCachedData = Object.keys(cachedData).length > 0;
 
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="bg-primary text-primary-foreground p-4 sticky top-0 z-50">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-primary-foreground hover:bg-primary-foreground/10"
+              onClick={() => navigate("/jamaah")}
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </Button>
+            <div>
+              <h1 className="font-semibold">Doa & Panduan</h1>
+              <div className="flex items-center gap-1.5 text-xs opacity-80">
+                {isOnline ? (
+                  <><Wifi className="h-3 w-3" /> Online</>
+                ) : (
+                  <><WifiOff className="h-3 w-3" /> Offline {hasCachedData && "• Data tersedia"}</>
+                )}
+              </div>
+            </div>
+          </div>
           <Button
             variant="ghost"
-            size="icon"
-            className="text-primary-foreground hover:bg-primary-foreground/10"
-            onClick={() => navigate("/jamaah")}
+            size="sm"
+            className="text-primary-foreground hover:bg-primary-foreground/10 gap-1.5"
+            onClick={syncAllContent}
           >
-            <ChevronLeft className="h-5 w-5" />
+            {isSynced ? (
+              <><Check className="h-4 w-4" /> Tersimpan</>
+            ) : (
+              <><Download className="h-4 w-4" /> Simpan Offline</>
+            )}
           </Button>
-          <div>
-            <h1 className="font-semibold">Doa & Panduan</h1>
-            <p className="text-xs opacity-80">Tersedia offline</p>
-          </div>
         </div>
       </div>
 
       <div className="p-4 space-y-4">
+        {/* Offline notice */}
+        {!isOnline && hasCachedData && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 rounded-lg p-3">
+            <WifiOff className="h-4 w-4 shrink-0" />
+            <span>Mode offline — menampilkan konten yang tersimpan</span>
+          </div>
+        )}
+
         {/* Search */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -103,33 +214,33 @@ export default function JamaahDoaPanduan() {
         {/* Category Tabs */}
         <Tabs value={activeCategory} onValueChange={setActiveCategory}>
           <TabsList className="grid grid-cols-4 w-full">
-            <TabsTrigger value="doa" className="text-xs">
-              <Book className="h-4 w-4 mr-1" />
+            <TabsTrigger value="doa" className="text-xs gap-1">
+              <Book className="h-3.5 w-3.5" />
               Doa
             </TabsTrigger>
-            <TabsTrigger value="panduan" className="text-xs">
-              <BookOpen className="h-4 w-4 mr-1" />
+            <TabsTrigger value="panduan" className="text-xs gap-1">
+              <BookOpen className="h-3.5 w-3.5" />
               Panduan
             </TabsTrigger>
-            <TabsTrigger value="manasik" className="text-xs">
-              <Languages className="h-4 w-4 mr-1" />
+            <TabsTrigger value="manasik" className="text-xs gap-1">
+              <Languages className="h-3.5 w-3.5" />
               Manasik
             </TabsTrigger>
-            <TabsTrigger value="tips" className="text-xs">
-              <Book className="h-4 w-4 mr-1" />
+            <TabsTrigger value="tips" className="text-xs gap-1">
+              <Book className="h-3.5 w-3.5" />
               Tips
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value={activeCategory} className="mt-4">
-            {isLoading ? (
+            {isLoading && !hasCachedData ? (
               <div className="text-center py-8 text-muted-foreground">
                 Memuat konten...
               </div>
             ) : !filteredContents?.length ? (
               <Card>
                 <CardContent className="py-8 text-center text-muted-foreground">
-                  {searchTerm ? "Tidak ditemukan" : "Belum ada konten"}
+                  {searchTerm ? "Tidak ditemukan" : !isOnline ? "Belum ada konten tersimpan untuk kategori ini" : "Belum ada konten"}
                 </CardContent>
               </Card>
             ) : (
@@ -160,75 +271,45 @@ export default function JamaahDoaPanduan() {
                       </CollapsibleTrigger>
                       <CollapsibleContent>
                         <CardContent className="pt-0 pb-4 px-4 space-y-4">
-                          {/* Arabic Text */}
                           {item.arabic_text && (
                             <div className="bg-muted/50 p-4 rounded-lg">
-                              <p
-                                className="text-xl leading-loose text-right font-arabic"
-                                dir="rtl"
-                              >
+                              <p className="text-xl leading-loose text-right font-arabic" dir="rtl">
                                 {item.arabic_text}
                               </p>
                             </div>
                           )}
 
-                          {/* Latin Text */}
                           {item.latin_text && (
                             <div>
-                              <Badge variant="outline" className="mb-2">
-                                Latin
-                              </Badge>
-                              <p className="text-sm italic text-muted-foreground">
-                                {item.latin_text}
-                              </p>
+                              <Badge variant="outline" className="mb-2">Latin</Badge>
+                              <p className="text-sm italic text-muted-foreground">{item.latin_text}</p>
                             </div>
                           )}
 
-                          {/* Translation */}
                           {item.translation && (
                             <div>
-                              <Badge variant="outline" className="mb-2">
-                                Arti
-                              </Badge>
+                              <Badge variant="outline" className="mb-2">Arti</Badge>
                               <p className="text-sm">{item.translation}</p>
                             </div>
                           )}
 
-                          {/* Content (for panduan/tips) */}
                           {item.content && (
                             <div className="prose prose-sm max-w-none">
                               {item.content.split("\n").map((line, i) => (
-                                <p key={i} className="text-sm mb-2">
-                                  {line}
-                                </p>
+                                <p key={i} className="text-sm mb-2">{line}</p>
                               ))}
                             </div>
                           )}
 
-                          {/* Actions */}
                           <div className="flex gap-2 pt-2">
                             {item.audio_url && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => playAudio(item.audio_url!)}
-                              >
+                              <Button variant="outline" size="sm" onClick={() => playAudio(item.audio_url!)}>
                                 <Volume2 className="h-4 w-4 mr-1" />
                                 Dengar
                               </Button>
                             )}
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => toggleFavorite(item.id)}
-                            >
-                              <Star
-                                className={`h-4 w-4 mr-1 ${
-                                  favorites.includes(item.id)
-                                    ? "text-yellow-500 fill-yellow-500"
-                                    : ""
-                                }`}
-                              />
+                            <Button variant="outline" size="sm" onClick={() => toggleFavorite(item.id)}>
+                              <Star className={`h-4 w-4 mr-1 ${favorites.includes(item.id) ? "text-yellow-500 fill-yellow-500" : ""}`} />
                               {favorites.includes(item.id) ? "Hapus" : "Favorit"}
                             </Button>
                           </div>
@@ -241,6 +322,13 @@ export default function JamaahDoaPanduan() {
             )}
           </TabsContent>
         </Tabs>
+
+        {/* Sync info */}
+        {lastSync && (
+          <p className="text-xs text-center text-muted-foreground">
+            Terakhir disinkron: {new Date(lastSync).toLocaleString("id-ID")}
+          </p>
+        )}
       </div>
     </div>
   );
