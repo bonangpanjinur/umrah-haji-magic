@@ -2,104 +2,17 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import ProtectedRoute from "@/components/auth/ProtectedRoute";
-import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
-import Login from "./pages/auth/Login";
-import Register from "./pages/auth/Register";
-import ForgotPassword from "./pages/auth/ForgotPassword";
-import ResetPassword from "./pages/auth/ResetPassword";
-import PackageList from "./pages/packages/PackageList";
-import PackageDetail from "./pages/packages/PackageDetail";
-import BookingPage from "./pages/booking/BookingPage";
-import BookingSuccess from "./pages/booking/BookingSuccess";
-import MyBookings from "./pages/customer/MyBookings";
-import BookingDetail from "./pages/customer/BookingDetail";
-import PaymentUpload from "./pages/customer/PaymentUpload";
-import { AdminLayout } from "./components/admin/AdminLayout";
-import AdminDashboard from "./pages/admin/AdminDashboard";
-import AdminAnalytics from "./pages/admin/AdminAnalytics";
-import AdminPackages from "./pages/admin/AdminPackages";
-import AdminPackageDetail from "./pages/admin/AdminPackageDetail";
-import AdminBookings from "./pages/admin/AdminBookings";
-import AdminBookingDetail from "./pages/admin/AdminBookingDetail";
-import AdminPayments from "./pages/admin/AdminPayments";
-import AdminCustomers from "./pages/admin/AdminCustomers";
-import AdminCustomerDetail from "./pages/admin/AdminCustomerDetail";
-import AdminUsers from "./pages/admin/AdminUsers";
-import AdminAgents from "./pages/admin/AdminAgents";
-import AdminReports from "./pages/admin/AdminReports";
-import AdminSettings from "./pages/admin/AdminSettings";
-import AdminMasterData from "./pages/admin/AdminMasterData";
-import AdminLeads from "./pages/admin/AdminLeads";
-import AdminLeadDetail from "./pages/admin/AdminLeadDetail";
-import AdminLeadAnalytics from "./pages/admin/AdminLeadAnalytics";
-import AdminRolePermissions from "./pages/admin/AdminRolePermissions";
-import AdminRoomAssignments from "./pages/admin/AdminRoomAssignments";
-import AdminDepartures from "./pages/admin/AdminDepartures";
-import AdminSavingsPlans from "./pages/admin/AdminSavingsPlans";
-import AdminDocumentVerification from "./pages/admin/AdminDocumentVerification";
-import AdminAppearance from "./pages/admin/AdminAppearance";
-import AdminBranches from "./pages/admin/AdminBranches";
-// Finance 2.0
-import AdminFinancePL from "./pages/admin/AdminFinancePL";
-import AdminVendors from "./pages/admin/AdminVendors";
-// Engagement
-import AdminLoyalty from "./pages/admin/AdminLoyalty";
-import AdminReferrals from "./pages/admin/AdminReferrals";
-import AdminSupportTickets from "./pages/admin/AdminSupportTickets";
-// Security
-import AdminSecurityAudit from "./pages/admin/AdminSecurityAudit";
-import Admin2FASettings from "./pages/admin/Admin2FASettings";
-// WhatsApp
-import AdminWhatsApp from "./pages/admin/AdminWhatsApp";
-// Advanced Features
-import AdminAdvancedReports from "./pages/admin/AdminAdvancedReports";
-import AdminHR from "./pages/admin/AdminHR";
-import AdminHajiManagement from "./pages/admin/AdminHajiManagement";
-import AdminItineraryTemplates from "./pages/admin/AdminItineraryTemplates";
-// HR Employee Pages
-import EmployeeAttendance from "./pages/hr/EmployeeAttendance";
-// Jamaah Portal (PWA)
-import JamaahPortal from "./pages/jamaah/JamaahPortal";
-import JamaahDigitalID from "./pages/jamaah/JamaahDigitalID";
-import JamaahItinerary from "./pages/jamaah/JamaahItinerary";
-// Operational
-import OperationalLayout from "./pages/operational/OperationalLayout";
-import OperationalDashboard from "./pages/operational/OperationalDashboard";
-import ManifestPage from "./pages/operational/ManifestPage";
-import CheckinPage from "./pages/operational/CheckinPage";
-import LuggagePage from "./pages/operational/LuggagePage";
-import RoomingListPage from "./pages/operational/RoomingListPage";
-import QRCodePage from "./pages/operational/QRCodePage";
-import EquipmentPage from "./pages/operational/EquipmentPage";
-import BusManagementPage from "./pages/operational/BusManagementPage";
-// Admin Advanced
-import AdminOfflineContent from "./pages/admin/AdminOfflineContent";
-import AdminDocumentGenerator from "./pages/admin/AdminDocumentGenerator";
-import AdminScheduledReports from "./pages/admin/AdminScheduledReports";
-// Jamaah PWA
-import JamaahDoaPanduan from "./pages/jamaah/JamaahDoaPanduan";
-// Agent
-import AgentLayout from "./pages/agent/AgentLayout";
-import AgentDashboard from "./pages/agent/AgentDashboard";
-import AgentRegister from "./pages/agent/AgentRegister";
-import AgentJamaah from "./pages/agent/AgentJamaah";
-import AgentCommissions from "./pages/agent/AgentCommissions";
-import AgentPackages from "./pages/agent/AgentPackages";
-import AgentWallet from "./pages/agent/AgentWallet";
-// Savings (Customer)
-import SavingsPackages from "./pages/savings/SavingsPackages";
-import SavingsRegister from "./pages/savings/SavingsRegister";
-import SavingsSuccess from "./pages/savings/SavingsSuccess";
-import MySavings from "./pages/customer/MySavings";
-import MyLoyalty from "./pages/customer/MyLoyalty";
-// Public Pages
-import AboutPage from "./pages/public/AboutPage";
-import ContactPage from "./pages/public/ContactPage";
+
+// Route modules
+import PublicRoutes from "@/routes/PublicRoutes";
+import CustomerRoutes from "@/routes/CustomerRoutes";
+import AdminRoutes from "@/routes/AdminRoutes";
+import OperationalRoutes from "@/routes/OperationalRoutes";
+import AgentRoutes from "@/routes/AgentRoutes";
 
 const queryClient = new QueryClient();
 
@@ -112,161 +25,11 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <Routes>
-              {/* Public Routes */}
-              <Route path="/" element={<Index />} />
-              <Route path="/login" element={<Navigate to="/auth/login" replace />} />
-              <Route path="/register" element={<Navigate to="/auth/register" replace />} />
-              <Route path="/dashboard" element={<Navigate to="/admin" replace />} />
-              <Route path="/auth/login" element={<Login />} />
-              <Route path="/auth/register" element={<Register />} />
-              <Route path="/auth/forgot-password" element={<ForgotPassword />} />
-              <Route path="/auth/reset-password" element={<ResetPassword />} />
-              <Route path="/packages" element={<PackageList />} />
-              <Route path="/packages/:id" element={<PackageDetail />} />
-              <Route path="/about" element={<AboutPage />} />
-              <Route path="/contact" element={<ContactPage />} />
-              
-              {/* Savings Public Routes */}
-              <Route path="/savings" element={<SavingsPackages />} />
-              <Route path="/savings/register/:packageId" element={<SavingsRegister />} />
-              <Route path="/savings/success/:planId" element={
-                <ProtectedRoute>
-                  <SavingsSuccess />
-                </ProtectedRoute>
-              } />
-              <Route path="/customer/my-savings" element={
-                <ProtectedRoute>
-                  <MySavings />
-                </ProtectedRoute>
-              } />
-              <Route path="/customer/my-loyalty" element={
-                <ProtectedRoute>
-                  <MyLoyalty />
-                </ProtectedRoute>
-              } />
-              
-              {/* Jamaah Portal (PWA) */}
-              <Route path="/jamaah" element={<ProtectedRoute><JamaahPortal /></ProtectedRoute>} />
-              <Route path="/jamaah/digital-id" element={<ProtectedRoute><JamaahDigitalID /></ProtectedRoute>} />
-              <Route path="/jamaah/doa-panduan" element={<ProtectedRoute><JamaahDoaPanduan /></ProtectedRoute>} />
-              <Route path="/jamaah/itinerary" element={<ProtectedRoute><JamaahItinerary /></ProtectedRoute>} />
-              
-              {/* Customer Protected Routes */}
-              <Route path="/booking/:packageId" element={
-                <ProtectedRoute>
-                  <BookingPage />
-                </ProtectedRoute>
-              } />
-              <Route path="/booking/success/:bookingId" element={
-                <ProtectedRoute>
-                  <BookingSuccess />
-                </ProtectedRoute>
-              } />
-              <Route path="/my-bookings" element={
-                <ProtectedRoute>
-                  <MyBookings />
-                </ProtectedRoute>
-              } />
-              <Route path="/my-bookings/:bookingId" element={
-                <ProtectedRoute>
-                  <BookingDetail />
-                </ProtectedRoute>
-              } />
-              <Route path="/my-bookings/:bookingId/payment" element={
-                <ProtectedRoute>
-                  <PaymentUpload />
-                </ProtectedRoute>
-              } />
-              
-              {/* Admin Routes - Protected with admin roles */}
-              <Route path="/admin" element={
-                <ProtectedRoute allowedRoles={['super_admin', 'owner', 'branch_manager', 'finance', 'sales', 'marketing']}>
-                  <AdminLayout />
-                </ProtectedRoute>
-              }>
-                <Route index element={<AdminDashboard />} />
-                <Route path="analytics" element={<AdminAnalytics />} />
-                <Route path="packages" element={<AdminPackages />} />
-                <Route path="packages/:id" element={<AdminPackageDetail />} />
-                <Route path="departures" element={<AdminDepartures />} />
-                <Route path="savings" element={<AdminSavingsPlans />} />
-                <Route path="master-data" element={<AdminMasterData />} />
-                <Route path="branches" element={<AdminBranches />} />
-                <Route path="bookings" element={<AdminBookings />} />
-                <Route path="bookings/:id" element={<AdminBookingDetail />} />
-                <Route path="payments" element={<AdminPayments />} />
-                {/* Finance 2.0 */}
-                <Route path="finance" element={<AdminFinancePL />} />
-                <Route path="vendors" element={<AdminVendors />} />
-                <Route path="customers" element={<AdminCustomers />} />
-                <Route path="customers/:id" element={<AdminCustomerDetail />} />
-                <Route path="documents" element={<AdminDocumentVerification />} />
-                <Route path="users" element={<AdminUsers />} />
-                <Route path="permissions" element={<AdminRolePermissions />} />
-                <Route path="agents" element={<AdminAgents />} />
-                {/* Engagement */}
-                <Route path="loyalty" element={<AdminLoyalty />} />
-                <Route path="referrals" element={<AdminReferrals />} />
-                <Route path="support" element={<AdminSupportTickets />} />
-                <Route path="leads" element={<AdminLeads />} />
-                <Route path="leads/analytics" element={<AdminLeadAnalytics />} />
-                <Route path="leads/:id" element={<AdminLeadDetail />} />
-                <Route path="room-assignments" element={<AdminRoomAssignments />} />
-                <Route path="reports" element={<AdminReports />} />
-                <Route path="advanced-reports" element={<AdminAdvancedReports />} />
-                <Route path="scheduled-reports" element={<AdminScheduledReports />} />
-                {/* HR & Haji */}
-                <Route path="hr" element={<AdminHR />} />
-                <Route path="haji" element={<AdminHajiManagement />} />
-                <Route path="itinerary-templates" element={<AdminItineraryTemplates />} />
-                <Route path="offline-content" element={<AdminOfflineContent />} />
-                <Route path="documents-generator" element={<AdminDocumentGenerator />} />
-                {/* Security */}
-                <Route path="security" element={<AdminSecurityAudit />} />
-                <Route path="2fa" element={<Admin2FASettings />} />
-                {/* WhatsApp */}
-                <Route path="whatsapp" element={<AdminWhatsApp />} />
-                <Route path="appearance" element={<AdminAppearance />} />
-                <Route path="settings" element={<AdminSettings />} />
-              </Route>
-              
-              {/* Operational Routes - Protected with operational roles */}
-              <Route path="/operational" element={
-                <ProtectedRoute allowedRoles={['super_admin', 'owner', 'branch_manager', 'operational', 'equipment']}>
-                  <OperationalLayout />
-                </ProtectedRoute>
-              }>
-                <Route index element={<OperationalDashboard />} />
-                <Route path="manifest" element={<ManifestPage />} />
-                <Route path="checkin" element={<CheckinPage />} />
-                <Route path="luggage" element={<LuggagePage />} />
-                <Route path="rooming" element={<RoomingListPage />} />
-                <Route path="qrcode" element={<QRCodePage />} />
-                <Route path="equipment" element={<EquipmentPage />} />
-                <Route path="bus" element={<BusManagementPage />} />
-              </Route>
-              
-              {/* HR Routes */}
-              <Route path="/hr" element={
-                <ProtectedRoute allowedRoles={['super_admin', 'owner', 'branch_manager', 'operational']}>
-                  <EmployeeAttendance />
-                </ProtectedRoute>
-              } />
-              
-              {/* Agent Routes - Protected with agent role */}
-              <Route path="/agent" element={
-                <ProtectedRoute allowedRoles={['super_admin', 'owner', 'agent']}>
-                  <AgentLayout />
-                </ProtectedRoute>
-              }>
-                <Route index element={<AgentDashboard />} />
-                <Route path="register" element={<AgentRegister />} />
-                <Route path="jamaah" element={<AgentJamaah />} />
-                <Route path="commissions" element={<AgentCommissions />} />
-                <Route path="wallet" element={<AgentWallet />} />
-                <Route path="packages" element={<AgentPackages />} />
-              </Route>
-              
+              {PublicRoutes()}
+              {CustomerRoutes()}
+              {AdminRoutes()}
+              {OperationalRoutes()}
+              {AgentRoutes()}
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
