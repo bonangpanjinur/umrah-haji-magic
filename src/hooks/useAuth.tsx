@@ -33,10 +33,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(session?.user ?? null);
 
         if (session?.user) {
-          // Fetch profile and roles
-          setTimeout(async () => {
-            await fetchUserData(session.user.id);
-          }, 0);
+          // Use deferred fetch to avoid Supabase auth deadlock
+          fetchUserData(session.user.id);
         } else {
           setProfile(null);
           setRoles([]);

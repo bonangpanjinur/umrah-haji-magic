@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
@@ -103,174 +104,176 @@ import ContactPage from "./pages/public/ContactPage";
 const queryClient = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/" element={<Index />} />
-            <Route path="/login" element={<Navigate to="/auth/login" replace />} />
-            <Route path="/register" element={<Navigate to="/auth/register" replace />} />
-            <Route path="/dashboard" element={<Navigate to="/admin" replace />} />
-            <Route path="/auth/login" element={<Login />} />
-            <Route path="/auth/register" element={<Register />} />
-            <Route path="/auth/forgot-password" element={<ForgotPassword />} />
-            <Route path="/auth/reset-password" element={<ResetPassword />} />
-            <Route path="/packages" element={<PackageList />} />
-            <Route path="/packages/:id" element={<PackageDetail />} />
-            <Route path="/about" element={<AboutPage />} />
-            <Route path="/contact" element={<ContactPage />} />
-            
-            {/* Savings Public Routes */}
-            <Route path="/savings" element={<SavingsPackages />} />
-            <Route path="/savings/register/:packageId" element={<SavingsRegister />} />
-            <Route path="/savings/success/:planId" element={
-              <ProtectedRoute>
-                <SavingsSuccess />
-              </ProtectedRoute>
-            } />
-            <Route path="/customer/my-savings" element={
-              <ProtectedRoute>
-                <MySavings />
-              </ProtectedRoute>
-            } />
-            <Route path="/customer/my-loyalty" element={
-              <ProtectedRoute>
-                <MyLoyalty />
-              </ProtectedRoute>
-            } />
-            
-            {/* Jamaah Portal (PWA) */}
-            <Route path="/jamaah" element={<ProtectedRoute><JamaahPortal /></ProtectedRoute>} />
-            <Route path="/jamaah/digital-id" element={<ProtectedRoute><JamaahDigitalID /></ProtectedRoute>} />
-            <Route path="/jamaah/doa-panduan" element={<ProtectedRoute><JamaahDoaPanduan /></ProtectedRoute>} />
-            <Route path="/jamaah/itinerary" element={<ProtectedRoute><JamaahItinerary /></ProtectedRoute>} />
-            
-            {/* Customer Protected Routes */}
-            <Route path="/booking/:packageId" element={
-              <ProtectedRoute>
-                <BookingPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/booking/success/:bookingId" element={
-              <ProtectedRoute>
-                <BookingSuccess />
-              </ProtectedRoute>
-            } />
-            <Route path="/my-bookings" element={
-              <ProtectedRoute>
-                <MyBookings />
-              </ProtectedRoute>
-            } />
-            <Route path="/my-bookings/:bookingId" element={
-              <ProtectedRoute>
-                <BookingDetail />
-              </ProtectedRoute>
-            } />
-            <Route path="/my-bookings/:bookingId/payment" element={
-              <ProtectedRoute>
-                <PaymentUpload />
-              </ProtectedRoute>
-            } />
-            
-            {/* Admin Routes - Protected with admin roles */}
-            <Route path="/admin" element={
-              <ProtectedRoute allowedRoles={['super_admin', 'owner', 'branch_manager', 'finance', 'sales', 'marketing']}>
-                <AdminLayout />
-              </ProtectedRoute>
-            }>
-              <Route index element={<AdminDashboard />} />
-              <Route path="analytics" element={<AdminAnalytics />} />
-              <Route path="packages" element={<AdminPackages />} />
-              <Route path="packages/:id" element={<AdminPackageDetail />} />
-              <Route path="departures" element={<AdminDepartures />} />
-              <Route path="savings" element={<AdminSavingsPlans />} />
-              <Route path="master-data" element={<AdminMasterData />} />
-              <Route path="branches" element={<AdminBranches />} />
-              <Route path="bookings" element={<AdminBookings />} />
-              <Route path="bookings/:id" element={<AdminBookingDetail />} />
-              <Route path="payments" element={<AdminPayments />} />
-              {/* Finance 2.0 */}
-              <Route path="finance" element={<AdminFinancePL />} />
-              <Route path="vendors" element={<AdminVendors />} />
-              <Route path="customers" element={<AdminCustomers />} />
-              <Route path="customers/:id" element={<AdminCustomerDetail />} />
-              <Route path="documents" element={<AdminDocumentVerification />} />
-              <Route path="users" element={<AdminUsers />} />
-              <Route path="permissions" element={<AdminRolePermissions />} />
-              <Route path="agents" element={<AdminAgents />} />
-              {/* Engagement */}
-              <Route path="loyalty" element={<AdminLoyalty />} />
-              <Route path="referrals" element={<AdminReferrals />} />
-              <Route path="support" element={<AdminSupportTickets />} />
-              <Route path="leads" element={<AdminLeads />} />
-              <Route path="leads/analytics" element={<AdminLeadAnalytics />} />
-              <Route path="leads/:id" element={<AdminLeadDetail />} />
-              <Route path="room-assignments" element={<AdminRoomAssignments />} />
-              <Route path="reports" element={<AdminReports />} />
-              <Route path="advanced-reports" element={<AdminAdvancedReports />} />
-              <Route path="scheduled-reports" element={<AdminScheduledReports />} />
-              {/* HR & Haji */}
-              <Route path="hr" element={<AdminHR />} />
-              <Route path="haji" element={<AdminHajiManagement />} />
-              <Route path="itinerary-templates" element={<AdminItineraryTemplates />} />
-              <Route path="offline-content" element={<AdminOfflineContent />} />
-              <Route path="documents-generator" element={<AdminDocumentGenerator />} />
-              {/* Security */}
-              <Route path="security" element={<AdminSecurityAudit />} />
-              <Route path="2fa" element={<Admin2FASettings />} />
-              {/* WhatsApp */}
-              <Route path="whatsapp" element={<AdminWhatsApp />} />
-              <Route path="appearance" element={<AdminAppearance />} />
-              <Route path="settings" element={<AdminSettings />} />
-            </Route>
-            
-            {/* Operational Routes - Protected with operational roles */}
-            <Route path="/operational" element={
-              <ProtectedRoute allowedRoles={['super_admin', 'owner', 'branch_manager', 'operational', 'equipment']}>
-                <OperationalLayout />
-              </ProtectedRoute>
-            }>
-              <Route index element={<OperationalDashboard />} />
-              <Route path="manifest" element={<ManifestPage />} />
-              <Route path="checkin" element={<CheckinPage />} />
-              <Route path="luggage" element={<LuggagePage />} />
-              <Route path="rooming" element={<RoomingListPage />} />
-              <Route path="qrcode" element={<QRCodePage />} />
-              <Route path="equipment" element={<EquipmentPage />} />
-              <Route path="bus" element={<BusManagementPage />} />
-            </Route>
-            
-            {/* HR Routes */}
-            <Route path="/hr" element={
-              <ProtectedRoute allowedRoles={['super_admin', 'owner', 'branch_manager', 'operational']}>
-                <EmployeeAttendance />
-              </ProtectedRoute>
-            } />
-            
-            {/* Agent Routes - Protected with agent role */}
-            <Route path="/agent" element={
-              <ProtectedRoute allowedRoles={['super_admin', 'owner', 'agent']}>
-                <AgentLayout />
-              </ProtectedRoute>
-            }>
-              <Route index element={<AgentDashboard />} />
-              <Route path="register" element={<AgentRegister />} />
-              <Route path="jamaah" element={<AgentJamaah />} />
-              <Route path="commissions" element={<AgentCommissions />} />
-              <Route path="wallet" element={<AgentWallet />} />
-              <Route path="packages" element={<AgentPackages />} />
-            </Route>
-            
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </AuthProvider>
-  </QueryClientProvider>
+  <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              {/* Public Routes */}
+              <Route path="/" element={<Index />} />
+              <Route path="/login" element={<Navigate to="/auth/login" replace />} />
+              <Route path="/register" element={<Navigate to="/auth/register" replace />} />
+              <Route path="/dashboard" element={<Navigate to="/admin" replace />} />
+              <Route path="/auth/login" element={<Login />} />
+              <Route path="/auth/register" element={<Register />} />
+              <Route path="/auth/forgot-password" element={<ForgotPassword />} />
+              <Route path="/auth/reset-password" element={<ResetPassword />} />
+              <Route path="/packages" element={<PackageList />} />
+              <Route path="/packages/:id" element={<PackageDetail />} />
+              <Route path="/about" element={<AboutPage />} />
+              <Route path="/contact" element={<ContactPage />} />
+              
+              {/* Savings Public Routes */}
+              <Route path="/savings" element={<SavingsPackages />} />
+              <Route path="/savings/register/:packageId" element={<SavingsRegister />} />
+              <Route path="/savings/success/:planId" element={
+                <ProtectedRoute>
+                  <SavingsSuccess />
+                </ProtectedRoute>
+              } />
+              <Route path="/customer/my-savings" element={
+                <ProtectedRoute>
+                  <MySavings />
+                </ProtectedRoute>
+              } />
+              <Route path="/customer/my-loyalty" element={
+                <ProtectedRoute>
+                  <MyLoyalty />
+                </ProtectedRoute>
+              } />
+              
+              {/* Jamaah Portal (PWA) */}
+              <Route path="/jamaah" element={<ProtectedRoute><JamaahPortal /></ProtectedRoute>} />
+              <Route path="/jamaah/digital-id" element={<ProtectedRoute><JamaahDigitalID /></ProtectedRoute>} />
+              <Route path="/jamaah/doa-panduan" element={<ProtectedRoute><JamaahDoaPanduan /></ProtectedRoute>} />
+              <Route path="/jamaah/itinerary" element={<ProtectedRoute><JamaahItinerary /></ProtectedRoute>} />
+              
+              {/* Customer Protected Routes */}
+              <Route path="/booking/:packageId" element={
+                <ProtectedRoute>
+                  <BookingPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/booking/success/:bookingId" element={
+                <ProtectedRoute>
+                  <BookingSuccess />
+                </ProtectedRoute>
+              } />
+              <Route path="/my-bookings" element={
+                <ProtectedRoute>
+                  <MyBookings />
+                </ProtectedRoute>
+              } />
+              <Route path="/my-bookings/:bookingId" element={
+                <ProtectedRoute>
+                  <BookingDetail />
+                </ProtectedRoute>
+              } />
+              <Route path="/my-bookings/:bookingId/payment" element={
+                <ProtectedRoute>
+                  <PaymentUpload />
+                </ProtectedRoute>
+              } />
+              
+              {/* Admin Routes - Protected with admin roles */}
+              <Route path="/admin" element={
+                <ProtectedRoute allowedRoles={['super_admin', 'owner', 'branch_manager', 'finance', 'sales', 'marketing']}>
+                  <AdminLayout />
+                </ProtectedRoute>
+              }>
+                <Route index element={<AdminDashboard />} />
+                <Route path="analytics" element={<AdminAnalytics />} />
+                <Route path="packages" element={<AdminPackages />} />
+                <Route path="packages/:id" element={<AdminPackageDetail />} />
+                <Route path="departures" element={<AdminDepartures />} />
+                <Route path="savings" element={<AdminSavingsPlans />} />
+                <Route path="master-data" element={<AdminMasterData />} />
+                <Route path="branches" element={<AdminBranches />} />
+                <Route path="bookings" element={<AdminBookings />} />
+                <Route path="bookings/:id" element={<AdminBookingDetail />} />
+                <Route path="payments" element={<AdminPayments />} />
+                {/* Finance 2.0 */}
+                <Route path="finance" element={<AdminFinancePL />} />
+                <Route path="vendors" element={<AdminVendors />} />
+                <Route path="customers" element={<AdminCustomers />} />
+                <Route path="customers/:id" element={<AdminCustomerDetail />} />
+                <Route path="documents" element={<AdminDocumentVerification />} />
+                <Route path="users" element={<AdminUsers />} />
+                <Route path="permissions" element={<AdminRolePermissions />} />
+                <Route path="agents" element={<AdminAgents />} />
+                {/* Engagement */}
+                <Route path="loyalty" element={<AdminLoyalty />} />
+                <Route path="referrals" element={<AdminReferrals />} />
+                <Route path="support" element={<AdminSupportTickets />} />
+                <Route path="leads" element={<AdminLeads />} />
+                <Route path="leads/analytics" element={<AdminLeadAnalytics />} />
+                <Route path="leads/:id" element={<AdminLeadDetail />} />
+                <Route path="room-assignments" element={<AdminRoomAssignments />} />
+                <Route path="reports" element={<AdminReports />} />
+                <Route path="advanced-reports" element={<AdminAdvancedReports />} />
+                <Route path="scheduled-reports" element={<AdminScheduledReports />} />
+                {/* HR & Haji */}
+                <Route path="hr" element={<AdminHR />} />
+                <Route path="haji" element={<AdminHajiManagement />} />
+                <Route path="itinerary-templates" element={<AdminItineraryTemplates />} />
+                <Route path="offline-content" element={<AdminOfflineContent />} />
+                <Route path="documents-generator" element={<AdminDocumentGenerator />} />
+                {/* Security */}
+                <Route path="security" element={<AdminSecurityAudit />} />
+                <Route path="2fa" element={<Admin2FASettings />} />
+                {/* WhatsApp */}
+                <Route path="whatsapp" element={<AdminWhatsApp />} />
+                <Route path="appearance" element={<AdminAppearance />} />
+                <Route path="settings" element={<AdminSettings />} />
+              </Route>
+              
+              {/* Operational Routes - Protected with operational roles */}
+              <Route path="/operational" element={
+                <ProtectedRoute allowedRoles={['super_admin', 'owner', 'branch_manager', 'operational', 'equipment']}>
+                  <OperationalLayout />
+                </ProtectedRoute>
+              }>
+                <Route index element={<OperationalDashboard />} />
+                <Route path="manifest" element={<ManifestPage />} />
+                <Route path="checkin" element={<CheckinPage />} />
+                <Route path="luggage" element={<LuggagePage />} />
+                <Route path="rooming" element={<RoomingListPage />} />
+                <Route path="qrcode" element={<QRCodePage />} />
+                <Route path="equipment" element={<EquipmentPage />} />
+                <Route path="bus" element={<BusManagementPage />} />
+              </Route>
+              
+              {/* HR Routes */}
+              <Route path="/hr" element={
+                <ProtectedRoute allowedRoles={['super_admin', 'owner', 'branch_manager', 'operational']}>
+                  <EmployeeAttendance />
+                </ProtectedRoute>
+              } />
+              
+              {/* Agent Routes - Protected with agent role */}
+              <Route path="/agent" element={
+                <ProtectedRoute allowedRoles={['super_admin', 'owner', 'agent']}>
+                  <AgentLayout />
+                </ProtectedRoute>
+              }>
+                <Route index element={<AgentDashboard />} />
+                <Route path="register" element={<AgentRegister />} />
+                <Route path="jamaah" element={<AgentJamaah />} />
+                <Route path="commissions" element={<AgentCommissions />} />
+                <Route path="wallet" element={<AgentWallet />} />
+                <Route path="packages" element={<AgentPackages />} />
+              </Route>
+              
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </AuthProvider>
+    </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;
