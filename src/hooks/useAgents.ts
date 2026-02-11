@@ -59,3 +59,46 @@ export function useAgentWallet(agentId: string | undefined) {
     },
   });
 }
+
+export function useAgentStats(agentId: string | undefined) {
+  return useQuery({
+    queryKey: ['agent-stats', agentId],
+    enabled: !!agentId,
+    queryFn: async () => {
+      const { data: bookings } = await supabase
+        .from('bookings')
+        .select('id, total_price, booking_status')
+        .eq('agent_id', agentId!);
+
+      const { data: commissions } = await supabase
+        .from('agent_commissions')
+        .select('commission_amount, status')
+        .eq('agent_id', agentId!);
+
+      const totalBookings = bookings?.length || 0;
+      const confirmedBookings = bookings?.filter(b => b.booking_status === 'confirmed').length || 0;
+      const totalCommission = commissions?.reduce((sum, c) => sum + Number(c.commission_amount), 0) || 0;
+      const pendingCommission = commissions?.filter(c => c.status === 'pending').reduce((sum, c) => sum + Number(c.commission_amount), 0) || 0;
+      const paidCommission = commissions?.filter(c => c.status === 'paid').reduce((sum, c) => sum + Number(c.commission_amount), 0) || 0;
+
+      return { totalBookings, confirmedBookings, totalCommission, pendingCommission, paidCommission };
+    },
+  });
+}
+
+export function useAgentRecentBookings(agentId: string | undefined) {
+  return useQuery({
+    queryKey: ['agent-recent-bookings', agentId],
+    enabled: !!agentId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('bookings')
+        .select(`id, booking_code, total_price, booking_status, created_at, customer:customers(full_name)`)
+        .eq('agent_id', agentId!)
+        .order('created_at', { ascending: false })
+        .limit(5);
+      if (error) throw error;
+      return data;
+    },
+  });
+}

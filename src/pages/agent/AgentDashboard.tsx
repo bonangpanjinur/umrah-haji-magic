@@ -1,84 +1,16 @@
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/format";
 import { useAuth } from "@/hooks/useAuth";
+import { useAgentByUserId, useAgentStats, useAgentRecentBookings } from "@/hooks/useAgents";
 import { Users, DollarSign, TrendingUp, Clock } from "lucide-react";
 
 export default function AgentDashboard() {
   const { user } = useAuth();
-
-  const { data: agentData, isLoading: loadingAgent } = useQuery({
-    queryKey: ['agent-profile', user?.id],
-    enabled: !!user?.id,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('agents')
-        .select('*')
-        .eq('user_id', user!.id)
-        .single();
-
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const { data: stats, isLoading: loadingStats } = useQuery({
-    queryKey: ['agent-stats', agentData?.id],
-    enabled: !!agentData?.id,
-    queryFn: async () => {
-      // Get bookings by this agent
-      const { data: bookings } = await supabase
-        .from('bookings')
-        .select('id, total_price, booking_status')
-        .eq('agent_id', agentData!.id);
-
-      // Get commissions
-      const { data: commissions } = await supabase
-        .from('agent_commissions')
-        .select('commission_amount, status')
-        .eq('agent_id', agentData!.id);
-
-      const totalBookings = bookings?.length || 0;
-      const confirmedBookings = bookings?.filter(b => b.booking_status === 'confirmed').length || 0;
-      const totalCommission = commissions?.reduce((sum, c) => sum + Number(c.commission_amount), 0) || 0;
-      const pendingCommission = commissions?.filter(c => c.status === 'pending').reduce((sum, c) => sum + Number(c.commission_amount), 0) || 0;
-      const paidCommission = commissions?.filter(c => c.status === 'paid').reduce((sum, c) => sum + Number(c.commission_amount), 0) || 0;
-
-      return {
-        totalBookings,
-        confirmedBookings,
-        totalCommission,
-        pendingCommission,
-        paidCommission,
-      };
-    },
-  });
-
-  const { data: recentBookings } = useQuery({
-    queryKey: ['agent-recent-bookings', agentData?.id],
-    enabled: !!agentData?.id,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('bookings')
-        .select(`
-          id,
-          booking_code,
-          total_price,
-          booking_status,
-          created_at,
-          customer:customers(full_name)
-        `)
-        .eq('agent_id', agentData!.id)
-        .order('created_at', { ascending: false })
-        .limit(5);
-
-      if (error) throw error;
-      return data;
-    },
-  });
+  const { data: agentData, isLoading: loadingAgent } = useAgentByUserId(user?.id);
+  const { data: stats, isLoading: loadingStats } = useAgentStats(agentData?.id);
+  const { data: recentBookings } = useAgentRecentBookings(agentData?.id);
 
   const isLoading = loadingAgent || loadingStats;
 

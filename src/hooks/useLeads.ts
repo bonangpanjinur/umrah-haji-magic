@@ -11,7 +11,7 @@ export function useLeads(filters?: { status?: LeadStatus; assignedTo?: string })
   return useQuery({
     queryKey: ['leads', filters],
     queryFn: async () => {
-      let query = supabase.from('leads').select('*, packages:package_interest(name)').order('created_at', { ascending: false });
+      let query = supabase.from('leads').select('*, package:packages!leads_package_interest_fkey(name, code), branch:branches!leads_branch_id_fkey(name)').order('created_at', { ascending: false });
       if (filters?.status) query = query.eq('status', filters.status);
       if (filters?.assignedTo) query = query.eq('assigned_to', filters.assignedTo);
       const { data, error } = await query;

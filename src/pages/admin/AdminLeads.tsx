@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -33,6 +33,7 @@ import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import type { Database } from "@/integrations/supabase/types";
+import { useLeads, useCreateLead, useUpdateLead } from "@/hooks/useLeads";
 
 type LeadStatus = Database["public"]["Enums"]["lead_status"];
 
@@ -53,24 +54,8 @@ export default function AdminLeads() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const { toast } = useToast();
-  const queryClient = useQueryClient();
 
-  const { data: leads, isLoading } = useQuery({
-    queryKey: ['admin-leads'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('leads')
-        .select(`
-          *,
-          package:packages(name, code),
-          branch:branches(name)
-        `)
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      return data;
-    },
-  });
+  const { data: leads, isLoading } = useLeads();
 
   const { data: packages } = useQuery({
     queryKey: ['packages-for-leads'],
@@ -84,41 +69,15 @@ export default function AdminLeads() {
     },
   });
 
-  const createMutation = useMutation({
-    mutationFn: async (data: {
-      full_name: string;
-      phone?: string;
-      email?: string;
-      source?: string;
-      notes?: string;
-      package_interest?: string;
-    }) => {
-      const { error } = await supabase.from('leads').insert(data);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-leads'] });
-      setIsCreateOpen(false);
-      toast({ title: "Lead berhasil ditambahkan" });
-    },
-    onError: (error: any) => {
-      toast({ title: "Gagal menambahkan lead", description: error.message, variant: "destructive" });
-    },
-  });
+  const createMutation = useCreateLead();
 
-  const updateStatusMutation = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: LeadStatus }) => {
-      const { error } = await supabase
-        .from('leads')
-        .update({ status, updated_at: new Date().toISOString() })
-        .eq('id', id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-leads'] });
-      toast({ title: "Status lead diperbarui" });
-    },
-  });
+  const updateStatusMutation = useUpdateLead();
+
+  const handleStatusChange = (id: string, status: LeadStatus) => {
+    updateStatusMutation.mutate({ id, status, updated_at: new Date().toISOString() }, {
+      onSuccess: () => toast({ title: "Status lead diperbarui" }),
+    });
+  };
 
   const filteredLeads = leads?.filter(lead => {
     const matchesSearch = lead.full_name.toLowerCase().includes(search.toLowerCase()) ||
@@ -148,6 +107,14 @@ export default function AdminLeads() {
       source: formData.get('source') as string || undefined,
       notes: formData.get('notes') as string || undefined,
       package_interest: formData.get('package_interest') as string || undefined,
+    }, {
+      onSuccess: () => {
+        setIsCreateOpen(false);
+        toast({ title: "Lead berhasil ditambahkan" });
+      },
+      onError: (error: any) => {
+        toast({ title: "Gagal menambahkan lead", description: error.message, variant: "destructive" });
+      },
     });
   };
 
@@ -305,7 +272,7 @@ export default function AdminLeads() {
                         <LeadCard 
                           key={lead.id} 
                           lead={lead} 
-                          onStatusChange={(newStatus) => updateStatusMutation.mutate({ id: lead.id, status: newStatus })}
+                          onStatusChange={(newStatus) => handleStatusChange(lead.id, newStatus)}
                         />
                       ))}
                       {statusLeads.length === 0 && (

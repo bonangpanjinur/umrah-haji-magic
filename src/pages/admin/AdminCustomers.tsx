@@ -4,7 +4,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Search, Eye, User, Phone, Mail, Users, FileCheck, Calendar, Star, UserPlus, Plus } from "lucide-react";
@@ -12,22 +11,13 @@ import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { RegisterAsJamaahDialog } from "@/components/admin/RegisterAsJamaahDialog";
 import { AddCustomerDialog } from "@/components/admin/AddCustomerDialog";
+import { useCustomers } from "@/hooks/useCustomers";
+import { LoadingState } from "@/components/shared/LoadingState";
 
 export default function AdminCustomers() {
   const [searchTerm, setSearchTerm] = useState("");
 
-  const { data: customers, isLoading } = useQuery({
-    queryKey: ['admin-customers'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('customers')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      return data;
-    },
-  });
+  const { data: customers, isLoading } = useCustomers();
 
   // Fetch booking counts per customer
   const { data: bookingCounts } = useQuery({
@@ -185,9 +175,7 @@ export default function AdminCustomers() {
       <Card>
         <CardContent className="p-0">
           {isLoading ? (
-            <div className="p-4 space-y-3">
-              {[1, 2, 3, 4, 5].map(i => <Skeleton key={i} className="h-16 w-full" />)}
-            </div>
+            <LoadingState />
           ) : !filteredCustomers || filteredCustomers.length === 0 ? (
             <div className="p-8 text-center text-muted-foreground">
               {searchTerm ? 'Tidak ada jamaah yang cocok.' : 'Belum ada data jamaah.'}
