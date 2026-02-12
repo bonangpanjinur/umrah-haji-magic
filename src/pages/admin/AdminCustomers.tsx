@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/shared/EmptyState";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Search, Eye, User, Phone, Mail, Users, FileCheck, Calendar, Star, UserPlus, Plus } from "lucide-react";
@@ -177,9 +178,11 @@ export default function AdminCustomers() {
           {isLoading ? (
             <LoadingState />
           ) : !filteredCustomers || filteredCustomers.length === 0 ? (
-            <div className="p-8 text-center text-muted-foreground">
-              {searchTerm ? 'Tidak ada jamaah yang cocok.' : 'Belum ada data jamaah.'}
-            </div>
+            <EmptyState
+              icon={User}
+              title={searchTerm ? 'Tidak ada jamaah yang cocok' : 'Belum ada data jamaah'}
+              description={searchTerm ? `Tidak ditemukan hasil untuk "${searchTerm}"` : 'Tambahkan jamaah baru untuk memulai'}
+            />
           ) : (
             <div className="divide-y">
               {filteredCustomers.map((customer) => {
