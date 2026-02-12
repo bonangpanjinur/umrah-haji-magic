@@ -14,6 +14,7 @@ import {
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import { useDashboardStats, useRecentBookings, useUpcomingDepartures } from "@/hooks/useDashboardStats";
+import { useRealtimeSubscription } from "@/hooks/useRealtimeSubscription";
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))'];
 
@@ -21,6 +22,15 @@ export default function AdminDashboard() {
   const { data: stats, isLoading } = useDashboardStats();
   const { data: recentBookings } = useRecentBookings();
   const { data: upcomingDepartures } = useUpcomingDepartures();
+
+  // Auto-refresh dashboard when bookings or payments change
+  useRealtimeSubscription('bookings', [
+    ['admin-dashboard-stats'],
+    ['admin-recent-bookings'],
+  ]);
+  useRealtimeSubscription('payments', [
+    ['admin-dashboard-stats'],
+  ]);
 
   return (
     <div className="space-y-6">
