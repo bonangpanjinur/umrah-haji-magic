@@ -4,7 +4,6 @@ import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -16,23 +15,26 @@ import {
 import { formatCurrency, formatDate } from "@/lib/format";
 import { useState } from "react";
 import { 
-  Search, Eye, Calendar, Users, Filter, X, Download
+  Search, Eye, Calendar, Users, Filter, X, Download, ShoppingCart
 } from "lucide-react";
+import { LoadingState } from "@/components/shared/LoadingState";
+import { EmptyState } from "@/components/shared/EmptyState";
+import { StatusBadge } from "@/components/shared/StatusBadge";
 
-const STATUS_CONFIG: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
-  pending: { label: 'Pending', variant: 'secondary' },
-  confirmed: { label: 'Konfirmasi', variant: 'default' },
-  processing: { label: 'Proses', variant: 'outline' },
-  completed: { label: 'Selesai', variant: 'default' },
-  cancelled: { label: 'Batal', variant: 'destructive' },
-  refunded: { label: 'Refund', variant: 'destructive' },
+const STATUS_LABELS: Record<string, string> = {
+  pending: 'Pending',
+  confirmed: 'Konfirmasi',
+  processing: 'Proses',
+  completed: 'Selesai',
+  cancelled: 'Batal',
+  refunded: 'Refund',
 };
 
-const PAYMENT_STATUS_CONFIG: Record<string, { label: string; className: string }> = {
-  pending: { label: 'Belum Bayar', className: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' },
-  partial: { label: 'Sebagian', className: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' },
-  paid: { label: 'Lunas', className: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' },
-  refunded: { label: 'Refund', className: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200' },
+const PAYMENT_LABELS: Record<string, string> = {
+  pending: 'Belum Bayar',
+  partial: 'Sebagian',
+  paid: 'Lunas',
+  refunded: 'Refund',
 };
 
 export default function AdminBookings() {
@@ -225,20 +227,20 @@ export default function AdminBookings() {
       <Card>
         <CardContent className="p-0">
           {isLoading ? (
-            <div className="p-4 space-y-3">
-              {[1, 2, 3, 4, 5].map(i => <Skeleton key={i} className="h-20 w-full" />)}
-            </div>
+            <LoadingState />
           ) : !filteredBookings || filteredBookings.length === 0 ? (
-            <div className="p-8 text-center text-muted-foreground">
-              {hasActiveFilters ? 'Tidak ada booking yang cocok dengan filter.' : 'Belum ada booking.'}
-            </div>
+            <EmptyState
+              icon={ShoppingCart}
+              title={hasActiveFilters ? 'Tidak ada booking yang cocok' : 'Belum ada booking'}
+              description={hasActiveFilters ? 'Coba ubah filter pencarian' : 'Booking baru akan muncul di sini'}
+            />
           ) : (
             <div className="divide-y">
               {filteredBookings.map((booking) => {
                 const customer = booking.customer as any;
                 const departure = booking.departure as any;
-                const statusConfig = STATUS_CONFIG[booking.booking_status || 'pending'];
-                const paymentConfig = PAYMENT_STATUS_CONFIG[booking.payment_status || 'pending'];
+                const bookingStatus = booking.booking_status || 'pending';
+                const paymentStatus = booking.payment_status || 'pending';
 
                 return (
                   <div key={booking.id} className="p-4 hover:bg-muted/50 transition-colors">
@@ -246,12 +248,8 @@ export default function AdminBookings() {
                       <div className="space-y-1 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="font-mono font-semibold">{booking.booking_code}</span>
-                          <Badge variant={statusConfig?.variant || 'secondary'}>
-                            {statusConfig?.label || booking.booking_status}
-                          </Badge>
-                          <Badge className={paymentConfig?.className}>
-                            {paymentConfig?.label || booking.payment_status}
-                          </Badge>
+                          <StatusBadge status={bookingStatus} label={STATUS_LABELS[bookingStatus] || bookingStatus} />
+                          <StatusBadge status={paymentStatus === 'pending' ? 'unpaid' : paymentStatus} label={PAYMENT_LABELS[paymentStatus] || paymentStatus} />
                         </div>
                         <p className="font-medium">{customer?.full_name || '-'}</p>
                         <p className="text-sm text-muted-foreground">

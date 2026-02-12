@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { LoadingState } from "@/components/shared/LoadingState";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,7 +23,6 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Plus, Search, Phone, Mail, Calendar, User, 
@@ -250,11 +250,7 @@ export default function AdminLeads() {
 
         <TabsContent value="kanban">
           {isLoading ? (
-            <div className="grid gap-4 lg:grid-cols-5">
-              {KANBAN_COLUMNS.map(col => (
-                <Skeleton key={col} className="h-[400px]" />
-              ))}
-            </div>
+            <LoadingState message="Memuat leads..." />
           ) : (
             <div className="grid gap-4 lg:grid-cols-5 overflow-x-auto">
               {KANBAN_COLUMNS.map(status => {

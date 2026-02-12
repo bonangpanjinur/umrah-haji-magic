@@ -9,11 +9,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { HotelForm } from "@/components/admin/forms/HotelForm";
 import { Search, Plus, Edit, Trash2, Hotel } from "lucide-react";
 import { toast } from "sonner";
+import { LoadingState } from "@/components/shared/LoadingState";
+import { EmptyState } from "@/components/shared/EmptyState";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
 export default function AdminHotels() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingHotel, setEditingHotel] = useState<any>(null);
+  const [deleteTarget, setDeleteTarget] = useState<any>(null);
   const queryClient = useQueryClient();
 
   const { data: hotels, isLoading } = useQuery({
@@ -60,9 +64,9 @@ export default function AdminHotels() {
       </div>
 
       {isLoading ? (
-        <div className="text-center py-12">Loading...</div>
+        <LoadingState message="Memuat data hotel..." />
       ) : !filteredHotels?.length ? (
-        <Card><CardContent className="py-12 text-center"><Hotel className="h-12 w-12 mx-auto text-muted-foreground mb-4" /><p>Belum ada hotel.</p></CardContent></Card>
+        <EmptyState icon={Hotel} title="Belum ada hotel" description="Tambahkan hotel Makkah & Madinah" actionLabel="Tambah Hotel" onAction={() => { setEditingHotel(null); setIsFormOpen(true); }} />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filteredHotels.map(hotel => (
@@ -79,7 +83,7 @@ export default function AdminHotels() {
                 {hotel.distance_to_masjid && <p className="text-xs text-muted-foreground mt-1">Jarak: {hotel.distance_to_masjid}</p>}
                 <div className="flex gap-2 mt-4">
                   <Button size="sm" variant="outline" onClick={() => { setEditingHotel(hotel); setIsFormOpen(true); }}><Edit className="h-4 w-4" /></Button>
-                  <Button size="sm" variant="destructive" onClick={() => deleteMutation.mutate(hotel.id)}><Trash2 className="h-4 w-4" /></Button>
+                  <Button size="sm" variant="destructive" onClick={() => setDeleteTarget(hotel)}><Trash2 className="h-4 w-4" /></Button>
                 </div>
               </CardContent>
             </Card>
@@ -93,6 +97,21 @@ export default function AdminHotels() {
           <HotelForm hotelData={editingHotel} onSuccess={() => setIsFormOpen(false)} onCancel={() => setIsFormOpen(false)} />
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title="Hapus Hotel"
+        description={`Yakin ingin menghapus hotel "${deleteTarget?.name}"?`}
+        confirmLabel="Hapus"
+        variant="destructive"
+        onConfirm={() => {
+          if (deleteTarget) {
+            deleteMutation.mutate(deleteTarget.id);
+            setDeleteTarget(null);
+          }
+        }}
+      />
     </div>
   );
 }
