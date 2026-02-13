@@ -1,12 +1,19 @@
 import { Route } from "react-router-dom";
+import { lazy, Suspense } from "react";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
-import AgentLayout from "@/pages/agent/AgentLayout";
-import AgentDashboard from "@/pages/agent/AgentDashboard";
-import AgentRegister from "@/pages/agent/AgentRegister";
-import AgentJamaah from "@/pages/agent/AgentJamaah";
-import AgentCommissions from "@/pages/agent/AgentCommissions";
-import AgentPackages from "@/pages/agent/AgentPackages";
-import AgentWallet from "@/pages/agent/AgentWallet";
+import { LoadingState } from "@/components/shared/LoadingState";
+
+const AgentLayout = lazy(() => import("@/pages/agent/AgentLayout"));
+const AgentDashboard = lazy(() => import("@/pages/agent/AgentDashboard"));
+const AgentRegister = lazy(() => import("@/pages/agent/AgentRegister"));
+const AgentJamaah = lazy(() => import("@/pages/agent/AgentJamaah"));
+const AgentCommissions = lazy(() => import("@/pages/agent/AgentCommissions"));
+const AgentPackages = lazy(() => import("@/pages/agent/AgentPackages"));
+const AgentWallet = lazy(() => import("@/pages/agent/AgentWallet"));
+
+function LazyPage({ children }: { children: React.ReactNode }) {
+  return <Suspense fallback={<LoadingState />}>{children}</Suspense>;
+}
 
 export default function AgentRoutes() {
   return (
@@ -14,16 +21,16 @@ export default function AgentRoutes() {
       path="/agent"
       element={
         <ProtectedRoute allowedRoles={['super_admin', 'owner', 'agent']}>
-          <AgentLayout />
+          <LazyPage><AgentLayout /></LazyPage>
         </ProtectedRoute>
       }
     >
-      <Route index element={<AgentDashboard />} />
-      <Route path="register" element={<AgentRegister />} />
-      <Route path="jamaah" element={<AgentJamaah />} />
-      <Route path="commissions" element={<AgentCommissions />} />
-      <Route path="wallet" element={<AgentWallet />} />
-      <Route path="packages" element={<AgentPackages />} />
+      <Route index element={<LazyPage><AgentDashboard /></LazyPage>} />
+      <Route path="register" element={<LazyPage><AgentRegister /></LazyPage>} />
+      <Route path="jamaah" element={<LazyPage><AgentJamaah /></LazyPage>} />
+      <Route path="commissions" element={<LazyPage><AgentCommissions /></LazyPage>} />
+      <Route path="wallet" element={<LazyPage><AgentWallet /></LazyPage>} />
+      <Route path="packages" element={<LazyPage><AgentPackages /></LazyPage>} />
     </Route>
   );
 }
