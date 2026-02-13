@@ -70,18 +70,26 @@ export default function PaymentUpload() {
 
     try {
       // 1. Upload proof file
+      // Sanitize file name: remove special characters and use timestamp
       const fileExt = proofFile.name.split('.').pop();
-      const fileName = `${user.id}/${bookingId}/${Date.now()}.${fileExt}`;
+      const sanitizedFileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
+      const filePath = `${user.id}/${sanitizedFileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('payment-proofs')
-        .upload(fileName, proofFile);
+        .upload(filePath, proofFile, {
+          cacheControl: '3600',
+          upsert: false
+        });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('Upload error details:', uploadError);
+        throw new Error(`Gagal mengunggah file: ${uploadError.message}`);
+      }
 
       const { data: { publicUrl } } = supabase.storage
         .from('payment-proofs')
-        .getPublicUrl(fileName);
+        .getPublicUrl(filePath);
 
       // 2. Create payment record
       const paymentCode = `PAY${Date.now().toString(36).toUpperCase()}`;
@@ -100,7 +108,10 @@ export default function PaymentUpload() {
           status: 'pending',
         });
 
-      if (paymentError) throw paymentError;
+      if (paymentError) {
+        console.error('Payment record error:', paymentError);
+        throw new Error(`Gagal menyimpan data pembayaran: ${paymentError.message}`);
+      }
 
       toast.success('Bukti pembayaran berhasil diupload! Tim kami akan memverifikasi dalam 1x24 jam.');
       navigate(`/my-bookings/${bookingId}`);
