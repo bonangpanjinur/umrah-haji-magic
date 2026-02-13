@@ -4091,7 +4091,7 @@ export const Constants = {
         "lost",
       ],
       package_type: ["umroh", "haji", "haji_plus", "umroh_plus", "tabungan"],
-      payment_status: ["pending", "partial", "paid", "refunded", "failed"],
+      payment_status: ["pending", "partial", "paid", "verified", "refunded", "failed"],
       room_type: ["quad", "triple", "double", "single"],
     },
   },
