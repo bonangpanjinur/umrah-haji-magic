@@ -1,17 +1,24 @@
 import { Route } from "react-router-dom";
+import { lazy, Suspense } from "react";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
-import OperationalLayout from "@/pages/operational/OperationalLayout";
-import OperationalDashboard from "@/pages/operational/OperationalDashboard";
-import ManifestPage from "@/pages/operational/ManifestPage";
-import CheckinPage from "@/pages/operational/CheckinPage";
-import LuggagePage from "@/pages/operational/LuggagePage";
-import RoomingListPage from "@/pages/operational/RoomingListPage";
-import QRCodePage from "@/pages/operational/QRCodePage";
-import EquipmentPage from "@/pages/operational/EquipmentPage";
-import BusManagementPage from "@/pages/operational/BusManagementPage";
-import EmployeeAttendance from "@/pages/hr/EmployeeAttendance";
+import { LoadingState } from "@/components/shared/LoadingState";
+
+const OperationalLayout = lazy(() => import("@/pages/operational/OperationalLayout"));
+const OperationalDashboard = lazy(() => import("@/pages/operational/OperationalDashboard"));
+const ManifestPage = lazy(() => import("@/pages/operational/ManifestPage"));
+const CheckinPage = lazy(() => import("@/pages/operational/CheckinPage"));
+const LuggagePage = lazy(() => import("@/pages/operational/LuggagePage"));
+const RoomingListPage = lazy(() => import("@/pages/operational/RoomingListPage"));
+const QRCodePage = lazy(() => import("@/pages/operational/QRCodePage"));
+const EquipmentPage = lazy(() => import("@/pages/operational/EquipmentPage"));
+const BusManagementPage = lazy(() => import("@/pages/operational/BusManagementPage"));
+const EmployeeAttendance = lazy(() => import("@/pages/hr/EmployeeAttendance"));
 
 const OPERATIONAL_ROLES = ['super_admin', 'owner', 'branch_manager', 'operational', 'equipment'] as const;
+
+function LazyPage({ children }: { children: React.ReactNode }) {
+  return <Suspense fallback={<LoadingState />}>{children}</Suspense>;
+}
 
 export default function OperationalRoutes() {
   return (
@@ -20,25 +27,25 @@ export default function OperationalRoutes() {
         path="/operational"
         element={
           <ProtectedRoute allowedRoles={[...OPERATIONAL_ROLES]}>
-            <OperationalLayout />
+            <LazyPage><OperationalLayout /></LazyPage>
           </ProtectedRoute>
         }
       >
-        <Route index element={<OperationalDashboard />} />
-        <Route path="manifest" element={<ManifestPage />} />
-        <Route path="checkin" element={<CheckinPage />} />
-        <Route path="luggage" element={<LuggagePage />} />
-        <Route path="rooming" element={<RoomingListPage />} />
-        <Route path="qrcode" element={<QRCodePage />} />
-        <Route path="equipment" element={<EquipmentPage />} />
-        <Route path="bus" element={<BusManagementPage />} />
+        <Route index element={<LazyPage><OperationalDashboard /></LazyPage>} />
+        <Route path="manifest" element={<LazyPage><ManifestPage /></LazyPage>} />
+        <Route path="checkin" element={<LazyPage><CheckinPage /></LazyPage>} />
+        <Route path="luggage" element={<LazyPage><LuggagePage /></LazyPage>} />
+        <Route path="rooming" element={<LazyPage><RoomingListPage /></LazyPage>} />
+        <Route path="qrcode" element={<LazyPage><QRCodePage /></LazyPage>} />
+        <Route path="equipment" element={<LazyPage><EquipmentPage /></LazyPage>} />
+        <Route path="bus" element={<LazyPage><BusManagementPage /></LazyPage>} />
       </Route>
 
       <Route
         path="/hr"
         element={
           <ProtectedRoute allowedRoles={['super_admin', 'owner', 'branch_manager', 'operational']}>
-            <EmployeeAttendance />
+            <LazyPage><EmployeeAttendance /></LazyPage>
           </ProtectedRoute>
         }
       />

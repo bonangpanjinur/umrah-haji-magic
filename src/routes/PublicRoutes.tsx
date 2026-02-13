@@ -1,33 +1,40 @@
 import { Route, Navigate } from "react-router-dom";
-import Index from "@/pages/Index";
-import Login from "@/pages/auth/Login";
-import Register from "@/pages/auth/Register";
-import ForgotPassword from "@/pages/auth/ForgotPassword";
-import ResetPassword from "@/pages/auth/ResetPassword";
-import PackageList from "@/pages/packages/PackageList";
-import PackageDetail from "@/pages/packages/PackageDetail";
-import AboutPage from "@/pages/public/AboutPage";
-import ContactPage from "@/pages/public/ContactPage";
-import SavingsPackages from "@/pages/savings/SavingsPackages";
-import SavingsRegister from "@/pages/savings/SavingsRegister";
+import { lazy, Suspense } from "react";
+import { LoadingState } from "@/components/shared/LoadingState";
+
+const Index = lazy(() => import("@/pages/Index"));
+const Login = lazy(() => import("@/pages/auth/Login"));
+const Register = lazy(() => import("@/pages/auth/Register"));
+const ForgotPassword = lazy(() => import("@/pages/auth/ForgotPassword"));
+const ResetPassword = lazy(() => import("@/pages/auth/ResetPassword"));
+const PackageList = lazy(() => import("@/pages/packages/PackageList"));
+const PackageDetail = lazy(() => import("@/pages/packages/PackageDetail"));
+const AboutPage = lazy(() => import("@/pages/public/AboutPage"));
+const ContactPage = lazy(() => import("@/pages/public/ContactPage"));
+const SavingsPackages = lazy(() => import("@/pages/savings/SavingsPackages"));
+const SavingsRegister = lazy(() => import("@/pages/savings/SavingsRegister"));
+
+function LazyPage({ children }: { children: React.ReactNode }) {
+  return <Suspense fallback={<LoadingState />}>{children}</Suspense>;
+}
 
 export default function PublicRoutes() {
   return (
     <>
-      <Route path="/" element={<Index />} />
+      <Route path="/" element={<LazyPage><Index /></LazyPage>} />
       <Route path="/login" element={<Navigate to="/auth/login" replace />} />
       <Route path="/register" element={<Navigate to="/auth/register" replace />} />
       <Route path="/dashboard" element={<Navigate to="/admin" replace />} />
-      <Route path="/auth/login" element={<Login />} />
-      <Route path="/auth/register" element={<Register />} />
-      <Route path="/auth/forgot-password" element={<ForgotPassword />} />
-      <Route path="/auth/reset-password" element={<ResetPassword />} />
-      <Route path="/packages" element={<PackageList />} />
-      <Route path="/packages/:id" element={<PackageDetail />} />
-      <Route path="/about" element={<AboutPage />} />
-      <Route path="/contact" element={<ContactPage />} />
-      <Route path="/savings" element={<SavingsPackages />} />
-      <Route path="/savings/register/:packageId" element={<SavingsRegister />} />
+      <Route path="/auth/login" element={<LazyPage><Login /></LazyPage>} />
+      <Route path="/auth/register" element={<LazyPage><Register /></LazyPage>} />
+      <Route path="/auth/forgot-password" element={<LazyPage><ForgotPassword /></LazyPage>} />
+      <Route path="/auth/reset-password" element={<LazyPage><ResetPassword /></LazyPage>} />
+      <Route path="/packages" element={<LazyPage><PackageList /></LazyPage>} />
+      <Route path="/packages/:id" element={<LazyPage><PackageDetail /></LazyPage>} />
+      <Route path="/about" element={<LazyPage><AboutPage /></LazyPage>} />
+      <Route path="/contact" element={<LazyPage><ContactPage /></LazyPage>} />
+      <Route path="/savings" element={<LazyPage><SavingsPackages /></LazyPage>} />
+      <Route path="/savings/register/:packageId" element={<LazyPage><SavingsRegister /></LazyPage>} />
     </>
   );
 }

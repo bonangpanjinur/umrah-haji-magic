@@ -1,48 +1,55 @@
 import { Route } from "react-router-dom";
+import { lazy, Suspense } from "react";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import { AdminLayout } from "@/components/admin/AdminLayout";
-import AdminDashboard from "@/pages/admin/AdminDashboard";
-import AdminAnalytics from "@/pages/admin/AdminAnalytics";
-import AdminPackages from "@/pages/admin/AdminPackages";
-import AdminPackageDetail from "@/pages/admin/AdminPackageDetail";
-import AdminBookings from "@/pages/admin/AdminBookings";
-import AdminBookingDetail from "@/pages/admin/AdminBookingDetail";
-import AdminPayments from "@/pages/admin/AdminPayments";
-import AdminCustomers from "@/pages/admin/AdminCustomers";
-import AdminCustomerDetail from "@/pages/admin/AdminCustomerDetail";
-import AdminUsers from "@/pages/admin/AdminUsers";
-import AdminAgents from "@/pages/admin/AdminAgents";
-import AdminReports from "@/pages/admin/AdminReports";
-import AdminSettings from "@/pages/admin/AdminSettings";
-import AdminMasterData from "@/pages/admin/AdminMasterData";
-import AdminLeads from "@/pages/admin/AdminLeads";
-import AdminLeadDetail from "@/pages/admin/AdminLeadDetail";
-import AdminLeadAnalytics from "@/pages/admin/AdminLeadAnalytics";
-import AdminRolePermissions from "@/pages/admin/AdminRolePermissions";
-import AdminRoomAssignments from "@/pages/admin/AdminRoomAssignments";
-import AdminDepartures from "@/pages/admin/AdminDepartures";
-import AdminSavingsPlans from "@/pages/admin/AdminSavingsPlans";
-import AdminDocumentVerification from "@/pages/admin/AdminDocumentVerification";
-import AdminAppearance from "@/pages/admin/AdminAppearance";
-import AdminBranches from "@/pages/admin/AdminBranches";
-import AdminFinancePL from "@/pages/admin/AdminFinancePL";
-import AdminVendors from "@/pages/admin/AdminVendors";
-import AdminLoyalty from "@/pages/admin/AdminLoyalty";
-import AdminReferrals from "@/pages/admin/AdminReferrals";
-import AdminSupportTickets from "@/pages/admin/AdminSupportTickets";
-import AdminSecurityAudit from "@/pages/admin/AdminSecurityAudit";
-import Admin2FASettings from "@/pages/admin/Admin2FASettings";
-import AdminWhatsApp from "@/pages/admin/AdminWhatsApp";
-import AdminAdvancedReports from "@/pages/admin/AdminAdvancedReports";
-import AdminHR from "@/pages/admin/AdminHR";
-import AdminHajiManagement from "@/pages/admin/AdminHajiManagement";
-import AdminItineraryTemplates from "@/pages/admin/AdminItineraryTemplates";
-import AdminOfflineContent from "@/pages/admin/AdminOfflineContent";
-import AdminDocumentGenerator from "@/pages/admin/AdminDocumentGenerator";
-import AdminScheduledReports from "@/pages/admin/AdminScheduledReports";
-import AdminCoupons from "@/pages/admin/AdminCoupons";
+import { LoadingState } from "@/components/shared/LoadingState";
+
+const AdminDashboard = lazy(() => import("@/pages/admin/AdminDashboard"));
+const AdminAnalytics = lazy(() => import("@/pages/admin/AdminAnalytics"));
+const AdminPackages = lazy(() => import("@/pages/admin/AdminPackages"));
+const AdminPackageDetail = lazy(() => import("@/pages/admin/AdminPackageDetail"));
+const AdminBookings = lazy(() => import("@/pages/admin/AdminBookings"));
+const AdminBookingDetail = lazy(() => import("@/pages/admin/AdminBookingDetail"));
+const AdminPayments = lazy(() => import("@/pages/admin/AdminPayments"));
+const AdminCustomers = lazy(() => import("@/pages/admin/AdminCustomers"));
+const AdminCustomerDetail = lazy(() => import("@/pages/admin/AdminCustomerDetail"));
+const AdminUsers = lazy(() => import("@/pages/admin/AdminUsers"));
+const AdminAgents = lazy(() => import("@/pages/admin/AdminAgents"));
+const AdminReports = lazy(() => import("@/pages/admin/AdminReports"));
+const AdminSettings = lazy(() => import("@/pages/admin/AdminSettings"));
+const AdminMasterData = lazy(() => import("@/pages/admin/AdminMasterData"));
+const AdminLeads = lazy(() => import("@/pages/admin/AdminLeads"));
+const AdminLeadDetail = lazy(() => import("@/pages/admin/AdminLeadDetail"));
+const AdminLeadAnalytics = lazy(() => import("@/pages/admin/AdminLeadAnalytics"));
+const AdminRolePermissions = lazy(() => import("@/pages/admin/AdminRolePermissions"));
+const AdminRoomAssignments = lazy(() => import("@/pages/admin/AdminRoomAssignments"));
+const AdminDepartures = lazy(() => import("@/pages/admin/AdminDepartures"));
+const AdminSavingsPlans = lazy(() => import("@/pages/admin/AdminSavingsPlans"));
+const AdminDocumentVerification = lazy(() => import("@/pages/admin/AdminDocumentVerification"));
+const AdminAppearance = lazy(() => import("@/pages/admin/AdminAppearance"));
+const AdminBranches = lazy(() => import("@/pages/admin/AdminBranches"));
+const AdminFinancePL = lazy(() => import("@/pages/admin/AdminFinancePL"));
+const AdminVendors = lazy(() => import("@/pages/admin/AdminVendors"));
+const AdminLoyalty = lazy(() => import("@/pages/admin/AdminLoyalty"));
+const AdminReferrals = lazy(() => import("@/pages/admin/AdminReferrals"));
+const AdminSupportTickets = lazy(() => import("@/pages/admin/AdminSupportTickets"));
+const AdminSecurityAudit = lazy(() => import("@/pages/admin/AdminSecurityAudit"));
+const Admin2FASettings = lazy(() => import("@/pages/admin/Admin2FASettings"));
+const AdminWhatsApp = lazy(() => import("@/pages/admin/AdminWhatsApp"));
+const AdminAdvancedReports = lazy(() => import("@/pages/admin/AdminAdvancedReports"));
+const AdminHR = lazy(() => import("@/pages/admin/AdminHR"));
+const AdminHajiManagement = lazy(() => import("@/pages/admin/AdminHajiManagement"));
+const AdminItineraryTemplates = lazy(() => import("@/pages/admin/AdminItineraryTemplates"));
+const AdminOfflineContent = lazy(() => import("@/pages/admin/AdminOfflineContent"));
+const AdminDocumentGenerator = lazy(() => import("@/pages/admin/AdminDocumentGenerator"));
+const AdminScheduledReports = lazy(() => import("@/pages/admin/AdminScheduledReports"));
+const AdminCoupons = lazy(() => import("@/pages/admin/AdminCoupons"));
 
 const ADMIN_ROLES = ['super_admin', 'owner', 'branch_manager', 'finance', 'sales', 'marketing'] as const;
+
+function LazyPage({ children }: { children: React.ReactNode }) {
+  return <Suspense fallback={<LoadingState />}>{children}</Suspense>;
+}
 
 export default function AdminRoutes() {
   return (
@@ -54,46 +61,46 @@ export default function AdminRoutes() {
         </ProtectedRoute>
       }
     >
-      <Route index element={<AdminDashboard />} />
-      <Route path="analytics" element={<AdminAnalytics />} />
-      <Route path="packages" element={<AdminPackages />} />
-      <Route path="packages/:id" element={<AdminPackageDetail />} />
-      <Route path="departures" element={<AdminDepartures />} />
-      <Route path="savings" element={<AdminSavingsPlans />} />
-      <Route path="master-data" element={<AdminMasterData />} />
-      <Route path="branches" element={<AdminBranches />} />
-      <Route path="bookings" element={<AdminBookings />} />
-      <Route path="bookings/:id" element={<AdminBookingDetail />} />
-      <Route path="payments" element={<AdminPayments />} />
-      <Route path="finance" element={<AdminFinancePL />} />
-      <Route path="vendors" element={<AdminVendors />} />
-      <Route path="customers" element={<AdminCustomers />} />
-      <Route path="customers/:id" element={<AdminCustomerDetail />} />
-      <Route path="documents" element={<AdminDocumentVerification />} />
-      <Route path="users" element={<AdminUsers />} />
-      <Route path="permissions" element={<AdminRolePermissions />} />
-      <Route path="agents" element={<AdminAgents />} />
-      <Route path="coupons" element={<AdminCoupons />} />
-      <Route path="loyalty" element={<AdminLoyalty />} />
-      <Route path="referrals" element={<AdminReferrals />} />
-      <Route path="support" element={<AdminSupportTickets />} />
-      <Route path="leads" element={<AdminLeads />} />
-      <Route path="leads/analytics" element={<AdminLeadAnalytics />} />
-      <Route path="leads/:id" element={<AdminLeadDetail />} />
-      <Route path="room-assignments" element={<AdminRoomAssignments />} />
-      <Route path="reports" element={<AdminReports />} />
-      <Route path="advanced-reports" element={<AdminAdvancedReports />} />
-      <Route path="scheduled-reports" element={<AdminScheduledReports />} />
-      <Route path="hr" element={<AdminHR />} />
-      <Route path="haji" element={<AdminHajiManagement />} />
-      <Route path="itinerary-templates" element={<AdminItineraryTemplates />} />
-      <Route path="offline-content" element={<AdminOfflineContent />} />
-      <Route path="documents-generator" element={<AdminDocumentGenerator />} />
-      <Route path="security" element={<AdminSecurityAudit />} />
-      <Route path="2fa" element={<Admin2FASettings />} />
-      <Route path="whatsapp" element={<AdminWhatsApp />} />
-      <Route path="appearance" element={<AdminAppearance />} />
-      <Route path="settings" element={<AdminSettings />} />
+      <Route index element={<LazyPage><AdminDashboard /></LazyPage>} />
+      <Route path="analytics" element={<LazyPage><AdminAnalytics /></LazyPage>} />
+      <Route path="packages" element={<LazyPage><AdminPackages /></LazyPage>} />
+      <Route path="packages/:id" element={<LazyPage><AdminPackageDetail /></LazyPage>} />
+      <Route path="departures" element={<LazyPage><AdminDepartures /></LazyPage>} />
+      <Route path="savings" element={<LazyPage><AdminSavingsPlans /></LazyPage>} />
+      <Route path="master-data" element={<LazyPage><AdminMasterData /></LazyPage>} />
+      <Route path="branches" element={<LazyPage><AdminBranches /></LazyPage>} />
+      <Route path="bookings" element={<LazyPage><AdminBookings /></LazyPage>} />
+      <Route path="bookings/:id" element={<LazyPage><AdminBookingDetail /></LazyPage>} />
+      <Route path="payments" element={<LazyPage><AdminPayments /></LazyPage>} />
+      <Route path="finance" element={<LazyPage><AdminFinancePL /></LazyPage>} />
+      <Route path="vendors" element={<LazyPage><AdminVendors /></LazyPage>} />
+      <Route path="customers" element={<LazyPage><AdminCustomers /></LazyPage>} />
+      <Route path="customers/:id" element={<LazyPage><AdminCustomerDetail /></LazyPage>} />
+      <Route path="documents" element={<LazyPage><AdminDocumentVerification /></LazyPage>} />
+      <Route path="users" element={<LazyPage><AdminUsers /></LazyPage>} />
+      <Route path="permissions" element={<LazyPage><AdminRolePermissions /></LazyPage>} />
+      <Route path="agents" element={<LazyPage><AdminAgents /></LazyPage>} />
+      <Route path="coupons" element={<LazyPage><AdminCoupons /></LazyPage>} />
+      <Route path="loyalty" element={<LazyPage><AdminLoyalty /></LazyPage>} />
+      <Route path="referrals" element={<LazyPage><AdminReferrals /></LazyPage>} />
+      <Route path="support" element={<LazyPage><AdminSupportTickets /></LazyPage>} />
+      <Route path="leads" element={<LazyPage><AdminLeads /></LazyPage>} />
+      <Route path="leads/analytics" element={<LazyPage><AdminLeadAnalytics /></LazyPage>} />
+      <Route path="leads/:id" element={<LazyPage><AdminLeadDetail /></LazyPage>} />
+      <Route path="room-assignments" element={<LazyPage><AdminRoomAssignments /></LazyPage>} />
+      <Route path="reports" element={<LazyPage><AdminReports /></LazyPage>} />
+      <Route path="advanced-reports" element={<LazyPage><AdminAdvancedReports /></LazyPage>} />
+      <Route path="scheduled-reports" element={<LazyPage><AdminScheduledReports /></LazyPage>} />
+      <Route path="hr" element={<LazyPage><AdminHR /></LazyPage>} />
+      <Route path="haji" element={<LazyPage><AdminHajiManagement /></LazyPage>} />
+      <Route path="itinerary-templates" element={<LazyPage><AdminItineraryTemplates /></LazyPage>} />
+      <Route path="offline-content" element={<LazyPage><AdminOfflineContent /></LazyPage>} />
+      <Route path="documents-generator" element={<LazyPage><AdminDocumentGenerator /></LazyPage>} />
+      <Route path="security" element={<LazyPage><AdminSecurityAudit /></LazyPage>} />
+      <Route path="2fa" element={<LazyPage><Admin2FASettings /></LazyPage>} />
+      <Route path="whatsapp" element={<LazyPage><AdminWhatsApp /></LazyPage>} />
+      <Route path="appearance" element={<LazyPage><AdminAppearance /></LazyPage>} />
+      <Route path="settings" element={<LazyPage><AdminSettings /></LazyPage>} />
     </Route>
   );
 }

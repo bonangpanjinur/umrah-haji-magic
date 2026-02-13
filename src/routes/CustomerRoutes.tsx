@@ -1,38 +1,40 @@
 import { Route } from "react-router-dom";
+import { lazy, Suspense } from "react";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
-import BookingPage from "@/pages/booking/BookingPage";
-import BookingSuccess from "@/pages/booking/BookingSuccess";
-import MyBookings from "@/pages/customer/MyBookings";
-import BookingDetail from "@/pages/customer/BookingDetail";
-import PaymentUpload from "@/pages/customer/PaymentUpload";
-import MySavings from "@/pages/customer/MySavings";
-import MyLoyalty from "@/pages/customer/MyLoyalty";
-import SavingsSuccess from "@/pages/savings/SavingsSuccess";
-import JamaahPortal from "@/pages/jamaah/JamaahPortal";
-import JamaahDigitalID from "@/pages/jamaah/JamaahDigitalID";
-import JamaahDoaPanduan from "@/pages/jamaah/JamaahDoaPanduan";
-import JamaahItinerary from "@/pages/jamaah/JamaahItinerary";
+import { LoadingState } from "@/components/shared/LoadingState";
+
+const BookingPage = lazy(() => import("@/pages/booking/BookingPage"));
+const BookingSuccess = lazy(() => import("@/pages/booking/BookingSuccess"));
+const MyBookings = lazy(() => import("@/pages/customer/MyBookings"));
+const BookingDetail = lazy(() => import("@/pages/customer/BookingDetail"));
+const PaymentUpload = lazy(() => import("@/pages/customer/PaymentUpload"));
+const MySavings = lazy(() => import("@/pages/customer/MySavings"));
+const MyLoyalty = lazy(() => import("@/pages/customer/MyLoyalty"));
+const SavingsSuccess = lazy(() => import("@/pages/savings/SavingsSuccess"));
+const JamaahPortal = lazy(() => import("@/pages/jamaah/JamaahPortal"));
+const JamaahDigitalID = lazy(() => import("@/pages/jamaah/JamaahDigitalID"));
+const JamaahDoaPanduan = lazy(() => import("@/pages/jamaah/JamaahDoaPanduan"));
+const JamaahItinerary = lazy(() => import("@/pages/jamaah/JamaahItinerary"));
+
+function LazyPage({ children }: { children: React.ReactNode }) {
+  return <Suspense fallback={<LoadingState />}>{children}</Suspense>;
+}
 
 export default function CustomerRoutes() {
   return (
     <>
-      {/* Savings Protected */}
-      <Route path="/savings/success/:planId" element={<ProtectedRoute><SavingsSuccess /></ProtectedRoute>} />
-      <Route path="/customer/my-savings" element={<ProtectedRoute><MySavings /></ProtectedRoute>} />
-      <Route path="/customer/my-loyalty" element={<ProtectedRoute><MyLoyalty /></ProtectedRoute>} />
-
-      {/* Jamaah Portal */}
-      <Route path="/jamaah" element={<ProtectedRoute><JamaahPortal /></ProtectedRoute>} />
-      <Route path="/jamaah/digital-id" element={<ProtectedRoute><JamaahDigitalID /></ProtectedRoute>} />
-      <Route path="/jamaah/doa-panduan" element={<ProtectedRoute><JamaahDoaPanduan /></ProtectedRoute>} />
-      <Route path="/jamaah/itinerary" element={<ProtectedRoute><JamaahItinerary /></ProtectedRoute>} />
-
-      {/* Booking */}
-      <Route path="/booking/:packageId" element={<ProtectedRoute><BookingPage /></ProtectedRoute>} />
-      <Route path="/booking/success/:bookingId" element={<ProtectedRoute><BookingSuccess /></ProtectedRoute>} />
-      <Route path="/my-bookings" element={<ProtectedRoute><MyBookings /></ProtectedRoute>} />
-      <Route path="/my-bookings/:bookingId" element={<ProtectedRoute><BookingDetail /></ProtectedRoute>} />
-      <Route path="/my-bookings/:bookingId/payment" element={<ProtectedRoute><PaymentUpload /></ProtectedRoute>} />
+      <Route path="/savings/success/:planId" element={<ProtectedRoute><LazyPage><SavingsSuccess /></LazyPage></ProtectedRoute>} />
+      <Route path="/customer/my-savings" element={<ProtectedRoute><LazyPage><MySavings /></LazyPage></ProtectedRoute>} />
+      <Route path="/customer/my-loyalty" element={<ProtectedRoute><LazyPage><MyLoyalty /></LazyPage></ProtectedRoute>} />
+      <Route path="/jamaah" element={<ProtectedRoute><LazyPage><JamaahPortal /></LazyPage></ProtectedRoute>} />
+      <Route path="/jamaah/digital-id" element={<ProtectedRoute><LazyPage><JamaahDigitalID /></LazyPage></ProtectedRoute>} />
+      <Route path="/jamaah/doa-panduan" element={<ProtectedRoute><LazyPage><JamaahDoaPanduan /></LazyPage></ProtectedRoute>} />
+      <Route path="/jamaah/itinerary" element={<ProtectedRoute><LazyPage><JamaahItinerary /></LazyPage></ProtectedRoute>} />
+      <Route path="/booking/:packageId" element={<ProtectedRoute><LazyPage><BookingPage /></LazyPage></ProtectedRoute>} />
+      <Route path="/booking/success/:bookingId" element={<ProtectedRoute><LazyPage><BookingSuccess /></LazyPage></ProtectedRoute>} />
+      <Route path="/my-bookings" element={<ProtectedRoute><LazyPage><MyBookings /></LazyPage></ProtectedRoute>} />
+      <Route path="/my-bookings/:bookingId" element={<ProtectedRoute><LazyPage><BookingDetail /></LazyPage></ProtectedRoute>} />
+      <Route path="/my-bookings/:bookingId/payment" element={<ProtectedRoute><LazyPage><PaymentUpload /></LazyPage></ProtectedRoute>} />
     </>
   );
 }

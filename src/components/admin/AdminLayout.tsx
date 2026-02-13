@@ -3,13 +3,15 @@ import { useAuth } from "@/hooks/useAuth";
 import { useAdminNotifications } from "@/hooks/useAdminNotifications";
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "./NotificationBell";
+import { CommandPalette } from "./CommandPalette";
+import { AdminBreadcrumb } from "./AdminBreadcrumb";
 import { 
   LayoutDashboard, Package, Users, Calendar, CreditCard, 
   Settings, LogOut, Menu, X, Shield, UserCheck,
   FileBarChart, BarChart3, Target, KeyRound, BedDouble, Plane,
   Wallet, FileCheck, Building2, DollarSign, Truck, Gift,
   HeadphonesIcon, Palette, ShieldCheck, Key, MessageSquare,
-  UserCog, BookOpen, MapPin, TrendingUp, FileText, Share2
+  UserCog, BookOpen, MapPin, TrendingUp, FileText, Share2, Search
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -149,8 +151,10 @@ export function AdminLayout() {
 
   return (
     <div className="min-h-screen bg-muted/30">
-      {/* Mobile Header */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-background border-b z-50 flex items-center justify-between px-4">
+      <CommandPalette />
+
+      {/* Mobile/Tablet Header */}
+      <header className="xl:hidden fixed top-0 left-0 right-0 h-16 bg-background border-b z-50 flex items-center justify-between px-4">
         <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)}>
           {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </Button>
@@ -169,9 +173,9 @@ export function AdminLayout() {
         </div>
       </header>
 
-      {/* Sidebar */}
+      {/* Sidebar - visible on xl+, togglable on mobile/tablet */}
       <aside className={cn(
-        "fixed top-0 left-0 bottom-0 w-64 bg-background border-r z-40 transform transition-transform lg:translate-x-0",
+        "fixed top-0 left-0 bottom-0 w-64 bg-background border-r z-40 transform transition-transform xl:translate-x-0",
         sidebarOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="flex flex-col h-full">
@@ -183,7 +187,19 @@ export function AdminLayout() {
               </div>
               <span className="font-semibold">UmrohTravel</span>
             </Link>
-            <div className="hidden lg:block">
+            <div className="hidden xl:flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => {
+                  const event = new KeyboardEvent('keydown', { key: 'k', ctrlKey: true });
+                  document.dispatchEvent(event);
+                }}
+                title="Cari halaman (Ctrl+K)"
+              >
+                <Search className="h-4 w-4" />
+              </Button>
               <NotificationBell
                 notifications={notifications}
                 unreadCount={unreadCount}
@@ -249,17 +265,18 @@ export function AdminLayout() {
         </div>
       </aside>
 
-      {/* Overlay */}
+      {/* Overlay for mobile/tablet */}
       {sidebarOpen && (
         <div 
-          className="fixed inset-0 bg-black/50 z-30 lg:hidden" 
+          className="fixed inset-0 bg-black/50 z-30 xl:hidden" 
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* Main Content */}
-      <main className="lg:pl-64 pt-16 lg:pt-0 min-h-screen">
+      <main className="xl:pl-64 pt-16 xl:pt-0 min-h-screen">
         <div className="p-6">
+          <AdminBreadcrumb />
           <Outlet />
         </div>
       </main>
