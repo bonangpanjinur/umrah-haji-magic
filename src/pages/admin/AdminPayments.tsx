@@ -167,7 +167,7 @@ export default function AdminPayments() {
     return true;
   });
 
-  const pendingPayments = payments?.filter(p => p.status === 'pending') || [];
+  const pendingPayments = payments?.filter(p => p.status === 'pending' || p.status === 'verified') || [];
   const paidPayments = payments?.filter(p => p.status === 'paid') || [];
   const failedPayments = payments?.filter(p => p.status === 'failed') || [];
 
@@ -182,6 +182,7 @@ export default function AdminPayments() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'paid':
+      case 'verified':
         return <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Disetujui</Badge>;
       case 'pending':
         return <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">Menunggu</Badge>;
@@ -504,7 +505,7 @@ export default function AdminPayments() {
               </div>
             </div>
           </div>
-          {selectedPayment?.status === 'pending' && (
+          {(selectedPayment?.status === 'pending' || selectedPayment?.status === 'verified') && (
             <DialogFooter className="gap-2">
               <Button 
                 variant="destructive" 
