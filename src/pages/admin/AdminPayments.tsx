@@ -76,7 +76,7 @@ export default function AdminPayments() {
   });
 
   const verifyMutation = useMutation({
-    mutationFn: async ({ paymentId, status, notes }: { paymentId: string; status: 'paid' | 'failed'; notes?: string }) => {
+    mutationFn: async ({ paymentId, status, notes }: { paymentId: string; status: 'paid' | 'verified' | 'failed'; notes?: string }) => {
       const { data: payment, error: paymentError } = await supabase
         .from('payments')
         .update({
@@ -91,7 +91,7 @@ export default function AdminPayments() {
 
       if (paymentError) throw paymentError;
 
-      if (status === 'paid' && payment) {
+      if ((status === 'paid' || status === 'verified') && payment) {
         const { data: booking } = await supabase
           .from('bookings')
           .select('paid_amount, total_price')
