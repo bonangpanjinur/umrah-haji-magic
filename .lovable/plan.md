@@ -1,159 +1,115 @@
 
-# Rencana Pengembangan & Perbaikan Lanjutan
+# Rencana Perbaikan: Error Payment Status & Build Errors
 
-Setelah menyelesaikan 4 fase fondasi (Stabilitas, Arsitektur, Shared Components, Data Layer), berikut adalah rencana pengembangan berikutnya yang dibagi dalam 5 fase strategis.
+## Masalah Utama
 
----
+**Error "invalid input value for enum payment_status: 'verified'"**
 
-## Fase 5: Adopsi Data Layer Hooks ke Halaman yang Ada
+Penyebab: Kode mencoba menyimpan status `'verified'` ke kolom `payments.status`, tapi enum `payment_status` di database hanya berisi: `pending`, `partial`, `paid`, `refunded`, `failed`. Nilai `'verified'` tidak ada di database meskipun sudah ada di `types.ts` (karena migrasi sebelumnya gagal -- `ALTER TYPE ADD VALUE` tidak bisa dijalankan dalam transaction block).
 
-Saat ini hooks seperti `useCustomers`, `useBookings`, `useLeads` sudah dibuat tapi belum dipakai di halaman admin. Halaman-halaman masih menulis query Supabase langsung di komponen.
-
-**Yang dikerjakan:**
-- Refactor `AdminCustomers.tsx` agar menggunakan `useCustomers()` bukan query inline
-- Refactor `AdminLeads.tsx` agar menggunakan `useLeads()` 
-- Refactor `AdminPayments.tsx` - extract verify mutation ke hook `usePayments()`
-- Refactor `AdminDashboard.tsx` - extract 3 query menjadi hook `useDashboardStats()`
-- Refactor `AgentDashboard.tsx` agar menggunakan `useAgents()`
-
-**Dampak:** Menghilangkan duplikasi query, konsistensi cache, dan komponen lebih bersih.
+**Solusi**: Tidak perlu menambah nilai enum baru. Cukup ganti logika verifikasi agar menggunakan status `'paid'` (bukan `'verified'`), karena secara bisnis "verified" = "paid". Ini lebih sederhana dan konsisten.
 
 ---
 
-## Fase 6: Adopsi Shared Components ke Halaman
+## Masalah Sekunder: 26 Build Errors di Edge Functions
 
-Komponen `DataTable`, `StatusBadge`, `LoadingState`, `EmptyState`, dan `ConfirmDialog` sudah dibuat tapi belum dipakai di halaman admin.
+Semua error ada di 2 file edge function:
 
-**Yang dikerjakan:**
-- `AdminCustomers.tsx` - ganti table manual dengan `DataTable` + `StatusBadge`
-- `AdminPayments.tsx` - ganti table manual dengan `DataTable` + `StatusBadge`
-- `AdminLeads.tsx` - integrasikan `StatusBadge` untuk lead status
-- `AdminBookings.tsx` - ganti table manual dengan `DataTable`
-- Semua halaman - ganti loading skeleton manual dengan `LoadingState`, ganti empty state manual dengan `EmptyState`
-- Semua dialog konfirmasi delete - ganti dengan `ConfirmDialog`
+### 1. `send-payment-reminder/index.ts` (9 errors)
+- `whatsapp_config` query mengembalikan tipe `never` karena tabel tidak ada di types.ts
+- `whatsapp_logs` insert juga `never`
+- **Fix**: Tambah type assertion `.returns<any>()` atau cast ke `any` pada query whatsapp_config dan whatsapp_logs
 
-**Dampak:** UI lebih konsisten, kode halaman berkurang signifikan (estimasi -40% LOC per halaman).
-
----
-
-## Fase 7: Fitur Kritis yang Belum Ada
-
-### 7A. Sistem Notifikasi Email Transaksional
-- Buat edge function `send-email` menggunakan Lovable AI atau layanan email
-- Trigger email otomatis untuk: booking baru, pembayaran diverifikasi, perubahan status
-- Tabel `email_logs` untuk tracking
-
-### 7B. Payment Gateway (Midtrans/Xendit)
-- Buat edge function `create-payment` untuk generate payment link
-- Buat edge function `payment-webhook` untuk terima callback otomatis
-- Update status pembayaran otomatis tanpa verifikasi manual
-- Tabel `payment_transactions` untuk tracking gateway
-
-### 7C. Dashboard Real-time
-- Aktifkan Supabase Realtime di tabel `bookings` dan `payments`
-- Dashboard admin update otomatis tanpa refresh
-- Notifikasi real-time saat ada booking/pembayaran baru
+### 2. `send-whatsapp-notification/index.ts` (17 errors)
+- `customer:customers(full_name, phone)` mengembalikan array, bukan object -- Supabase join hasilnya perlu `.single()` atau akses `[0]`
+- `error.message` -- `error` bertipe `unknown`
+- **Fix**: Akses customer sebagai `booking.customer[0]` atau cast, dan cast error ke `Error`
 
 ---
 
-## Fase 8: UX & Mobile Improvements
+## Rencana Eksekusi
 
-**Yang dikerjakan:**
-- Perbaiki responsiveness AdminLayout sidebar di tablet (768px-1024px)
-- Tambah "pull to refresh" di halaman Jamaah Portal (PWA)
-- Tambah skeleton loading yang lebih baik di semua halaman
-- Tambah breadcrumb navigation di halaman admin
-- Perbaiki form validation feedback (inline error, highlight field)
-- Tambah keyboard shortcut untuk navigasi admin (Ctrl+K search)
+### Langkah 1: Fix Payment Status (Prioritas Utama)
 
----
+**File: `src/pages/admin/AdminPayments.tsx`**
+- Ubah tipe mutation dari `'paid' | 'verified' | 'failed'` menjadi `'paid' | 'failed'`
+- Hapus semua referensi ke `'verified'` -- gunakan `'paid'` saja
+- Pada baris 79: `status: 'paid' | 'failed'`
+- Pada baris 94: Hapus kondisi `|| status === 'verified'`
 
-## Fase 9: Keamanan & Performa
+**File: `src/integrations/supabase/types.ts`** -- TIDAK BOLEH DIEDIT (auto-generated), tapi types.ts saat ini salah karena berisi `'verified'`. Ini akan tersinkron ulang saat migrasi berikutnya dijalankan.
 
-### Keamanan
-- Audit semua edge function - pastikan validasi input dengan Zod
-- Tambah rate limiting di edge function kritis (login, payment)
-- Review RLS policies - pastikan branch isolation benar-benar enforce
-- Implementasi session timeout (auto logout setelah inaktif)
+### Langkah 2: Fix Edge Function `send-whatsapp-notification/index.ts`
 
-### Performa
-- Lazy load route modules (React.lazy + Suspense) - saat ini semua page di-import eager
-- Optimasi query dashboard - gunakan database views atau materialized views
-- Implementasi pagination server-side untuk tabel dengan data banyak (customers, bookings)
-- Image optimization - compress bukti transfer sebelum upload
+- Semua akses `booking.customer.phone` dan `booking.customer.full_name` diganti dengan `booking.customer?.[0]?.phone` dan `booking.customer?.[0]?.full_name` (karena Supabase join mengembalikan array)
+- Baris 249: Cast `error` ke `(error as Error).message`
 
----
+### Langkah 3: Fix Edge Function `send-payment-reminder/index.ts`
 
-## Urutan Prioritas Eksekusi
+- Query `whatsapp_config` dan insert `whatsapp_logs`: tambah type casting karena tabel ini mungkin tidak ada di generated types
+- Cast `supabase` parameter dengan `as any` pada pemanggilan `sendWhatsApp`
 
-```text
-Fase 5 (Adopsi Hooks)     ← Paling mudah, dampak langsung
-    |
-Fase 6 (Adopsi Components) ← Mudah, UI konsisten
-    |
-Fase 7A (Email)            ← Fitur kritis untuk bisnis
-Fase 7C (Realtime)         ← UX boost besar
-    |
-Fase 8 (UX/Mobile)         ← Polish
-    |
-Fase 7B (Payment Gateway)  ← Butuh API key external
-Fase 9 (Security/Perf)     ← Optimasi lanjutan
-```
+### Langkah 4: Sinkronkan types.ts
+
+- Buat migrasi kosong/dummy untuk trigger regenerasi types.ts, menghapus `'verified'` dari enum karena memang tidak ada di database
 
 ---
 
 ## Detail Teknis
 
-### Fase 5 - Contoh Refactor
-Sebelum:
+### AdminPayments.tsx - Perubahan
+
 ```typescript
-// AdminCustomers.tsx - 30 baris query inline
-const { data: customers } = useQuery({
-  queryKey: ['admin-customers'],
-  queryFn: async () => {
-    const { data, error } = await supabase.from('customers').select('*')...
-  }
-});
+// SEBELUM (baris 79):
+status: 'paid' | 'verified' | 'failed'
+
+// SESUDAH:
+status: 'paid' | 'failed'
+
+// SEBELUM (baris 94):
+if ((status === 'paid' || status === 'verified') && payment) {
+
+// SESUDAH:
+if (status === 'paid' && payment) {
 ```
 
-Sesudah:
+### send-whatsapp-notification - Perubahan Pattern
+
 ```typescript
-// AdminCustomers.tsx - 1 baris
-const { data: customers, isLoading } = useCustomerList();
+// SEBELUM:
+booking.customer.phone
+booking.customer.full_name
+
+// SESUDAH:
+const customer = Array.isArray(booking.customer) 
+  ? booking.customer[0] 
+  : booking.customer;
+customer?.phone
+customer?.full_name
 ```
 
-### Fase 6 - Contoh Refactor
-Sebelum: ~80 baris table manual (TableHeader, TableBody, TableRow, dll)
-Sesudah: ~15 baris DataTable dengan column config
+### send-payment-reminder - Perubahan Pattern
 
-### Fase 7B - Payment Gateway Architecture
-```text
-Customer -> Edge Function (create-payment)
-    -> Midtrans/Xendit API -> Payment Page
-    -> Customer bayar
-    -> Webhook -> Edge Function (payment-webhook)
-    -> Update DB otomatis
-```
-
-### Fase 9 - Lazy Loading
 ```typescript
-// Sebelum
-import AdminDashboard from "@/pages/admin/AdminDashboard";
+// Cast untuk whatsapp_config
+const { data: config } = await supabase
+  .from("whatsapp_config")
+  .select("*")
+  .single() as { data: any; error: any };
 
-// Sesudah
-const AdminDashboard = lazy(() => import("@/pages/admin/AdminDashboard"));
+// Cast untuk whatsapp_logs  
+await (supabase.from("whatsapp_logs") as any).insert({...});
 ```
 
 ---
 
-## Estimasi File yang Akan Dibuat/Diubah
+## Estimasi
 
-| Fase | File Baru | File Diubah | Estimasi |
-|------|-----------|-------------|----------|
-| 5 | 1-2 hooks baru | 5-6 halaman | Ringan |
-| 6 | 0 | 5-8 halaman | Ringan |
-| 7A | 1 edge function, 1 migration | 2-3 halaman | Sedang |
-| 7B | 2 edge functions, 1 migration | 3-4 halaman | Berat |
-| 7C | 0 migration (ALTER) | 2-3 halaman | Ringan |
-| 8 | 1-2 components | 5-10 halaman | Sedang |
-| 9 | 0-1 | 5-8 file | Sedang |
+| Langkah | File | Kompleksitas |
+|---------|------|-------------|
+| 1 - Payment Status | AdminPayments.tsx | Ringan |
+| 2 - WhatsApp Notification | send-whatsapp-notification/index.ts | Sedang |
+| 3 - Payment Reminder | send-payment-reminder/index.ts | Sedang |
+| 4 - Types sync | Migration dummy | Ringan |
+
+Total: 4 file diubah, 0 file baru, semua 26 build errors akan teratasi.
