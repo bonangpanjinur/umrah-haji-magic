@@ -1,115 +1,49 @@
 
-# Rencana Perbaikan: Error Payment Status & Build Errors
 
-## Masalah Utama
+# Perbaikan Error "invalid input value for enum payment_status: verified"
 
-**Error "invalid input value for enum payment_status: 'verified'"**
+## Akar Masalah
 
-Penyebab: Kode mencoba menyimpan status `'verified'` ke kolom `payments.status`, tapi enum `payment_status` di database hanya berisi: `pending`, `partial`, `paid`, `refunded`, `failed`. Nilai `'verified'` tidak ada di database meskipun sudah ada di `types.ts` (karena migrasi sebelumnya gagal -- `ALTER TYPE ADD VALUE` tidak bisa dijalankan dalam transaction block).
+Error ini disebabkan oleh **database trigger**, bukan kode frontend.
 
-**Solusi**: Tidak perlu menambah nilai enum baru. Cukup ganti logika verifikasi agar menggunakan status `'paid'` (bukan `'verified'`), karena secara bisnis "verified" = "paid". Ini lebih sederhana dan konsisten.
+Trigger `award_loyalty_points_on_payment` yang terpasang di tabel `payments` mengandung literal `'verified'` dalam logikanya. Setiap kali ada INSERT atau UPDATE di tabel `payments`, trigger ini otomatis dijalankan dan PostgreSQL gagal karena `'verified'` bukan nilai valid di enum `payment_status`.
 
----
+Alur error:
+1. Customer submit bukti pembayaran dengan status `'pending'` (kode frontend sudah benar)
+2. PostgreSQL otomatis menjalankan trigger `tr_award_loyalty_points`
+3. Trigger mencoba membandingkan `NEW.status = 'verified'` -- nilai `'verified'` tidak ada di enum
+4. PostgreSQL menolak seluruh operasi INSERT, muncul error
 
-## Masalah Sekunder: 26 Build Errors di Edge Functions
+Enum `payment_status` di database hanya berisi: `pending`, `partial`, `paid`, `refunded`, `failed`.
 
-Semua error ada di 2 file edge function:
+## Rencana Perbaikan
 
-### 1. `send-payment-reminder/index.ts` (9 errors)
-- `whatsapp_config` query mengembalikan tipe `never` karena tabel tidak ada di types.ts
-- `whatsapp_logs` insert juga `never`
-- **Fix**: Tambah type assertion `.returns<any>()` atau cast ke `any` pada query whatsapp_config dan whatsapp_logs
+### Langkah 1: Perbaiki Database Trigger (Prioritas Utama)
 
-### 2. `send-whatsapp-notification/index.ts` (17 errors)
-- `customer:customers(full_name, phone)` mengembalikan array, bukan object -- Supabase join hasilnya perlu `.single()` atau akses `[0]`
-- `error.message` -- `error` bertipe `unknown`
-- **Fix**: Akses customer sebagai `booking.customer[0]` atau cast, dan cast error ke `Error`
+Buat migrasi SQL untuk mengganti fungsi `award_loyalty_points_on_payment`:
+- Ganti `'verified'` menjadi `'paid'` di semua referensi
+- Ini langsung menyelesaikan error upload pembayaran
 
----
-
-## Rencana Eksekusi
-
-### Langkah 1: Fix Payment Status (Prioritas Utama)
-
-**File: `src/pages/admin/AdminPayments.tsx`**
-- Ubah tipe mutation dari `'paid' | 'verified' | 'failed'` menjadi `'paid' | 'failed'`
-- Hapus semua referensi ke `'verified'` -- gunakan `'paid'` saja
-- Pada baris 79: `status: 'paid' | 'failed'`
-- Pada baris 94: Hapus kondisi `|| status === 'verified'`
-
-**File: `src/integrations/supabase/types.ts`** -- TIDAK BOLEH DIEDIT (auto-generated), tapi types.ts saat ini salah karena berisi `'verified'`. Ini akan tersinkron ulang saat migrasi berikutnya dijalankan.
-
-### Langkah 2: Fix Edge Function `send-whatsapp-notification/index.ts`
-
-- Semua akses `booking.customer.phone` dan `booking.customer.full_name` diganti dengan `booking.customer?.[0]?.phone` dan `booking.customer?.[0]?.full_name` (karena Supabase join mengembalikan array)
-- Baris 249: Cast `error` ke `(error as Error).message`
-
-### Langkah 3: Fix Edge Function `send-payment-reminder/index.ts`
-
-- Query `whatsapp_config` dan insert `whatsapp_logs`: tambah type casting karena tabel ini mungkin tidak ada di generated types
-- Cast `supabase` parameter dengan `as any` pada pemanggilan `sendWhatsApp`
-
-### Langkah 4: Sinkronkan types.ts
-
-- Buat migrasi kosong/dummy untuk trigger regenerasi types.ts, menghapus `'verified'` dari enum karena memang tidak ada di database
-
----
-
-## Detail Teknis
-
-### AdminPayments.tsx - Perubahan
-
-```typescript
-// SEBELUM (baris 79):
-status: 'paid' | 'verified' | 'failed'
-
-// SESUDAH:
-status: 'paid' | 'failed'
-
-// SEBELUM (baris 94):
-if ((status === 'paid' || status === 'verified') && payment) {
-
-// SESUDAH:
-if (status === 'paid' && payment) {
+```sql
+CREATE OR REPLACE FUNCTION award_loyalty_points_on_payment()
+RETURNS TRIGGER AS $$
+...
+  IF NEW.status = 'paid' AND (OLD.status IS NULL OR OLD.status != 'paid') THEN
+...
+END;
+$$ LANGUAGE plpgsql;
 ```
 
-### send-whatsapp-notification - Perubahan Pattern
+### Langkah 2: Bersihkan Referensi 'verified' di AdminPayments.tsx
 
-```typescript
-// SEBELUM:
-booking.customer.phone
-booking.customer.full_name
+Baris 507 masih ada kondisi `selectedPayment?.status === 'verified'` yang perlu dihapus karena status tersebut tidak pernah ada di database.
 
-// SESUDAH:
-const customer = Array.isArray(booking.customer) 
-  ? booking.customer[0] 
-  : booking.customer;
-customer?.phone
-customer?.full_name
-```
+### Estimasi
 
-### send-payment-reminder - Perubahan Pattern
+| Langkah | Target | Kompleksitas |
+|---------|--------|-------------|
+| 1 | Database trigger function | Ringan (1 migrasi SQL) |
+| 2 | AdminPayments.tsx baris 507 | Ringan (hapus kondisi) |
 
-```typescript
-// Cast untuk whatsapp_config
-const { data: config } = await supabase
-  .from("whatsapp_config")
-  .select("*")
-  .single() as { data: any; error: any };
+Total: 1 migrasi database + 1 file diubah. Error upload pembayaran akan langsung teratasi.
 
-// Cast untuk whatsapp_logs  
-await (supabase.from("whatsapp_logs") as any).insert({...});
-```
-
----
-
-## Estimasi
-
-| Langkah | File | Kompleksitas |
-|---------|------|-------------|
-| 1 - Payment Status | AdminPayments.tsx | Ringan |
-| 2 - WhatsApp Notification | send-whatsapp-notification/index.ts | Sedang |
-| 3 - Payment Reminder | send-payment-reminder/index.ts | Sedang |
-| 4 - Types sync | Migration dummy | Ringan |
-
-Total: 4 file diubah, 0 file baru, semua 26 build errors akan teratasi.
