@@ -76,7 +76,7 @@ export default function AdminPayments() {
   });
 
   const verifyMutation = useMutation({
-    mutationFn: async ({ paymentId, status, notes }: { paymentId: string; status: 'paid' | 'verified' | 'failed'; notes?: string }) => {
+    mutationFn: async ({ paymentId, status, notes }: { paymentId: string; status: 'paid' | 'failed'; notes?: string }) => {
       const { data: payment, error: paymentError } = await supabase
         .from('payments')
         .update({
@@ -91,7 +91,7 @@ export default function AdminPayments() {
 
       if (paymentError) throw paymentError;
 
-      if ((status === 'paid' || status === 'verified') && payment) {
+      if (status === 'paid' && payment) {
         const { data: booking } = await supabase
           .from('bookings')
           .select('paid_amount, total_price')
@@ -167,7 +167,7 @@ export default function AdminPayments() {
     return true;
   });
 
-  const pendingPayments = payments?.filter(p => p.status === 'pending' || p.status === 'verified') || [];
+  const pendingPayments = payments?.filter(p => p.status === 'pending') || [];
   const paidPayments = payments?.filter(p => p.status === 'paid') || [];
   const failedPayments = payments?.filter(p => p.status === 'failed') || [];
 
@@ -182,7 +182,6 @@ export default function AdminPayments() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'paid':
-      case 'verified':
         return <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Disetujui</Badge>;
       case 'pending':
         return <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">Menunggu</Badge>;

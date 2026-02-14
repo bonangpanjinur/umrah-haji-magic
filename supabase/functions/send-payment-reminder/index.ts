@@ -45,16 +45,16 @@ function getDaysUntilDeparture(departureDate: string): number {
 
 // Send WhatsApp message via configured provider
 async function sendWhatsApp(
-  supabase: ReturnType<typeof createClient>,
+  supabaseClient: any,
   phone: string,
   message: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
     // Get WhatsApp config
-    const { data: config, error: configError } = await supabase
+    const { data: config, error: configError } = await supabaseClient
       .from("whatsapp_config")
       .select("*")
-      .single();
+      .single() as { data: any; error: any };
 
     if (configError || !config || !config.is_active || !config.api_key) {
       return { success: false, error: "WhatsApp not configured" };
@@ -102,7 +102,7 @@ async function sendWhatsApp(
     const data = await response.json();
     
     // Log the message
-    await supabase.from("whatsapp_logs").insert({
+    await (supabaseClient.from("whatsapp_logs") as any).insert({
       recipient_phone: formattedPhone,
       message_content: message,
       status: data.status === true || data.status === "true" ? 'sent' : 'failed',
@@ -137,7 +137,7 @@ serve(async (req: Request): Promise<Response> => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Parse request body for optional filters
-    let reminderType = "all"; // all, unpaid, approaching
+    let reminderType = "all";
     let bookingId: string | null = null;
     
     try {
@@ -199,7 +199,6 @@ serve(async (req: Request): Promise<Response> => {
 
       const daysUntil = getDaysUntilDeparture(b.departure.departure_date);
       
-      // Determine if we should send reminder based on type
       let shouldSend = false;
       let messageType = "";
 
@@ -226,7 +225,7 @@ serve(async (req: Request): Promise<Response> => {
         continue;
       }
 
-      // Compose message based on type
+      // Compose message
       let message = "";
       const customerName = b.customer.full_name;
       const packageName = b.departure?.package?.name || "Umrah";
@@ -244,7 +243,7 @@ serve(async (req: Request): Promise<Response> => {
       const sendResult = await sendWhatsApp(supabase, b.customer.phone, message);
 
       // Log reminder
-      await supabase.from("payment_reminders").insert({
+      await (supabase.from("payment_reminders") as any).insert({
         booking_id: b.id,
         reminder_type: messageType,
         channel: "whatsapp",

@@ -25,7 +25,7 @@ serve(async (req) => {
     );
 
     const payload: NotificationPayload = await req.json();
-    const { type, booking_id, departure_id, customer_id } = payload;
+    const { type, booking_id, departure_id } = payload;
 
     // Get WhatsApp settings
     const { data: waSettings } = await supabase
@@ -49,6 +49,12 @@ serve(async (req) => {
 
     const notifications: Array<{ phone: string; message: string; customer_name: string }> = [];
 
+    // Helper to extract customer from Supabase join (returns array)
+    const getCustomer = (booking: any) => {
+      const c = booking?.customer;
+      return Array.isArray(c) ? c[0] : c;
+    };
+
     switch (type) {
       case 'payment_received': {
         if (!booking_id) throw new Error("booking_id required");
@@ -64,12 +70,13 @@ serve(async (req) => {
           .eq('id', booking_id)
           .single();
 
-        if (booking?.customer?.phone) {
+        const customer = getCustomer(booking);
+        if (customer?.phone) {
           const remaining = Number(booking.total_price) - Number(booking.paid_amount || 0);
           notifications.push({
-            phone: booking.customer.phone,
-            customer_name: booking.customer.full_name,
-            message: `✅ *Pembayaran Diterima*\n\nAssalamu'alaikum ${booking.customer.full_name},\n\nPembayaran Anda untuk booking *${booking.booking_code}* telah kami terima.\n\n💰 Sisa pembayaran: Rp ${remaining.toLocaleString('id-ID')}\n\nTerima kasih atas kepercayaan Anda. Jika ada pertanyaan, silakan hubungi kami.\n\nWassalam 🤲`
+            phone: customer.phone,
+            customer_name: customer.full_name,
+            message: `✅ *Pembayaran Diterima*\n\nAssalamu'alaikum ${customer.full_name},\n\nPembayaran Anda untuk booking *${booking.booking_code}* telah kami terima.\n\n💰 Sisa pembayaran: Rp ${remaining.toLocaleString('id-ID')}\n\nTerima kasih atas kepercayaan Anda. Jika ada pertanyaan, silakan hubungi kami.\n\nWassalam 🤲`
           });
         }
         break;
@@ -78,7 +85,6 @@ serve(async (req) => {
       case 'departure_reminder': {
         if (!departure_id) throw new Error("departure_id required");
         
-        // Get all confirmed bookings for this departure
         const { data: bookings } = await supabase
           .from('bookings')
           .select(`
@@ -100,7 +106,8 @@ serve(async (req) => {
 
         if (bookings && departure) {
           for (const booking of bookings) {
-            if (booking.customer?.phone) {
+            const customer = getCustomer(booking);
+            if (customer?.phone) {
               const depDate = new Date(departure.departure_date);
               const formattedDate = depDate.toLocaleDateString('id-ID', { 
                 weekday: 'long', 
@@ -110,9 +117,9 @@ serve(async (req) => {
               });
 
               notifications.push({
-                phone: booking.customer.phone,
-                customer_name: booking.customer.full_name,
-                message: `🕋 *H-3 Keberangkatan Umrah*\n\nAssalamu'alaikum ${booking.customer.full_name},\n\nInsya Allah dalam *3 hari* Anda akan berangkat umrah!\n\n📅 *${formattedDate}*\n⏰ Jam: ${departure.departure_time || 'Akan dikonfirmasi'}\n📦 Paket: ${(departure.package as any)?.name}\n\n📋 *Checklist Persiapan:*\n✅ Paspor & visa\n✅ Perlengkapan ibadah\n✅ Obat-obatan pribadi\n✅ Pakaian ihram\n\nSemoga perjalanan Anda diberkahi Allah SWT 🤲\n\nWassalam`
+                phone: customer.phone,
+                customer_name: customer.full_name,
+                message: `🕋 *H-3 Keberangkatan Umrah*\n\nAssalamu'alaikum ${customer.full_name},\n\nInsya Allah dalam *3 hari* Anda akan berangkat umrah!\n\n📅 *${formattedDate}*\n⏰ Jam: ${departure.departure_time || 'Akan dikonfirmasi'}\n📦 Paket: ${(departure.package as any)?.name}\n\n📋 *Checklist Persiapan:*\n✅ Paspor & visa\n✅ Perlengkapan ibadah\n✅ Obat-obatan pribadi\n✅ Pakaian ihram\n\nSemoga perjalanan Anda diberkahi Allah SWT 🤲\n\nWassalam`
               });
             }
           }
@@ -133,11 +140,12 @@ serve(async (req) => {
 
         if (bookings) {
           for (const booking of bookings) {
-            if (booking.customer?.phone) {
+            const customer = getCustomer(booking);
+            if (customer?.phone) {
               notifications.push({
-                phone: booking.customer.phone,
-                customer_name: booking.customer.full_name,
-                message: `🕋 *Selamat Menunaikan Ibadah Umrah*\n\nAssalamu'alaikum ${booking.customer.full_name},\n\nSemoga perjalanan ibadah umrah Anda berjalan lancar dan penuh berkah.\n\n🤲 *Doa Kami:*\n"Ya Allah, terimalah ibadah mereka, ampunilah dosa-dosa mereka, dan kembalikanlah mereka dengan selamat kepada keluarga."\n\nJangan lupa doakan kami yang masih di tanah air 🙏\n\nWassalam\n_Tim Biro Perjalanan_`
+                phone: customer.phone,
+                customer_name: customer.full_name,
+                message: `🕋 *Selamat Menunaikan Ibadah Umrah*\n\nAssalamu'alaikum ${customer.full_name},\n\nSemoga perjalanan ibadah umrah Anda berjalan lancar dan penuh berkah.\n\n🤲 *Doa Kami:*\n"Ya Allah, terimalah ibadah mereka, ampunilah dosa-dosa mereka, dan kembalikanlah mereka dengan selamat kepada keluarga."\n\nJangan lupa doakan kami yang masih di tanah air 🙏\n\nWassalam\n_Tim Biro Perjalanan_`
               });
             }
           }
@@ -162,8 +170,10 @@ serve(async (req) => {
           .eq('id', booking_id)
           .single();
 
-        if (booking?.customer?.phone) {
-          const depDate = new Date((booking.departure as any)?.departure_date);
+        const customer = getCustomer(booking);
+        if (customer?.phone) {
+          const dep = Array.isArray(booking.departure) ? booking.departure[0] : booking.departure;
+          const depDate = new Date(dep?.departure_date);
           const formattedDate = depDate.toLocaleDateString('id-ID', { 
             day: 'numeric', 
             month: 'long', 
@@ -171,9 +181,9 @@ serve(async (req) => {
           });
 
           notifications.push({
-            phone: booking.customer.phone,
-            customer_name: booking.customer.full_name,
-            message: `✅ *Booking Dikonfirmasi*\n\nAssalamu'alaikum ${booking.customer.full_name},\n\nSelamat! Booking umrah Anda telah dikonfirmasi.\n\n📋 *Detail Booking:*\n🔖 Kode: *${booking.booking_code}*\n📦 Paket: ${(booking.departure as any)?.package?.name}\n📅 Berangkat: ${formattedDate}\n💰 Total: Rp ${Number(booking.total_price).toLocaleString('id-ID')}\n\nSilakan selesaikan pembayaran sesuai jadwal.\n\nWassalam 🤲`
+            phone: customer.phone,
+            customer_name: customer.full_name,
+            message: `✅ *Booking Dikonfirmasi*\n\nAssalamu'alaikum ${customer.full_name},\n\nSelamat! Booking umrah Anda telah dikonfirmasi.\n\n📋 *Detail Booking:*\n🔖 Kode: *${booking.booking_code}*\n📦 Paket: ${dep?.package?.name}\n📅 Berangkat: ${formattedDate}\n💰 Total: Rp ${Number(booking.total_price).toLocaleString('id-ID')}\n\nSilakan selesaikan pembayaran sesuai jadwal.\n\nWassalam 🤲`
           });
         }
         break;
@@ -192,7 +202,7 @@ serve(async (req) => {
           response = await fetch('https://api.fonnte.com/send', {
             method: 'POST',
             headers: {
-              'Authorization': config.api_key,
+              'Authorization': config.api_key!,
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
@@ -204,7 +214,7 @@ serve(async (req) => {
           response = await fetch('https://pati.wablas.com/api/send-message', {
             method: 'POST',
             headers: {
-              'Authorization': config.api_key,
+              'Authorization': config.api_key!,
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
@@ -217,7 +227,7 @@ serve(async (req) => {
         if (response?.ok) {
           sent++;
           // Log success
-          await supabase.from('whatsapp_logs').insert({
+          await (supabase.from('whatsapp_logs') as any).insert({
             phone_number: notif.phone,
             message_type: type,
             message_content: notif.message,
@@ -243,10 +253,11 @@ serve(async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
 
-  } catch (error) {
-    console.error("Error:", error);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    console.error("Error:", errorMessage);
     return new Response(
-      JSON.stringify({ success: false, error: error.message }),
+      JSON.stringify({ success: false, error: errorMessage }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
     );
   }
