@@ -29,8 +29,22 @@ import type { Database } from "@/integrations/supabase/types";
 
 type PackageType = Database["public"]["Enums"]["package_type"];
 
+const generatePackageCode = (type: string) => {
+  const prefixMap: Record<string, string> = {
+    umroh: "UMR",
+    umroh_plus: "UMP",
+    haji: "HAJ",
+    haji_plus: "HJP",
+    tabungan: "TAB",
+  };
+  const prefix = prefixMap[type] || "PKG";
+  const timestamp = Date.now().toString(36).toUpperCase().slice(-4);
+  const random = Math.random().toString(36).toUpperCase().slice(2, 5);
+  return `${prefix}-${timestamp}${random}`;
+};
+
 const packageSchema = z.object({
-  code: z.string().min(1, "Kode paket harus diisi"),
+  code: z.string().optional(),
   name: z.string().min(1, "Nama paket harus diisi"),
   package_type: z.enum(["umroh", "haji", "haji_plus", "umroh_plus", "tabungan"]),
   description: z.string().optional(),
@@ -114,6 +128,7 @@ export function PackageForm({ packageData, onSuccess, onCancel }: PackageFormPro
     mutationFn: async (values: PackageFormValues) => {
       const payload = {
         ...values,
+        code: isEditing ? values.code : generatePackageCode(values.package_type),
         includes: values.includes ? values.includes.split("\n").filter(Boolean) : [],
         excludes: values.excludes ? values.excludes.split("\n").filter(Boolean) : [],
         hotel_makkah_id: values.hotel_makkah_id || null,
@@ -148,19 +163,21 @@ export function PackageForm({ packageData, onSuccess, onCancel }: PackageFormPro
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <div className="grid gap-4 sm:grid-cols-2">
-          <FormField
-            control={form.control}
-            name="code"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Kode Paket</FormLabel>
-                <FormControl>
-                  <Input placeholder="UMR-001" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          {isEditing && (
+            <FormField
+              control={form.control}
+              name="code"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Kode Paket</FormLabel>
+                  <FormControl>
+                    <Input {...field} disabled />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
 
           <FormField
             control={form.control}
@@ -176,6 +193,8 @@ export function PackageForm({ packageData, onSuccess, onCancel }: PackageFormPro
             )}
           />
         </div>
+
+
 
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField
