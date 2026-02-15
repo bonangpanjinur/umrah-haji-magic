@@ -504,7 +504,7 @@ export default function AdminPayments() {
               </div>
             </div>
           </div>
-          {(selectedPayment?.status === 'pending' || selectedPayment?.status === 'verified') && (
+          {selectedPayment?.status === 'pending' && (
             <DialogFooter className="gap-2">
               <Button 
                 variant="destructive" 
