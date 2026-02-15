@@ -464,19 +464,18 @@ export default function AdminPayments() {
                 <img 
                   src={selectedPayment.proof_url} 
                   alt="Bukti Pembayaran"
-                  className="w-full max-h-[60vh] object-contain rounded-lg border"
+                  className="w-full max-h-[60vh] object-contain rounded-lg border cursor-zoom-in"
+                  onClick={() => {
+                    const img = document.createElement('div');
+                    img.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.9);display:flex;align-items:center;justify-content:center;cursor:zoom-out';
+                    img.onclick = () => img.remove();
+                    const imgEl = document.createElement('img');
+                    imgEl.src = selectedPayment.proof_url;
+                    imgEl.style.cssText = 'max-width:95vw;max-height:95vh;object-fit:contain';
+                    img.appendChild(imgEl);
+                    document.body.appendChild(img);
+                  }}
                 />
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="absolute top-2 right-2"
-                  asChild
-                >
-                  <a href={selectedPayment.proof_url} target="_blank" rel="noopener noreferrer">
-                    <ExternalLink className="h-4 w-4 mr-1" />
-                    Buka
-                  </a>
-                </Button>
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
