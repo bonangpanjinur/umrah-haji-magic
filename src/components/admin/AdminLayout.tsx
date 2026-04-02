@@ -1,7 +1,6 @@
 import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdminNotifications } from "@/hooks/useAdminNotifications";
-import { AppRole } from "@/types/database";
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "./NotificationBell";
 import { CommandPalette } from "./CommandPalette";
@@ -14,134 +13,136 @@ import {
   Banknote, Clock, Briefcase, Smartphone,
   HeadphonesIcon, Palette, ShieldCheck, Key, MessageSquare,
   UserCog, BookOpen, MapPin, TrendingUp, FileText, Share2, Search,
-  FileType, Star, ExternalLink, ChevronDown, Hotel, Plane as PlaneIcon
+  FileType, Star, ExternalLink, ChevronDown
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { Loader2 } from 'lucide-react';
 
-// Grouped navigation for better organization
-const NAV_GROUPS = [
+interface NavItem {
+  label: string;
+  icon: any;
+  path: string;
+  permissionKey?: string;
+}
+
+interface NavGroup {
+  label: string;
+  items: NavItem[];
+}
+
+// Navigation groups with permissionKey per item
+const NAV_GROUPS: NavGroup[] = [
   {
     label: 'Overview',
     items: [
-      { label: 'Dashboard', icon: LayoutDashboard, path: '/admin' },
-      { label: 'Analytics', icon: BarChart3, path: '/admin/analytics' },
+      { label: 'Dashboard', icon: LayoutDashboard, path: '/admin', permissionKey: 'dashboard' },
+      { label: 'Analytics', icon: BarChart3, path: '/admin/analytics', permissionKey: 'analytics' },
     ]
   },
   {
     label: 'Sales & CRM',
-    allowedRoles: ['super_admin', 'owner', 'branch_manager', 'sales', 'marketing', 'operational'],
     items: [
-      { label: 'CRM Leads', icon: Target, path: '/admin/leads' },
-      { label: 'Kupon', icon: Gift, path: '/admin/coupons' },
+      { label: 'CRM Leads', icon: Target, path: '/admin/leads', permissionKey: 'leads' },
+      { label: 'Kupon', icon: Gift, path: '/admin/coupons', permissionKey: 'coupons' },
     ]
   },
   {
     label: 'Produk & Operasional',
-    allowedRoles: ['super_admin', 'owner', 'branch_manager', 'operational', 'equipment'],
     items: [
-      { label: 'Paket', icon: Package, path: '/admin/packages' },
-      { label: 'Keberangkatan', icon: Plane, path: '/admin/departures' },
-      { label: 'Booking', icon: Calendar, path: '/admin/bookings' },
-      { label: 'Perlengkapan', icon: Box, path: '/admin/equipment' },
-      { label: 'Template Itinerary', icon: MapPin, path: '/admin/itinerary-templates' },
-      { label: 'Tabungan', icon: Wallet, path: '/admin/savings' },
-      { label: 'Kamar', icon: BedDouble, path: '/admin/room-assignments' },
+      { label: 'Paket', icon: Package, path: '/admin/packages', permissionKey: 'packages' },
+      { label: 'Keberangkatan', icon: Plane, path: '/admin/departures', permissionKey: 'departures' },
+      { label: 'Booking', icon: Calendar, path: '/admin/bookings', permissionKey: 'bookings' },
+      { label: 'Perlengkapan', icon: Box, path: '/admin/equipment', permissionKey: 'equipment' },
+      { label: 'Template Itinerary', icon: MapPin, path: '/admin/itinerary-templates', permissionKey: 'itinerary_templates' },
+      { label: 'Tabungan', icon: Wallet, path: '/admin/savings', permissionKey: 'savings' },
+      { label: 'Kamar', icon: BedDouble, path: '/admin/room-assignments', permissionKey: 'room_assignments' },
     ]
   },
   {
     label: 'Keuangan & Akuntansi',
-    allowedRoles: ['super_admin', 'owner', 'finance', 'operational', 'branch_manager'],
     items: [
-      { label: 'Pembayaran', icon: CreditCard, path: '/admin/payments' },
-      { label: 'Kas & Bank', icon: Wallet, path: '/admin/finance-cash' },
-      { label: 'Piutang Jamaah', icon: FileText, path: '/admin/finance/ar' },
-      { label: 'Hutang Vendor', icon: Truck, path: '/admin/finance/ap' },
-      { label: 'Laporan Laba Rugi', icon: DollarSign, path: '/admin/finance' },
+      { label: 'Pembayaran', icon: CreditCard, path: '/admin/payments', permissionKey: 'payments' },
+      { label: 'Kas & Bank', icon: Wallet, path: '/admin/finance-cash', permissionKey: 'finance_cash' },
+      { label: 'Piutang Jamaah', icon: FileText, path: '/admin/finance/ar', permissionKey: 'finance_ar' },
+      { label: 'Hutang Vendor', icon: Truck, path: '/admin/finance/ap', permissionKey: 'finance_ap' },
+      { label: 'Laporan Laba Rugi', icon: DollarSign, path: '/admin/finance', permissionKey: 'finance_pl' },
     ]
   },
   {
     label: 'Jamaah & Agent',
-    allowedRoles: ['super_admin', 'owner', 'branch_manager', 'sales', 'operational'],
     items: [
-      { label: 'Jamaah', icon: Users, path: '/admin/customers' },
-      { label: 'Agent', icon: UserCheck, path: '/admin/agents' },
-      { label: 'Cabang', icon: Building2, path: '/admin/branches' },
-      { label: 'Loyalty', icon: Gift, path: '/admin/loyalty' },
-      { label: 'Referral', icon: Share2, path: '/admin/referrals' },
-      { label: 'Haji', icon: BookOpen, path: '/admin/haji' },
-      { label: 'Manasik', icon: Calendar, path: '/admin/manasik' },
-      { label: 'Visa', icon: FileCheck, path: '/admin/visa' },
+      { label: 'Jamaah', icon: Users, path: '/admin/customers', permissionKey: 'customers' },
+      { label: 'Agent', icon: UserCheck, path: '/admin/agents', permissionKey: 'agents' },
+      { label: 'Cabang', icon: Building2, path: '/admin/branches', permissionKey: 'branches' },
+      { label: 'Loyalty', icon: Gift, path: '/admin/loyalty', permissionKey: 'loyalty' },
+      { label: 'Referral', icon: Share2, path: '/admin/referrals', permissionKey: 'referrals' },
+      { label: 'Haji', icon: BookOpen, path: '/admin/haji', permissionKey: 'haji' },
+      { label: 'Manasik', icon: Calendar, path: '/admin/manasik', permissionKey: 'manasik' },
+      { label: 'Visa', icon: FileCheck, path: '/admin/visa', permissionKey: 'visa' },
     ]
   },
   {
     label: 'SDM (HR)',
-    allowedRoles: ['super_admin', 'owner', 'branch_manager', 'operational'],
     items: [
-      { label: 'Data Karyawan', icon: UserCog, path: '/admin/hr?tab=employees' },
-      { label: 'Absensi', icon: Clock, path: '/admin/hr?tab=attendance' },
-      { label: 'Penggajian / Payroll', icon: Banknote, path: '/admin/hr/payroll' },
-      { label: 'Slip Gaji', icon: FileText, path: '/admin/finance-cash?tab=salary' },
-      { label: 'Departemen', icon: Building2, path: '/admin/hr?tab=departments' },
-      { label: 'Posisi', icon: Briefcase, path: '/admin/hr?tab=positions' },
-      { label: 'Jadwal Kerja', icon: Calendar, path: '/admin/hr?tab=schedules' },
-      { label: 'Perangkat', icon: Smartphone, path: '/admin/hr?tab=devices' },
-      { label: 'Pengaturan HR', icon: Settings, path: '/admin/hr?tab=settings' },
+      { label: 'Data Karyawan', icon: UserCog, path: '/admin/hr?tab=employees', permissionKey: 'hr' },
+      { label: 'Absensi', icon: Clock, path: '/admin/hr?tab=attendance', permissionKey: 'hr' },
+      { label: 'Penggajian / Payroll', icon: Banknote, path: '/admin/hr/payroll', permissionKey: 'payroll' },
+      { label: 'Slip Gaji', icon: FileText, path: '/admin/finance-cash?tab=salary', permissionKey: 'payroll' },
+      { label: 'Departemen', icon: Building2, path: '/admin/hr?tab=departments', permissionKey: 'hr' },
+      { label: 'Posisi', icon: Briefcase, path: '/admin/hr?tab=positions', permissionKey: 'hr' },
+      { label: 'Jadwal Kerja', icon: Calendar, path: '/admin/hr?tab=schedules', permissionKey: 'hr' },
+      { label: 'Perangkat', icon: Smartphone, path: '/admin/hr?tab=devices', permissionKey: 'hr' },
+      { label: 'Pengaturan HR', icon: Settings, path: '/admin/hr?tab=settings', permissionKey: 'hr' },
     ]
   },
   {
     label: 'Support & Komunikasi',
-    allowedRoles: ['super_admin', 'owner', 'branch_manager', 'sales', 'marketing', 'operational'],
     items: [
-      { label: 'Tiket Support', icon: HeadphonesIcon, path: '/admin/support' },
-      { label: 'WhatsApp', icon: MessageSquare, path: '/admin/whatsapp' },
-      { label: 'Materi Promosi', icon: FileText, path: '/admin/marketing-materials' },
+      { label: 'Tiket Support', icon: HeadphonesIcon, path: '/admin/support', permissionKey: 'support_tickets' },
+      { label: 'WhatsApp', icon: MessageSquare, path: '/admin/whatsapp', permissionKey: 'whatsapp' },
+      { label: 'Materi Promosi', icon: FileText, path: '/admin/marketing-materials', permissionKey: 'marketing_materials' },
     ]
   },
   {
     label: 'Master Data',
-    allowedRoles: ['super_admin', 'owner', 'branch_manager', 'operational'],
     items: [
-      { label: 'Master Data', icon: Settings, path: '/admin/master-data' },
+      { label: 'Master Data', icon: Settings, path: '/admin/master-data', permissionKey: 'master_data' },
     ]
   },
   {
     label: 'Dokumen & Surat',
-    allowedRoles: ['super_admin', 'owner', 'branch_manager', 'operational', 'equipment'],
     items: [
-      { label: 'Verifikasi Dokumen', icon: FileCheck, path: '/admin/document-verification' },
-      { label: 'Generate Surat', icon: FileText, path: '/admin/documents-generator' },
-      { label: 'Konten Offline', icon: BookOpen, path: '/admin/offline-content' },
+      { label: 'Verifikasi Dokumen', icon: FileCheck, path: '/admin/document-verification', permissionKey: 'document_verification' },
+      { label: 'Generate Surat', icon: FileText, path: '/admin/documents-generator', permissionKey: 'document_generator' },
+      { label: 'Konten Offline', icon: BookOpen, path: '/admin/offline-content', permissionKey: 'offline_content' },
     ]
   },
   {
     label: 'Laporan',
-    allowedRoles: ['super_admin', 'owner', 'finance', 'marketing', 'branch_manager', 'operational'],
     items: [
-      { label: 'Laporan', icon: FileBarChart, path: '/admin/reports' },
-      { label: 'Laporan Lanjutan', icon: TrendingUp, path: '/admin/advanced-reports' },
-      { label: 'Laporan Terjadwal', icon: Calendar, path: '/admin/scheduled-reports' },
+      { label: 'Laporan', icon: FileBarChart, path: '/admin/reports', permissionKey: 'reports' },
+      { label: 'Laporan Lanjutan', icon: TrendingUp, path: '/admin/advanced-reports', permissionKey: 'reports' },
+      { label: 'Laporan Terjadwal', icon: Calendar, path: '/admin/scheduled-reports', permissionKey: 'reports' },
     ]
   },
   {
     label: 'Pengaturan',
-    allowedRoles: ['super_admin', 'owner', 'branch_manager'],
     items: [
-      { label: 'Users', icon: Shield, path: '/admin/users' },
-      { label: 'Hak Akses', icon: KeyRound, path: '/admin/permissions' },
-      { label: 'Security Audit', icon: ShieldCheck, path: '/admin/security' },
-      { label: '2FA Settings', icon: Key, path: '/admin/2fa' },
-      { label: 'Tampilan', icon: Palette, path: '/admin/appearance' },
-      { label: 'Halaman Statis', icon: FileType, path: '/admin/static-pages' },
-      { label: 'Testimoni', icon: Star, path: '/admin/testimonials' },
-      { label: 'Pengaturan', icon: Settings, path: '/admin/settings' },
+      { label: 'Users', icon: Shield, path: '/admin/users', permissionKey: 'users' },
+      { label: 'Hak Akses', icon: KeyRound, path: '/admin/permissions', permissionKey: 'users' },
+      { label: 'Security Audit', icon: ShieldCheck, path: '/admin/security', permissionKey: 'security_audit' },
+      { label: '2FA Settings', icon: Key, path: '/admin/2fa', permissionKey: '2fa' },
+      { label: 'Tampilan', icon: Palette, path: '/admin/appearance', permissionKey: 'appearance' },
+      { label: 'Halaman Statis', icon: FileType, path: '/admin/static-pages', permissionKey: 'static_pages' },
+      { label: 'Testimoni', icon: Star, path: '/admin/testimonials', permissionKey: 'testimonials' },
+      { label: 'Pengaturan', icon: Settings, path: '/admin/settings', permissionKey: 'settings' },
     ]
   },
 ];
 
 function AdminLayout() {
-  const { user, profile, signOut, isAdmin, roles, isLoading } = useAuth();
+  const { user, profile, signOut, roles, isLoading, hasPermission } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 1024);
@@ -156,12 +157,12 @@ function AdminLayout() {
     clearAll,
   } = useAdminNotifications();
 
-  // Handle responsive sidebar behavior
+  const isStaff = roles.some(r => ['super_admin', 'owner', 'branch_manager', 'finance', 'sales', 'marketing', 'operational', 'equipment'].includes(r));
+
   useEffect(() => {
     const handleResize = () => {
       const isLargeScreen = window.innerWidth >= 1024;
       setIsDesktop(isLargeScreen);
-      // On mobile, close sidebar; on desktop, keep current state
       if (!isLargeScreen) {
         setSidebarOpen(false);
       } else {
@@ -208,7 +209,7 @@ function AdminLayout() {
     );
   }
 
-  if (!user || !isAdmin()) {
+  if (!user || !isStaff) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -224,13 +225,17 @@ function AdminLayout() {
     );
   }
 
+  // Filter nav groups: show group only if user has permission to at least 1 item
+  const filteredGroups = NAV_GROUPS.map(group => ({
+    ...group,
+    items: group.items.filter(item => !item.permissionKey || hasPermission(item.permissionKey)),
+  })).filter(group => group.items.length > 0);
+
   return (
     <div className="min-h-screen bg-muted/30">
       <CommandPalette />
 
-      {/* Desktop Header - Top Navigation Bar */}
       <header className="fixed top-0 left-0 right-0 h-14 sm:h-16 bg-background border-b z-40 flex items-center justify-between px-3 sm:px-6">
-        {/* Left side - Logo and Toggle */}
         <div className="flex items-center gap-2 sm:gap-4 min-w-0">
           <Button 
             variant="ghost" 
@@ -249,7 +254,6 @@ function AdminLayout() {
           </Link>
         </div>
 
-        {/* Right side - Actions */}
         <div className="flex items-center gap-1 sm:gap-3 flex-shrink-0">
           <Button
             variant="ghost"
@@ -293,26 +297,18 @@ function AdminLayout() {
         </div>
       </header>
 
-      {/* Sidebar - Responsive */}
       <aside className={cn(
         "fixed top-14 sm:top-16 left-0 bottom-0 w-56 sm:w-64 bg-background border-r z-30 transform transition-transform duration-300 ease-in-out overflow-y-auto",
         sidebarOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="flex flex-col h-full">
-          {/* Navigation */}
           <nav className="flex-1 p-3 sm:p-4 space-y-2">
-            {NAV_GROUPS.filter((group) => {
-              // If no allowedRoles defined, show to all admin users
-              if (!group.allowedRoles) return true;
-              // Check if user has any of the allowed roles
-              return group.allowedRoles.some(role => roles.includes(role as AppRole));
-            }).map((group) => {
+            {filteredGroups.map((group) => {
               const isExpanded = isGroupExpanded(group.label);
               const hasActiveItem = group.items.some(item => isPathActive(item.path));
               
               return (
                 <div key={group.label} className="space-y-1">
-                  {/* Group Header with Toggle */}
                   <button
                     onClick={() => toggleGroup(group.label)}
                     className={cn(
@@ -333,7 +329,6 @@ function AdminLayout() {
                     />
                   </button>
 
-                  {/* Group Items - Collapsible */}
                   {isExpanded && (
                     <div className="space-y-1 pl-2 sm:pl-3 border-l border-muted ml-2 sm:ml-3">
                       {group.items.map((item) => {
@@ -344,7 +339,6 @@ function AdminLayout() {
                             key={item.path}
                             to={item.path}
                             onClick={() => {
-                              // Close sidebar only on mobile when item is clicked
                               if (!isDesktop) {
                                 setSidebarOpen(false);
                               }
@@ -368,7 +362,6 @@ function AdminLayout() {
             })}
           </nav>
 
-          {/* User Info at Bottom */}
           <div className="p-3 sm:p-4 border-t space-y-3">
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
               <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
@@ -385,7 +378,6 @@ function AdminLayout() {
         </div>
       </aside>
 
-      {/* Overlay for mobile/tablet when sidebar is open */}
       {sidebarOpen && !isDesktop && (
         <div 
           className="fixed inset-0 bg-black/50 z-20 top-14 sm:top-16" 
@@ -393,7 +385,6 @@ function AdminLayout() {
         />
       )}
 
-      {/* Main Content - Responsive Margin */}
       <main className={cn(
         "pt-14 sm:pt-16 min-h-screen transition-all duration-300",
         sidebarOpen && isDesktop ? "pl-56 sm:pl-64" : "pl-0"

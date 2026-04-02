@@ -76,56 +76,56 @@ export default function AdminRoutes() {
       }
     >
       <Route index element={<LazyPage><AdminDashboard /></LazyPage>} />
-      <Route path="analytics" element={<LazyPage><AdminAnalytics /></LazyPage>} />
-      <Route path="packages" element={<LazyPage><AdminPackages /></LazyPage>} />
-      <Route path="packages/:id" element={<LazyPage><AdminPackageDetail /></LazyPage>} />
-      <Route path="departures" element={<LazyPage><AdminDepartures /></LazyPage>} />
-      <Route path="equipment" element={<LazyPage><EquipmentPage /></LazyPage>} />
-      <Route path="savings" element={<LazyPage><AdminSavingsPlans /></LazyPage>} />
-      <Route path="master-data" element={<LazyPage><AdminMasterData /></LazyPage>} />
-      <Route path="branches" element={<LazyPage><AdminBranches /></LazyPage>} />
-      <Route path="bookings" element={<LazyPage><AdminBookings /></LazyPage>} />
-      <Route path="bookings/create" element={<LazyPage><AdminBookingCreate /></LazyPage>} />
-      <Route path="bookings/:id" element={<LazyPage><AdminBookingDetail /></LazyPage>} />
-      <Route path="payments" element={<LazyPage><AdminPayments /></LazyPage>} />
-      <Route path="finance" element={<LazyPage><AdminFinancePL /></LazyPage>} />
-      <Route path="finance-cash" element={<LazyPage><AdminFinanceCash /></LazyPage>} />
-      <Route path="vendors" element={<LazyPage><AdminVendors /></LazyPage>} />
-      <Route path="customers" element={<LazyPage><AdminCustomers /></LazyPage>} />
-      <Route path="customers/:id" element={<LazyPage><AdminCustomerDetail /></LazyPage>} />
-      <Route path="document-verification" element={<LazyPage><AdminDocumentVerification /></LazyPage>} />
-      <Route path="users" element={<LazyPage><AdminUsers /></LazyPage>} />
-      <Route path="permissions" element={<LazyPage><AdminRolePermissions /></LazyPage>} />
-      <Route path="agents" element={<LazyPage><AdminAgents /></LazyPage>} />
-      <Route path="coupons" element={<LazyPage><AdminCoupons /></LazyPage>} />
-      <Route path="loyalty" element={<LazyPage><AdminLoyalty /></LazyPage>} />
-      <Route path="referrals" element={<LazyPage><AdminReferrals /></LazyPage>} />
-      <Route path="support" element={<LazyPage><AdminSupportTickets /></LazyPage>} />
-      <Route path="leads" element={<LazyPage><AdminLeads /></LazyPage>} />
-      <Route path="leads/analytics" element={<LazyPage><AdminLeadAnalytics /></LazyPage>} />
-      <Route path="leads/:id" element={<LazyPage><AdminLeadDetail /></LazyPage>} />
-      <Route path="room-assignments" element={<LazyPage><AdminRoomAssignments /></LazyPage>} />
-      <Route path="reports" element={<LazyPage><AdminReports /></LazyPage>} />
-      <Route path="advanced-reports" element={<LazyPage><AdminAdvancedReports /></LazyPage>} />
-      <Route path="scheduled-reports" element={<LazyPage><AdminScheduledReports /></LazyPage>} />
-      <Route path="hr" element={<LazyPage><AdminHR /></LazyPage>} />
-      <Route path="haji" element={<LazyPage><AdminHajiManagement /></LazyPage>} />
-      <Route path="itinerary-templates" element={<LazyPage><AdminItineraryTemplates /></LazyPage>} />
-      <Route path="offline-content" element={<LazyPage><AdminOfflineContent /></LazyPage>} />
-      <Route path="documents-generator" element={<LazyPage><AdminDocumentGenerator /></LazyPage>} />
-      <Route path="security" element={<LazyPage><AdminSecurityAudit /></LazyPage>} />
-      <Route path="2fa" element={<LazyPage><Admin2FASettings /></LazyPage>} />
-      <Route path="whatsapp" element={<LazyPage><AdminWhatsApp /></LazyPage>} />
-      <Route path="marketing-materials" element={<LazyPage><AdminMarketingMaterials /></LazyPage>} />
-      <Route path="appearance" element={<LazyPage><AdminAppearance /></LazyPage>} />
-      <Route path="static-pages" element={<LazyPage><AdminStaticPages /></LazyPage>} />
-      <Route path="testimonials" element={<LazyPage><AdminTestimonials /></LazyPage>} />
-      <Route path="settings" element={<LazyPage><AdminSettings /></LazyPage>} />
-      <Route path="finance/ar" element={<LazyPage><AdminFinanceAR /></LazyPage>} />
-      <Route path="finance/ap" element={<LazyPage><AdminFinanceAP /></LazyPage>} />
-      <Route path="hr/payroll" element={<LazyPage><AdminPayroll /></LazyPage>} />
-      <Route path="manasik" element={<LazyPage><AdminManasik /></LazyPage>} />
-      <Route path="visa" element={<LazyPage><AdminVisaManagement /></LazyPage>} />
+      <Route path="analytics" element={<ProtectedRoute permissionKey="analytics"><LazyPage><AdminAnalytics /></LazyPage></ProtectedRoute>} />
+      <Route path="packages" element={<ProtectedRoute permissionKey="packages"><LazyPage><AdminPackages /></LazyPage></ProtectedRoute>} />
+      <Route path="packages/:id" element={<ProtectedRoute permissionKey="packages"><LazyPage><AdminPackageDetail /></LazyPage></ProtectedRoute>} />
+      <Route path="departures" element={<ProtectedRoute permissionKey="departures"><LazyPage><AdminDepartures /></LazyPage></ProtectedRoute>} />
+      <Route path="equipment" element={<ProtectedRoute permissionKey="equipment"><LazyPage><EquipmentPage /></LazyPage></ProtectedRoute>} />
+      <Route path="savings" element={<ProtectedRoute permissionKey="savings"><LazyPage><AdminSavingsPlans /></LazyPage></ProtectedRoute>} />
+      <Route path="master-data" element={<ProtectedRoute permissionKey="master_data"><LazyPage><AdminMasterData /></LazyPage></ProtectedRoute>} />
+      <Route path="branches" element={<ProtectedRoute permissionKey="branches"><LazyPage><AdminBranches /></LazyPage></ProtectedRoute>} />
+      <Route path="bookings" element={<ProtectedRoute permissionKey="bookings"><LazyPage><AdminBookings /></LazyPage></ProtectedRoute>} />
+      <Route path="bookings/create" element={<ProtectedRoute permissionKey="bookings"><LazyPage><AdminBookingCreate /></LazyPage></ProtectedRoute>} />
+      <Route path="bookings/:id" element={<ProtectedRoute permissionKey="bookings"><LazyPage><AdminBookingDetail /></LazyPage></ProtectedRoute>} />
+      <Route path="payments" element={<ProtectedRoute permissionKey="payments"><LazyPage><AdminPayments /></LazyPage></ProtectedRoute>} />
+      <Route path="finance" element={<ProtectedRoute permissionKey="finance_pl"><LazyPage><AdminFinancePL /></LazyPage></ProtectedRoute>} />
+      <Route path="finance-cash" element={<ProtectedRoute permissionKey="finance_cash"><LazyPage><AdminFinanceCash /></LazyPage></ProtectedRoute>} />
+      <Route path="finance/ar" element={<ProtectedRoute permissionKey="finance_ar"><LazyPage><AdminFinanceAR /></LazyPage></ProtectedRoute>} />
+      <Route path="finance/ap" element={<ProtectedRoute permissionKey="finance_ap"><LazyPage><AdminFinanceAP /></LazyPage></ProtectedRoute>} />
+      <Route path="vendors" element={<ProtectedRoute permissionKey="finance_ap"><LazyPage><AdminVendors /></LazyPage></ProtectedRoute>} />
+      <Route path="customers" element={<ProtectedRoute permissionKey="customers"><LazyPage><AdminCustomers /></LazyPage></ProtectedRoute>} />
+      <Route path="customers/:id" element={<ProtectedRoute permissionKey="customers"><LazyPage><AdminCustomerDetail /></LazyPage></ProtectedRoute>} />
+      <Route path="document-verification" element={<ProtectedRoute permissionKey="document_verification"><LazyPage><AdminDocumentVerification /></LazyPage></ProtectedRoute>} />
+      <Route path="users" element={<ProtectedRoute permissionKey="users"><LazyPage><AdminUsers /></LazyPage></ProtectedRoute>} />
+      <Route path="permissions" element={<ProtectedRoute permissionKey="users"><LazyPage><AdminRolePermissions /></LazyPage></ProtectedRoute>} />
+      <Route path="agents" element={<ProtectedRoute permissionKey="agents"><LazyPage><AdminAgents /></LazyPage></ProtectedRoute>} />
+      <Route path="coupons" element={<ProtectedRoute permissionKey="coupons"><LazyPage><AdminCoupons /></LazyPage></ProtectedRoute>} />
+      <Route path="loyalty" element={<ProtectedRoute permissionKey="loyalty"><LazyPage><AdminLoyalty /></LazyPage></ProtectedRoute>} />
+      <Route path="referrals" element={<ProtectedRoute permissionKey="referrals"><LazyPage><AdminReferrals /></LazyPage></ProtectedRoute>} />
+      <Route path="support" element={<ProtectedRoute permissionKey="support_tickets"><LazyPage><AdminSupportTickets /></LazyPage></ProtectedRoute>} />
+      <Route path="leads" element={<ProtectedRoute permissionKey="leads"><LazyPage><AdminLeads /></LazyPage></ProtectedRoute>} />
+      <Route path="leads/analytics" element={<ProtectedRoute permissionKey="leads"><LazyPage><AdminLeadAnalytics /></LazyPage></ProtectedRoute>} />
+      <Route path="leads/:id" element={<ProtectedRoute permissionKey="leads"><LazyPage><AdminLeadDetail /></LazyPage></ProtectedRoute>} />
+      <Route path="room-assignments" element={<ProtectedRoute permissionKey="room_assignments"><LazyPage><AdminRoomAssignments /></LazyPage></ProtectedRoute>} />
+      <Route path="reports" element={<ProtectedRoute permissionKey="reports"><LazyPage><AdminReports /></LazyPage></ProtectedRoute>} />
+      <Route path="advanced-reports" element={<ProtectedRoute permissionKey="reports"><LazyPage><AdminAdvancedReports /></LazyPage></ProtectedRoute>} />
+      <Route path="scheduled-reports" element={<ProtectedRoute permissionKey="reports"><LazyPage><AdminScheduledReports /></LazyPage></ProtectedRoute>} />
+      <Route path="hr" element={<ProtectedRoute permissionKey="hr"><LazyPage><AdminHR /></LazyPage></ProtectedRoute>} />
+      <Route path="hr/payroll" element={<ProtectedRoute permissionKey="payroll"><LazyPage><AdminPayroll /></LazyPage></ProtectedRoute>} />
+      <Route path="haji" element={<ProtectedRoute permissionKey="haji"><LazyPage><AdminHajiManagement /></LazyPage></ProtectedRoute>} />
+      <Route path="manasik" element={<ProtectedRoute permissionKey="manasik"><LazyPage><AdminManasik /></LazyPage></ProtectedRoute>} />
+      <Route path="visa" element={<ProtectedRoute permissionKey="visa"><LazyPage><AdminVisaManagement /></LazyPage></ProtectedRoute>} />
+      <Route path="itinerary-templates" element={<ProtectedRoute permissionKey="itinerary_templates"><LazyPage><AdminItineraryTemplates /></LazyPage></ProtectedRoute>} />
+      <Route path="offline-content" element={<ProtectedRoute permissionKey="offline_content"><LazyPage><AdminOfflineContent /></LazyPage></ProtectedRoute>} />
+      <Route path="documents-generator" element={<ProtectedRoute permissionKey="document_generator"><LazyPage><AdminDocumentGenerator /></LazyPage></ProtectedRoute>} />
+      <Route path="security" element={<ProtectedRoute permissionKey="security_audit"><LazyPage><AdminSecurityAudit /></LazyPage></ProtectedRoute>} />
+      <Route path="2fa" element={<ProtectedRoute permissionKey="2fa"><LazyPage><Admin2FASettings /></LazyPage></ProtectedRoute>} />
+      <Route path="whatsapp" element={<ProtectedRoute permissionKey="whatsapp"><LazyPage><AdminWhatsApp /></LazyPage></ProtectedRoute>} />
+      <Route path="marketing-materials" element={<ProtectedRoute permissionKey="marketing_materials"><LazyPage><AdminMarketingMaterials /></LazyPage></ProtectedRoute>} />
+      <Route path="appearance" element={<ProtectedRoute permissionKey="appearance"><LazyPage><AdminAppearance /></LazyPage></ProtectedRoute>} />
+      <Route path="static-pages" element={<ProtectedRoute permissionKey="static_pages"><LazyPage><AdminStaticPages /></LazyPage></ProtectedRoute>} />
+      <Route path="testimonials" element={<ProtectedRoute permissionKey="testimonials"><LazyPage><AdminTestimonials /></LazyPage></ProtectedRoute>} />
+      <Route path="settings" element={<ProtectedRoute permissionKey="settings"><LazyPage><AdminSettings /></LazyPage></ProtectedRoute>} />
     </Route>
   );
 }

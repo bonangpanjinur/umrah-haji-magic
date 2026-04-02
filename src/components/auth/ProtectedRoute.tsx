@@ -8,17 +8,18 @@ interface ProtectedRouteProps {
   children: ReactNode;
   allowedRoles?: AppRole[];
   requireAuth?: boolean;
+  permissionKey?: string;
 }
 
 export default function ProtectedRoute({ 
   children, 
   allowedRoles,
-  requireAuth = true 
+  requireAuth = true,
+  permissionKey,
 }: ProtectedRouteProps) {
-  const { user, roles, isLoading, isAdmin } = useAuth();
+  const { user, roles, isLoading, hasPermission } = useAuth();
   const location = useLocation();
 
-  // Show loading state while checking auth
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -30,28 +31,26 @@ export default function ProtectedRoute({
     );
   }
 
-  // Check if authentication is required
   if (requireAuth && !user) {
     return <Navigate to={`/auth/login?redirect=${encodeURIComponent(location.pathname + location.search)}`} replace />;
   }
 
-  // Check role-based access
-  if (allowedRoles && allowedRoles.length > 0) {
-    const hasAllowedRole = allowedRoles.some(role => roles.includes(role));
-    
-    // Special case: check if user is admin (super_admin, owner, branch_manager)
-    const adminRoles: AppRole[] = ['super_admin', 'owner', 'branch_manager'];
-    const needsAdminRole = allowedRoles.some(role => adminRoles.includes(role));
-    
-    if (needsAdminRole && isAdmin()) {
-      return <>{children}</>;
+  // Super Admin & Owner bypass all checks
+  const isSuperUser = roles.includes('super_admin') || roles.includes('owner');
+
+  // Check permission key first (granular)
+  if (permissionKey && !isSuperUser) {
+    if (!hasPermission(permissionKey)) {
+      // Redirect to admin dashboard if they have admin access, otherwise home
+      const hasAdminAccess = roles.some(r => ['branch_manager', 'finance', 'sales', 'marketing', 'operational', 'equipment'].includes(r));
+      return <Navigate to={hasAdminAccess ? "/admin" : "/"} replace />;
     }
-    
+  }
+
+  // Check role-based access
+  if (allowedRoles && allowedRoles.length > 0 && !isSuperUser) {
+    const hasAllowedRole = allowedRoles.some(role => roles.includes(role));
     if (!hasAllowedRole) {
-      // Redirect unauthorized users
-      if (isAdmin()) {
-        return <Navigate to="/admin" replace />;
-      }
       return <Navigate to="/" replace />;
     }
   }

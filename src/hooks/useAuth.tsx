@@ -10,11 +10,13 @@ interface AuthContextType {
   roles: AppRole[];
   branchId: string | null;
   isLoading: boolean;
+  permissions: Record<string, boolean>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   hasRole: (role: AppRole) => boolean;
   isAdmin: () => boolean;
+  hasPermission: (key: string) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -25,6 +27,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [roles, setRoles] = useState<AppRole[]>([]);
   const [branchId, setBranchId] = useState<string | null>(null);
+  const [permissions, setPermissions] = useState<Record<string, boolean>>({});
   const [isLoading, setIsLoading] = useState(true);
   const authHandledRef = useRef(false);
 
@@ -40,13 +43,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } else {
           setProfile(null);
           setRoles([]);
+          setPermissions({});
           setIsLoading(false);
         }
       }
     );
 
     supabase.auth.getSession().then(({ data: { session } }) => {
-      // Skip if onAuthStateChange already handled this
       if (authHandledRef.current) return;
 
       setSession(session);
@@ -81,10 +84,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .select('role, branch_id')
         .eq('user_id', userId);
       
+      let userRoles: AppRole[] = [];
       if (rolesData) {
-        setRoles(rolesData.map(r => r.role as AppRole));
+        userRoles = rolesData.map(r => r.role as AppRole);
+        setRoles(userRoles);
         const branchRole = rolesData.find(r => r.branch_id);
         setBranchId(branchRole?.branch_id || null);
+      }
+
+      // Fetch permissions for user's roles
+      if (userRoles.length > 0) {
+        const { data: permData } = await supabase
+          .from('role_permissions')
+          .select('permission_key, is_enabled, role')
+          .in('role', userRoles);
+
+        if (permData) {
+          // Merge permissions: if ANY role grants access, it's enabled
+          const permMap: Record<string, boolean> = {};
+          for (const p of permData) {
+            const key = p.permission_key;
+            if (p.is_enabled) {
+              permMap[key] = true;
+            } else if (!(key in permMap)) {
+              permMap[key] = false;
+            }
+          }
+          setPermissions(permMap);
+        }
       }
     } catch (error) {
       console.error('Error fetching user data:', error);
@@ -130,13 +157,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfile(null);
     setRoles([]);
     setBranchId(null);
+    setPermissions({});
   };
 
   const hasRole = (role: AppRole): boolean => {
     return roles.includes(role);
   };
 
+  // Only true admin roles — not all staff
   const isAdmin = (): boolean => {
+    return roles.some(role => ['super_admin', 'owner', 'branch_manager'].includes(role));
+  };
+
+  // Check if user has a specific permission
+  // Super Admin & Owner always have full access
+  const hasPermission = (key: string): boolean => {
+    if (roles.includes('super_admin') || roles.includes('owner')) return true;
+    return permissions[key] === true;
+  };
+
+  // Check if user has any staff/admin role (for admin panel access)
+  const isStaff = (): boolean => {
     return roles.some(role => ['super_admin', 'owner', 'branch_manager', 'finance', 'sales', 'marketing', 'operational', 'equipment'].includes(role));
   };
 
@@ -149,11 +190,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         roles,
         branchId,
         isLoading,
+        permissions,
         signUp,
         signIn,
         signOut,
         hasRole,
         isAdmin,
+        hasPermission,
       }}
     >
       {children}
