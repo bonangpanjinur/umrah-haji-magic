@@ -18,6 +18,7 @@ import { Calendar, Users, BedDouble, Minus, Plus, Loader2, Info, Plane, Hotel, M
 import { cn } from "@/lib/utils";
 import { RoomType } from "@/types/database";
 import { HotelDisplay } from "@/components/hotels/HotelDisplay";
+import { useWebsiteSettings } from "@/hooks/useWebsiteSettings";
 
 interface PackageBookingFormProps {
   pkg: any;
