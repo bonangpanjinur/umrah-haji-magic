@@ -1,171 +1,54 @@
 
 
-# Analisis Bug & Rencana Hak Akses Komprehensif
+# Rencana Perbaikan Bug CSS/JS
 
-## BAGIAN A: BUG YANG DITEMUKAN
+## Bug yang Ditemukan
 
-### BUG KRITIS 1: `role_permissions` Tabel Tidak Pernah Dipakai (Dead Feature)
+### 1. KRITIS: `user-scalable=no` Memblokir Zoom Aksesibilitas
+**File**: `index.html` baris 5
+`maximum-scale=1.0, user-scalable=no` mencegah pengguna zoom di mobile. Ini melanggar WCAG 2.1 dan buruk untuk aksesibilitas.
+**Fix**: Hapus `maximum-scale=1.0, user-scalable=no`.
 
-Tabel `role_permissions` berisi 14 permission keys dan 8 roles -- admin bisa toggle checkbox di `/admin/permissions`. **Tapi data ini tidak pernah dibaca oleh aplikasi.** Sidebar (`AdminLayout.tsx`) menggunakan hardcoded `allowedRoles` per group. `ProtectedRoute.tsx` hanya cek `allowedRoles` prop statis. Artinya: admin mengubah permission di UI, tapi **tidak ada efek sama sekali**.
+### 2. KRITIS: CSS Variables Tidak Ada di `:root` — Halaman Putih Kosong
+**File**: `src/index.css`
+Semua default CSS variable dihapus dari `:root` (baris 11-21). Jika localStorage kosong DAN database belum merespons, **semua warna tidak terdefinisi** → `hsl(var(--background))` = invalid → halaman putih, teks tak terlihat.
+**Fix**: Tambahkan fallback CSS variables di `:root` sebagai baseline.
 
-### BUG KRITIS 2: Tidak Ada Proteksi Route Per-Halaman
+### 3. TINGGI: `font-arabic` Class Tidak Terdefinisi
+**File**: Dipakai di 5 file (`DynamicHeroSection.tsx`, `HeroSection.tsx`, `JamaahDoaPanduan.tsx`, dll) tapi **tidak ada definisi** di CSS atau Tailwind config. Font Arab menggunakan font default sans-serif.
+**Fix**: Tambahkan `font-arabic` di `index.css` dan load font Arab (Amiri/Scheherazade).
 
-Semua route `/admin/*` dilindungi oleh `ADMIN_ROLES` yang sama (8 roles). Artinya user `sales` bisa langsung akses `/admin/finance`, `/admin/users`, `/admin/permissions`, `/admin/security` -- cukup ketik URL. Sidebar hanya menyembunyikan menu, bukan memblokir akses.
+### 4. TINGGI: Missing CSS Variables untuk Sidebar Foreground & Chart
+**File**: `tailwind.config.ts` mereferensikan `--sidebar-primary-foreground`, `--sidebar-accent-foreground`, `--chart-1` s/d `--chart-5`, tapi `ThemeProvider.tsx` **tidak pernah menghasilkan** variable ini. Footer dan sidebar UI menggunakan `hsl(undefined)` → warna fallback browser (hitam/transparan).
+**Fix**: Tambahkan variable ini di `generateCSSVariables()`.
 
-### BUG KRITIS 3: Permission Keys Tidak Lengkap
+### 5. SEDANG: `QueryClient` Tanpa Konfigurasi Retry/Stale
+**File**: `src/App.tsx` baris 18 — `new QueryClient()` tanpa opsi. Default: 3 retry, infinite stale time = request berulang saat error, dan data tidak pernah di-refetch otomatis.
+**Fix**: Konfigurasi `retry: 1`, `staleTime: 5 * 60 * 1000`, `refetchOnWindowFocus: false`.
 
-Database hanya punya 14 permission keys, tapi sidebar punya 40+ menu items yang dikelompokkan ke 10 groups. Banyak modul tidak punya permission key:
-- **Keuangan**: `finance_pl`, `finance_cash`, `finance_ar`, `finance_ap`, `payroll` -- tidak ada
-- **HR**: `hr_employees`, `hr_attendance`, `hr_schedules` -- tidak ada
-- **Operasional detail**: `equipment`, `room_assignments`, `visa`, `manasik`, `haji` -- tidak ada
-- **Konten**: `appearance`, `static_pages`, `testimonials`, `marketing_materials` -- tidak ada
-- **Sistem**: `security_audit`, `2fa`, `whatsapp`, `coupons`, `loyalty`, `referrals`, `savings` -- tidak ada
+### 6. SEDANG: Footer Logo `brightness-0 invert` Hardcoded
+**File**: `DynamicFooter.tsx` baris 166, 203 — `brightness-0 invert` diterapkan pada logo footer. Ini membuat logo selalu putih, tapi jika sidebar background terang (white), logo jadi invisible.
+**Fix**: Deteksi lightness dari `--sidebar-background` atau gunakan conditional class.
 
-### BUG 4: `isAdmin()` Terlalu Luas
+### 7. SEDANG: Search Widget Hero — Warna Hardcoded Putih
+**File**: `DynamicHeroSection.tsx` baris 100 — `bg-white` hardcoded pada search widget. Jika tema dark/custom, ini mencolok dan tidak konsisten.
+**Fix**: Ganti `bg-white` → `bg-card`.
 
-Fungsi `isAdmin()` di `useAuth.tsx` return `true` untuk semua 8 staff roles termasuk `equipment`. Ini dipakai di `ProtectedRoute.tsx` untuk bypass role check (line 43-46). Akibatnya, jika `allowedRoles` berisi `super_admin`, user `equipment` tetap lolos karena `isAdmin()` = true.
+### 8. RENDAH: Mobile Navbar Tidak Menutup saat Navigate
+**File**: `DynamicNavbar.tsx` — state `isOpen` di-close via `onClick` pada setiap link, tapi jika user menekan tombol Back browser, menu tetap terbuka karena tidak listen ke `location` changes.
+**Fix**: Tambahkan `useEffect` yang menutup menu saat `location.pathname` berubah.
 
----
+### 9. RENDAH: `ErrorBoundary` Auto-Reload tanpa Guard
+**File**: `ErrorBoundary.tsx` baris 29-32 — jika chunk error berulang, `componentDidCatch` memanggil `window.location.reload()` tanpa limit. Sudah ada guard di `main.tsx` (MAX_RELOAD_ATTEMPTS=3) tapi `ErrorBoundary` bypass itu.
+**Fix**: Gunakan counter dari `sessionStorage` di `ErrorBoundary` juga.
 
-## BAGIAN B: RENCANA PERBAIKAN HAK AKSES KOMPREHENSIF
+### 10. RENDAH: Hardcoded WhatsApp Number di PackageBookingForm
+**File**: `PackageBookingForm.tsx` baris 350 — `6281234567890` hardcoded. Seharusnya ambil dari `website_settings.footer_whatsapp`.
+**Fix**: Baca dari `useWebsiteSettings()`.
 
-### Arsitektur Baru
-
-```text
-┌─────────────────────────────────────────────────┐
-│           role_permissions (Database)            │
-│  role × permission_key × is_enabled             │
-└──────────────────────┬──────────────────────────┘
-                       │
-          ┌────────────▼────────────┐
-          │   usePermissions() hook  │
-          │  - fetch on login       │
-          │  - cache di AuthContext  │
-          │  - hasPermission(key)   │
-          └────────────┬────────────┘
-                       │
-        ┌──────────────┼──────────────┐
-        ▼              ▼              ▼
-   Sidebar         ProtectedRoute   Component
-   (filter menu)   (block URL)      (hide buttons)
-```
-
-### Langkah 1: Perluas Permission Keys di Database
-
-Tambah permission keys baru via migration `INSERT ... ON CONFLICT DO NOTHING`:
-
-| Kategori | Permission Keys Baru |
-|:---|:---|
-| Keuangan | `finance_pl`, `finance_cash`, `finance_ar`, `finance_ap` |
-| HR | `hr`, `payroll` |
-| Operasional | `equipment`, `room_assignments`, `visa`, `manasik`, `haji`, `itinerary_templates` |
-| Tabungan & Loyalty | `savings`, `loyalty`, `referrals`, `coupons` |
-| Konten | `appearance`, `static_pages`, `testimonials`, `marketing_materials`, `offline_content` |
-| Komunikasi | `whatsapp`, `support_tickets` |
-| Sistem | `security_audit`, `2fa`, `branches`, `document_verification`, `document_generator` |
-
-Default values per role sesuai ROLE_ACCESS_MATRIX.md (contoh: `finance` enabled untuk `finance_pl`, `finance_cash`, `finance_ar`, `finance_ap`, `payments`; disabled untuk `hr`, `appearance`, dll).
-
-**File**: Migration SQL
-
-### Langkah 2: Buat `usePermissions()` Hook + Integrasi ke AuthContext
-
-- Fetch `role_permissions` saat login (di `fetchUserData`)
-- Cache di AuthContext sebagai `permissions: Record<string, boolean>`
-- Expose `hasPermission(key: string): boolean` -- return true jika super_admin/owner, atau jika `role_permissions` untuk user's role + key = enabled
-- Super Admin & Owner selalu return true (bypass)
-
-**File**: `useAuth.tsx`
-
-### Langkah 3: Sidebar Dinamis Berdasarkan Permission
-
-Ganti hardcoded `allowedRoles` di `NAV_GROUPS` dengan `permissionKey` per item. Contoh:
-
-```typescript
-{ label: 'Piutang Jamaah', icon: FileText, path: '/admin/finance/ar', permissionKey: 'finance_ar' },
-```
-
-Sidebar filter: `hasPermission(item.permissionKey)` bukan lagi `roles.includes(...)`.
-
-**File**: `AdminLayout.tsx`
-
-### Langkah 4: ProtectedRoute Enforces Permission
-
-Tambah prop `permissionKey` opsional di `ProtectedRoute`. Jika ada, cek `hasPermission(key)` selain role check. Untuk route-level protection, bungkus setiap admin sub-route:
-
-```typescript
-<Route path="finance" element={
-  <ProtectedRoute permissionKey="finance_pl">
-    <AdminFinancePL />
-  </ProtectedRoute>
-} />
-```
-
-**File**: `ProtectedRoute.tsx`, `AdminRoutes.tsx`
-
-### Langkah 5: Fix `isAdmin()` Logic
-
-Ubah `isAdmin()` agar hanya return true untuk `super_admin`, `owner`, `branch_manager` -- sesuai definisi admin sebenarnya. Bukan semua 8 roles.
-
-**File**: `useAuth.tsx`
-
-### Langkah 6: Update Permission Matrix UI
-
-Perluas `PERMISSION_LABELS` di `AdminRolePermissions.tsx` agar mencakup semua 40+ permission keys baru. Kelompokkan dalam tabs/sections agar tidak overwhelming.
-
-**File**: `AdminRolePermissions.tsx`
-
----
-
-## Matriks Hak Akses Detail (Default Values)
-
-```text
-Permission Key          │ BranchMgr │ Finance │ Sales │ Marketing │ Operational │ Equipment
-────────────────────────┼───────────┼─────────┼───────┼───────────┼─────────────┼──────────
-dashboard               │     ✅    │    ✅   │  ✅   │    ✅     │     ✅      │    ✅
-analytics               │     ✅    │    ❌   │  ❌   │    ✅     │     ❌      │    ❌
-packages                │     ✅    │    ❌   │  ✅   │    ✅     │     ✅      │    ❌
-departures              │     ✅    │    ❌   │  ✅   │    ✅     │     ✅      │    ✅
-bookings                │     ✅    │    ✅   │  ✅   │    ❌     │     ✅      │    ✅
-payments                │     ✅    │    ✅   │  ❌   │    ❌     │     ❌      │    ❌
-finance_pl              │     ✅    │    ✅   │  ❌   │    ❌     │     ❌      │    ❌
-finance_cash            │     ✅    │    ✅   │  ❌   │    ❌     │     ❌      │    ❌
-finance_ar              │     ✅    │    ✅   │  ❌   │    ❌     │     ❌      │    ❌
-finance_ap              │     ✅    │    ✅   │  ❌   │    ❌     │     ❌      │    ❌
-customers               │     ✅    │    ✅   │  ✅   │    ❌     │     ✅      │    ❌
-leads                   │     ✅    │    ❌   │  ✅   │    ✅     │     ❌      │    ❌
-agents                  │     ✅    │    ✅   │  ❌   │    ❌     │     ❌      │    ❌
-branches                │     ✅    │    ❌   │  ❌   │    ❌     │     ❌      │    ❌
-savings                 │     ✅    │    ✅   │  ✅   │    ❌     │     ❌      │    ❌
-loyalty                 │     ✅    │    ❌   │  ✅   │    ✅     │     ❌      │    ❌
-referrals               │     ✅    │    ❌   │  ✅   │    ✅     │     ❌      │    ❌
-coupons                 │     ✅    │    ❌   │  ✅   │    ✅     │     ❌      │    ❌
-haji                    │     ✅    │    ❌   │  ✅   │    ❌     │     ✅      │    ❌
-manasik                 │     ✅    │    ❌   │  ✅   │    ❌     │     ✅      │    ❌
-visa                    │     ✅    │    ❌   │  ❌   │    ❌     │     ✅      │    ❌
-room_assignments        │     ✅    │    ❌   │  ❌   │    ❌     │     ✅      │    ❌
-equipment               │     ✅    │    ❌   │  ❌   │    ❌     │     ✅      │    ✅
-itinerary_templates     │     ✅    │    ❌   │  ❌   │    ❌     │     ✅      │    ❌
-hr                      │     ✅    │    ❌   │  ❌   │    ❌     │     ❌      │    ❌
-payroll                 │     ✅    │    ✅   │  ❌   │    ❌     │     ❌      │    ❌
-document_verification   │     ✅    │    ❌   │  ❌   │    ❌     │     ✅      │    ❌
-document_generator      │     ✅    │    ❌   │  ❌   │    ❌     │     ✅      │    ❌
-offline_content         │     ✅    │    ❌   │  ❌   │    ❌     │     ✅      │    ❌
-support_tickets         │     ✅    │    ❌   │  ✅   │    ❌     │     ✅      │    ❌
-whatsapp                │     ✅    │    ❌   │  ✅   │    ✅     │     ❌      │    ❌
-marketing_materials     │     ✅    │    ❌   │  ❌   │    ✅     │     ❌      │    ❌
-master_data             │     ✅    │    ❌   │  ❌   │    ❌     │     ✅      │    ❌
-appearance              │     ✅    │    ❌   │  ❌   │    ✅     │     ❌      │    ❌
-static_pages            │     ✅    │    ❌   │  ❌   │    ✅     │     ❌      │    ❌
-testimonials            │     ✅    │    ❌   │  ❌   │    ✅     │     ❌      │    ❌
-users                   │     ✅    │    ❌   │  ❌   │    ❌     │     ❌      │    ❌
-settings                │     ✅    │    ❌   │  ❌   │    ❌     │     ❌      │    ❌
-security_audit          │     ❌    │    ❌   │  ❌   │    ❌     │     ❌      │    ❌
-2fa                     │     ❌    │    ❌   │  ❌   │    ❌     │     ❌      │    ❌
-reports                 │     ✅    │    ✅   │  ❌   │    ✅     │     ✅      │    ❌
-```
-
-*Super Admin & Owner: selalu full access, tidak perlu di-manage via tabel.*
+### 11. RENDAH: Animated Elements Tanpa `prefers-reduced-motion` Guard
+**File**: `index.css` — `.animate-fade-in`, `.animate-slide-up`, dll tidak dihentikan untuk user yang memilih reduced motion.
+**Fix**: Tambahkan `@media (prefers-reduced-motion: reduce) { .animate-* { animation: none; } }`.
 
 ---
 
@@ -173,21 +56,13 @@ reports                 │     ✅    │    ✅   │  ❌   │    ✅     �
 
 | File | Perubahan |
 |:---|:---|
-| Migration SQL | Insert 30+ permission keys baru dengan default values per role |
-| `useAuth.tsx` | Tambah `permissions` state, `hasPermission()`, fix `isAdmin()` |
-| `AdminLayout.tsx` | Ganti hardcoded `allowedRoles` → `permissionKey` per item, filter via `hasPermission()` |
-| `ProtectedRoute.tsx` | Tambah prop `permissionKey`, enforce permission check |
-| `AdminRoutes.tsx` | Bungkus setiap sub-route dengan `permissionKey` |
-| `AdminRolePermissions.tsx` | Perluas `PERMISSION_LABELS` untuk 40+ keys, grouping UI |
-
-## Prioritas
-
-| # | Prioritas | Item |
-|:--|:----------|:-----|
-| 1 | **KRITIS** | Fix `isAdmin()` (terlalu luas, bypass semua) |
-| 2 | **KRITIS** | Route-level protection per halaman admin |
-| 3 | **KRITIS** | Integrasikan `role_permissions` ke sidebar + routing (dead feature) |
-| 4 | **TINGGI** | Perluas permission keys (14 → 40+) |
-| 5 | **TINGGI** | `usePermissions` hook + AuthContext integration |
-| 6 | **SEDANG** | Update Permission Matrix UI (grouping, labels lengkap) |
+| `index.html` | Hapus `user-scalable=no`, `maximum-scale=1.0` |
+| `src/index.css` | Tambah fallback `:root` vars, `font-arabic`, `prefers-reduced-motion` |
+| `src/App.tsx` | Konfigurasi `QueryClient` default options |
+| `src/components/providers/ThemeProvider.tsx` | Tambah `--sidebar-primary-foreground`, `--sidebar-accent-foreground`, `--chart-1`~`5` |
+| `src/components/home/DynamicHeroSection.tsx` | `bg-white` → `bg-card` |
+| `src/components/layout/DynamicNavbar.tsx` | Close menu on `location` change |
+| `src/components/layout/DynamicFooter.tsx` | Conditional logo invert |
+| `src/components/packages/PackageBookingForm.tsx` | Ambil WA number dari settings |
+| `src/components/ErrorBoundary.tsx` | Tambah reload counter guard |
 
