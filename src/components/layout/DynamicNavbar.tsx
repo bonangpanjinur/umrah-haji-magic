@@ -43,6 +43,12 @@ export function DynamicNavbar({ tenantSettings }: DynamicNavbarProps = {}) {
   const { data: mainSettings } = useWebsiteSettings();
   const settings = tenantSettings || mainSettings;
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Close mobile menu on route change (e.g. browser back button)
+  useEffect(() => {
+    setIsOpen(false);
+  }, [location.pathname]);
 
   const handleSignOut = async () => {
     await signOut();

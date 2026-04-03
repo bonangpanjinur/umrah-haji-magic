@@ -348,8 +348,9 @@ export function PackageBookingForm({ pkg }: PackageBookingFormProps) {
                 variant="outline"
                 className="w-full h-11 text-base font-semibold gap-2 border-primary text-primary hover:bg-primary/5" 
                 onClick={() => {
+                  const waNumber = websiteSettings?.footer_whatsapp?.replace(/\D/g, '') || '6281234567890';
                   const message = encodeURIComponent(`Halo, saya tertarik dengan paket *${pkg.name}*. Bisa bantu saya untuk proses booking?`);
-                  window.open(`https://wa.me/6281234567890?text=${message}`, '_blank');
+                  window.open(`https://wa.me/${waNumber}?text=${message}`, '_blank');
                 }}
               >
                 <MessageCircle className="h-5 w-5" />Konsultasi via WhatsApp

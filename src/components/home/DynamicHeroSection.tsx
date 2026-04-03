@@ -97,7 +97,7 @@ export function DynamicHeroSection({ settings: propSettings }: DynamicHeroSectio
           )}
 
           {/* Search Widget */}
-          <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-3xl mx-auto">
+          <div className="bg-card text-card-foreground rounded-2xl shadow-2xl p-6 max-w-3xl mx-auto">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground flex items-center gap-2">

@@ -25,10 +25,18 @@ export class ErrorBoundary extends Component<Props, State> {
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('ErrorBoundary caught:', error, errorInfo);
     
-    // Check for chunk load errors
+    // Check for chunk load errors with reload guard
     if (error.message.includes('Failed to fetch dynamically imported module')) {
-      console.warn('Chunk load error detected in ErrorBoundary, reloading page...');
-      window.location.reload();
+      const key = 'eb-reload-count';
+      const count = parseInt(sessionStorage.getItem(key) || '0', 10);
+      if (count < 3) {
+        sessionStorage.setItem(key, String(count + 1));
+        console.warn(`Chunk load error, reloading (attempt ${count + 1}/3)...`);
+        window.location.reload();
+      } else {
+        console.error('Max reload attempts reached, showing error UI.');
+        sessionStorage.removeItem(key);
+      }
     }
   }
 
