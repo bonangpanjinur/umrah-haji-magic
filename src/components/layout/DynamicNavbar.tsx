@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { WebsiteSettings } from '@/hooks/useWebsiteSettings';
 import { Menu, X, User, ChevronDown, LogOut, LayoutDashboard, Wallet, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -43,6 +43,12 @@ export function DynamicNavbar({ tenantSettings }: DynamicNavbarProps = {}) {
   const { data: mainSettings } = useWebsiteSettings();
   const settings = tenantSettings || mainSettings;
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Close mobile menu on route change (e.g. browser back button)
+  useEffect(() => {
+    setIsOpen(false);
+  }, [location.pathname]);
 
   const handleSignOut = async () => {
     await signOut();
