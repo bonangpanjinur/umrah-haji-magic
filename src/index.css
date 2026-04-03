@@ -10,14 +10,56 @@
 
 @layer base {
   :root {
-    /* 
-      IMPORTANT: Default color values removed to prevent Flash of Unstyled Content (FOUC).
-      These values are now applied by the theme restoration script in index.html and ThemeProvider.
-      This ensures consistent design from the first pixel rendered.
-    */
-    
-    /* Border Radius - kept as it's not theme-dependent */
+    /* Fallback defaults — overridden by ThemeProvider / localStorage cache */
+    --background: 0 0% 100%;
+    --foreground: 142 20% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 142 20% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 142 20% 10%;
+    --primary: 142 70% 45%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 45 93% 47%;
+    --secondary-foreground: 0 0% 0%;
+    --accent: 142 60% 35%;
+    --accent-foreground: 0 0% 100%;
+    --muted: 0 10% 94%;
+    --muted-foreground: 0 10% 45%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 10% 90%;
+    --input: 0 10% 90%;
+    --ring: 142 70% 45%;
     --radius: 0.75rem;
+
+    /* Sidebar */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 142 20% 10%;
+    --sidebar-primary: 142 70% 45%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 142 60% 35%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 0 10% 90%;
+    --sidebar-ring: 142 70% 45%;
+
+    /* Chart */
+    --chart-1: 142 70% 45%;
+    --chart-2: 45 93% 47%;
+    --chart-3: 199 89% 48%;
+    --chart-4: 38 92% 50%;
+    --chart-5: 0 84% 60%;
+
+    /* Status */
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 0%;
+    --info: 199 89% 48%;
+    --info-foreground: 0 0% 100%;
+    --success-muted: 142 76% 95%;
+    --warning-muted: 38 92% 95%;
+    --info-muted: 199 89% 95%;
+    --destructive-muted: 0 84% 95%;
   }
 
   .dark {
