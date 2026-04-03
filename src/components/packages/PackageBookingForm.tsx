@@ -44,6 +44,7 @@ export function PackageBookingForm({ pkg }: PackageBookingFormProps) {
   const packageId = pkg.id;
   const navigate = useNavigate();
   const { user, isLoading: authLoading } = useAuth();
+  const { data: websiteSettings } = useWebsiteSettings();
   
   const [selectedDeparture, setSelectedDeparture] = useState<string>("");
   const [roomAllocation, setRoomAllocation] = useState<RoomAllocation>({ quad: 0, triple: 0, double: 0, single: 0 });
