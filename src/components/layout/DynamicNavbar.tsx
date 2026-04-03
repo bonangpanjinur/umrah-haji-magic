@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { WebsiteSettings } from '@/hooks/useWebsiteSettings';
 import { Menu, X, User, ChevronDown, LogOut, LayoutDashboard, Wallet, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
