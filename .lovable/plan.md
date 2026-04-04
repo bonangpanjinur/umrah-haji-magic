@@ -1,66 +1,74 @@
 
+# Rencana Perbaikan Bug -- Analisis Terkini
 
-# Rencana Perbaikan Bug CSS/JS -- Analisis Terkini
-
-## Temuan Setelah Analisis
-
-Banyak bug dari rencana sebelumnya **sudah diperbaiki**: `user-scalable=no` sudah dihapus, fallback `:root` vars sudah ada, `font-arabic` sudah didefinisikan, `QueryClient` sudah dikonfigurasi, `ErrorBoundary` sudah punya reload guard, navbar sudah close on route change, `prefers-reduced-motion` sudah ditambahkan, search widget sudah `bg-card`, sidebar/chart CSS vars sudah ada di ThemeProvider.
-
-Berikut bug yang **masih aktif**:
+## Bug yang sudah diperbaiki sebelumnya (SKIP)
+- `useDepartures` category -> package_type: SUDAH FIX
+- `@import` Amiri di akhir file: SUDAH FIX (sekarang di baris 1)
+- `user-scalable=no`: SUDAH FIX
+- `:root` fallback vars: SUDAH FIX
+- `font-arabic`: SUDAH FIX
+- `useHeroStats` query tabel 404: SUDAH FIX (sekarang baca dari `website_settings`)
+- Footer logo invert: SUDAH FIX (brightness-0 invert tanpa dark:)
 
 ---
 
-### 1. KRITIS: `useDepartures` Query `packages(name, category)` -- Kolom `category` Tidak Ada
+## Bug yang Masih Aktif
 
-**File**: `src/hooks/useDepartures.ts` baris 19
+### 1. TINGGI: `usePackageTypes` Query Tabel `package_types` yang Tidak Ada (404)
 
-Query `.select('*, packages(name, category), ...')` gagal karena tabel `packages` tidak punya kolom `category`. Network request mengembalikan **400 error**: `column packages_1.category does not exist`.
+**File**: `src/hooks/usePackageTypes.ts`
 
-Ini menyebabkan **halaman homepage gagal memuat departures** untuk search widget dan **halaman admin departures** rusak total.
+Network logs menunjukkan request ke `package_types` return **404**: `Could not find the table 'public.package_types'`. Meskipun ada fallback ke `DEFAULT_PACKAGE_TYPES`, setiap page load menghasilkan 404 error + console warning. Hook ini cast `supabase as any` untuk menghindari type error -- tanda jelas tabel tidak ada.
 
-**Fix**: Ganti `packages(name, category)` menjadi `packages(name, package_type)` karena `package_type` adalah kolom yang benar.
+**Fix**: Hapus query ke tabel yang tidak ada. Gunakan enum `package_type` dari packages langsung, atau hardcode default types (sudah ada). Hapus `(supabase as any)` cast.
 
-### 2. TINGGI: Footer Logo `dark:brightness-0 dark:invert` Tidak Efektif
+### 2. TINGGI: `useCompanyFeatures` Query Tabel `company_features` yang Tidak Ada (404)
 
-**File**: `src/components/layout/DynamicFooter.tsx` baris 166, 203
+**File**: `src/hooks/useCompanyFeatures.ts` dan `src/components/admin/appearance/CompanyFeaturesEditor.tsx`
 
-Class `dark:brightness-0 dark:invert` hanya aktif jika `<html class="dark">` -- tapi aplikasi ini **tidak menggunakan dark mode class**. Tema dikelola via CSS variables, bukan Tailwind dark mode. Jadi logo di footer **tidak pernah diinvert**, dan jika footer bg gelap (sidebar bg gelap), logo bisa invisible.
+Sama seperti di atas -- tabel `company_features` tidak ada di database. Setiap page load = 404 error. Editor di admin juga upsert ke tabel yang tidak ada, jadi fitur "edit company features" di admin **tidak berfungsi sama sekali**.
 
-**Fix**: Deteksi lightness dari sidebar background CSS variable, atau gunakan `brightness-0 invert` tanpa `dark:` prefix karena footer selalu pakai `bg-sidebar` yang bisa gelap.
+**Fix**: Simpan company features di `website_settings.custom_sections.features` (pattern yang sama seperti stats). Update hook dan editor untuk baca/tulis ke sana.
 
-### 3. TINGGI: `@import` CSS di Akhir File -- Invalid per CSS Spec
+### 3. SEDANG: `PackageCard` Harga Terendah = Rp0 untuk Paket Kosong
 
-**File**: `src/index.css` baris 241
+**File**: `src/components/packages/PackageCard.tsx` baris 14-19
 
-`@import url('...Amiri...')` ditempatkan **di akhir file** setelah semua rules. Per spesifikasi CSS, `@import` harus berada **sebelum semua aturan lain** (kecuali `@charset`). Browser modern mungkin mengabaikan import ini, menyebabkan font Amiri **tidak pernah dimuat**.
+`Math.min(0, 0, 0, 0)` = 0. Paket seperti "paket tabungan" dan "paket baru" punya semua harga = 0, sehingga ditampilkan sebagai **"Rp0"** di card. Ini menyesatkan pengguna.
 
-**Fix**: Pindahkan `@import` ke **baris pertama** sebelum `@tailwind base`.
+**Fix**: Filter harga > 0 sebelum `Math.min()`. Jika semua 0, tampilkan "Hubungi Kami" bukan "Rp0".
 
-### 4. SEDANG: Hero Stats Masih Query Tabel `hero_stats` yang 404
+### 4. SEDANG: Console Warning -- Badge Ref pada PackageCard
 
-**File**: `src/hooks/useHeroStats.ts`
+**File**: `src/components/ui/badge.tsx`
 
-Meskipun sudah ada fallback ke `DEFAULT_HERO_STATS`, setiap page load tetap mengirim request ke `hero_stats` yang return **404**. Ini menghasilkan console warning dan network noise yang tidak perlu.
+Console menunjukkan `Function components cannot be given refs` dari `Badge` di `PackageCard`. Badge menggunakan `<div>` tapi tidak wrapped dengan `forwardRef`. Tooltip atau parent component mungkin mencoba memberikan ref.
 
-Sementara `website_settings.custom_sections.stats` sudah punya data stats (dari DB response), hero section **tidak membaca** data itu -- malah query tabel terpisah yang tidak ada.
+**Fix**: Wrap Badge component dengan `React.forwardRef`.
 
-**Fix**: Baca stats dari `custom_sections.stats` di `website_settings` (sudah ada datanya) alih-alih query tabel `hero_stats`. Hapus request 404 yang sia-sia.
+### 5. SEDANG: Footer Menampilkan Contact Kosong
 
-### 5. SEDANG: `DynamicHeroSection` Memanggil `useDepartures()` yang Gagal
+**File**: `src/components/layout/DynamicFooter.tsx` baris 119-139
 
-**File**: `src/components/home/DynamicHeroSection.tsx` baris 22
+`renderContactInfo()` selalu render phone, email, address -- bahkan jika kosong (dari DB: `footer_phone: ""`, `footer_email: ""`, `footer_whatsapp: ""`). Ini menghasilkan icon tanpa teks, link `tel:` dan `mailto:` kosong.
 
-Karena `useDepartures()` query gagal (bug #1), hero section memanggil hook yang error. Meskipun `departures` fallback ke `undefined`, ini tetap menghasilkan error di console dan wasted network request.
+**Fix**: Hanya render item contact jika nilainya tidak kosong. Skip seluruh section jika semua kosong.
 
-**Fix**: Setelah fix bug #1, ini otomatis terselesaikan. Tapi lebih baik buat query departures terpisah yang lebih ringan khusus untuk homepage (hanya ambil `departure_date` untuk populate bulan).
+### 6. RENDAH: Social Icons Dummy Ditampilkan
 
-### 6. RENDAH: Duplikat Font Preload di `index.html`
+**File**: `src/components/layout/DynamicFooter.tsx` baris 108-114
 
-**File**: `index.html` baris 24-26
+Jika tidak ada social media yang dikonfigurasi (`!hasSocial`), footer menampilkan 3 **dummy icons** (Facebook, Instagram, YouTube) tanpa link. Ini misleading karena icons tidak mengarah ke mana pun.
 
-Ada `<link rel="preload" ...>` dan `<link rel="stylesheet" ...>` untuk Google Fonts (Plus Jakarta Sans + Inter), **tapi** ThemeProvider bisa menimpa font ini dengan font lain dari database (saat ini: Playfair Display + Lato). Jadi preload font yang salah = wasted bandwidth.
+**Fix**: Jangan tampilkan social icons jika tidak ada yang dikonfigurasi. Hapus dummy fallback.
 
-**Fix**: Hapus hardcoded font preload dari `index.html`. Biarkan `ThemeProvider.loadGoogleFonts()` yang menangani loading font secara dinamis.
+### 7. RENDAH: Initial Loader Tidak Dihapus Setelah React Mount
+
+**File**: `index.html` baris 144 + `src/main.tsx`
+
+Element `#initialLoader` dengan class `loading-state` pada body ditampilkan saat load. Perlu dicek apakah ada kode yang menghapus loader ini setelah React mount. Jika tidak, loader bisa menutupi konten.
+
+**Fix**: Pastikan `main.tsx` atau `App.tsx` menghapus `#initialLoader` dan `loading-state` class setelah mount.
 
 ---
 
@@ -68,21 +76,22 @@ Ada `<link rel="preload" ...>` dan `<link rel="stylesheet" ...>` untuk Google Fo
 
 | File | Perubahan |
 |:---|:---|
-| `src/hooks/useDepartures.ts` | `packages(name, category)` → `packages(name, package_type)` |
-| `src/components/layout/DynamicFooter.tsx` | Hapus `dark:` prefix pada logo invert, gunakan conditional berdasarkan sidebar lightness |
-| `src/index.css` | Pindahkan `@import url('...Amiri...')` ke baris pertama |
-| `src/hooks/useHeroStats.ts` | Baca dari `website_settings.custom_sections.stats` bukan query tabel 404 |
-| `src/components/home/DynamicHeroSection.tsx` | Gunakan stats dari settings, bukan `useHeroStats()` |
-| `index.html` | Hapus hardcoded font preload (Plus Jakarta Sans + Inter) |
+| `src/hooks/usePackageTypes.ts` | Hapus query ke tabel 404, gunakan hardcoded defaults saja |
+| `src/hooks/useCompanyFeatures.ts` | Baca dari `website_settings.custom_sections.features` |
+| `src/components/admin/appearance/CompanyFeaturesEditor.tsx` | Tulis ke `website_settings.custom_sections.features` |
+| `src/components/packages/PackageCard.tsx` | Handle harga 0, tampilkan "Hubungi Kami" |
+| `src/components/ui/badge.tsx` | Wrap dengan `React.forwardRef` |
+| `src/components/layout/DynamicFooter.tsx` | Skip contact/social kosong, hapus dummy icons |
+| `src/main.tsx` | Pastikan initial loader dihapus |
 
 ## Prioritas
 
 | # | Prioritas | Item |
 |:--|:----------|:-----|
-| 1 | **KRITIS** | Fix `useDepartures` -- `category` → `package_type` (400 error aktif) |
-| 2 | **TINGGI** | Fix `@import` posisi di CSS (font Arab mungkin tidak dimuat) |
-| 3 | **TINGGI** | Fix footer logo invert (tidak efektif tanpa dark class) |
-| 4 | **SEDANG** | Hero stats: baca dari `custom_sections` bukan tabel 404 |
-| 5 | **SEDANG** | Bersihkan hero departures query |
-| 6 | **RENDAH** | Hapus font preload yang tidak terpakai |
-
+| 1 | **TINGGI** | Fix `usePackageTypes` 404 query |
+| 2 | **TINGGI** | Fix `useCompanyFeatures` 404 query + editor |
+| 3 | **SEDANG** | PackageCard harga Rp0 |
+| 4 | **SEDANG** | Badge forwardRef warning |
+| 5 | **SEDANG** | Footer contact kosong |
+| 6 | **RENDAH** | Hapus dummy social icons |
+| 7 | **RENDAH** | Initial loader cleanup |
