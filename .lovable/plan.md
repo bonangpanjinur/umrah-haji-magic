@@ -1,54 +1,66 @@
 
 
-# Rencana Perbaikan Bug CSS/JS
+# Rencana Perbaikan Bug CSS/JS -- Analisis Terkini
 
-## Bug yang Ditemukan
+## Temuan Setelah Analisis
 
-### 1. KRITIS: `user-scalable=no` Memblokir Zoom Aksesibilitas
-**File**: `index.html` baris 5
-`maximum-scale=1.0, user-scalable=no` mencegah pengguna zoom di mobile. Ini melanggar WCAG 2.1 dan buruk untuk aksesibilitas.
-**Fix**: Hapus `maximum-scale=1.0, user-scalable=no`.
+Banyak bug dari rencana sebelumnya **sudah diperbaiki**: `user-scalable=no` sudah dihapus, fallback `:root` vars sudah ada, `font-arabic` sudah didefinisikan, `QueryClient` sudah dikonfigurasi, `ErrorBoundary` sudah punya reload guard, navbar sudah close on route change, `prefers-reduced-motion` sudah ditambahkan, search widget sudah `bg-card`, sidebar/chart CSS vars sudah ada di ThemeProvider.
 
-### 2. KRITIS: CSS Variables Tidak Ada di `:root` — Halaman Putih Kosong
-**File**: `src/index.css`
-Semua default CSS variable dihapus dari `:root` (baris 11-21). Jika localStorage kosong DAN database belum merespons, **semua warna tidak terdefinisi** → `hsl(var(--background))` = invalid → halaman putih, teks tak terlihat.
-**Fix**: Tambahkan fallback CSS variables di `:root` sebagai baseline.
+Berikut bug yang **masih aktif**:
 
-### 3. TINGGI: `font-arabic` Class Tidak Terdefinisi
-**File**: Dipakai di 5 file (`DynamicHeroSection.tsx`, `HeroSection.tsx`, `JamaahDoaPanduan.tsx`, dll) tapi **tidak ada definisi** di CSS atau Tailwind config. Font Arab menggunakan font default sans-serif.
-**Fix**: Tambahkan `font-arabic` di `index.css` dan load font Arab (Amiri/Scheherazade).
+---
 
-### 4. TINGGI: Missing CSS Variables untuk Sidebar Foreground & Chart
-**File**: `tailwind.config.ts` mereferensikan `--sidebar-primary-foreground`, `--sidebar-accent-foreground`, `--chart-1` s/d `--chart-5`, tapi `ThemeProvider.tsx` **tidak pernah menghasilkan** variable ini. Footer dan sidebar UI menggunakan `hsl(undefined)` → warna fallback browser (hitam/transparan).
-**Fix**: Tambahkan variable ini di `generateCSSVariables()`.
+### 1. KRITIS: `useDepartures` Query `packages(name, category)` -- Kolom `category` Tidak Ada
 
-### 5. SEDANG: `QueryClient` Tanpa Konfigurasi Retry/Stale
-**File**: `src/App.tsx` baris 18 — `new QueryClient()` tanpa opsi. Default: 3 retry, infinite stale time = request berulang saat error, dan data tidak pernah di-refetch otomatis.
-**Fix**: Konfigurasi `retry: 1`, `staleTime: 5 * 60 * 1000`, `refetchOnWindowFocus: false`.
+**File**: `src/hooks/useDepartures.ts` baris 19
 
-### 6. SEDANG: Footer Logo `brightness-0 invert` Hardcoded
-**File**: `DynamicFooter.tsx` baris 166, 203 — `brightness-0 invert` diterapkan pada logo footer. Ini membuat logo selalu putih, tapi jika sidebar background terang (white), logo jadi invisible.
-**Fix**: Deteksi lightness dari `--sidebar-background` atau gunakan conditional class.
+Query `.select('*, packages(name, category), ...')` gagal karena tabel `packages` tidak punya kolom `category`. Network request mengembalikan **400 error**: `column packages_1.category does not exist`.
 
-### 7. SEDANG: Search Widget Hero — Warna Hardcoded Putih
-**File**: `DynamicHeroSection.tsx` baris 100 — `bg-white` hardcoded pada search widget. Jika tema dark/custom, ini mencolok dan tidak konsisten.
-**Fix**: Ganti `bg-white` → `bg-card`.
+Ini menyebabkan **halaman homepage gagal memuat departures** untuk search widget dan **halaman admin departures** rusak total.
 
-### 8. RENDAH: Mobile Navbar Tidak Menutup saat Navigate
-**File**: `DynamicNavbar.tsx` — state `isOpen` di-close via `onClick` pada setiap link, tapi jika user menekan tombol Back browser, menu tetap terbuka karena tidak listen ke `location` changes.
-**Fix**: Tambahkan `useEffect` yang menutup menu saat `location.pathname` berubah.
+**Fix**: Ganti `packages(name, category)` menjadi `packages(name, package_type)` karena `package_type` adalah kolom yang benar.
 
-### 9. RENDAH: `ErrorBoundary` Auto-Reload tanpa Guard
-**File**: `ErrorBoundary.tsx` baris 29-32 — jika chunk error berulang, `componentDidCatch` memanggil `window.location.reload()` tanpa limit. Sudah ada guard di `main.tsx` (MAX_RELOAD_ATTEMPTS=3) tapi `ErrorBoundary` bypass itu.
-**Fix**: Gunakan counter dari `sessionStorage` di `ErrorBoundary` juga.
+### 2. TINGGI: Footer Logo `dark:brightness-0 dark:invert` Tidak Efektif
 
-### 10. RENDAH: Hardcoded WhatsApp Number di PackageBookingForm
-**File**: `PackageBookingForm.tsx` baris 350 — `6281234567890` hardcoded. Seharusnya ambil dari `website_settings.footer_whatsapp`.
-**Fix**: Baca dari `useWebsiteSettings()`.
+**File**: `src/components/layout/DynamicFooter.tsx` baris 166, 203
 
-### 11. RENDAH: Animated Elements Tanpa `prefers-reduced-motion` Guard
-**File**: `index.css` — `.animate-fade-in`, `.animate-slide-up`, dll tidak dihentikan untuk user yang memilih reduced motion.
-**Fix**: Tambahkan `@media (prefers-reduced-motion: reduce) { .animate-* { animation: none; } }`.
+Class `dark:brightness-0 dark:invert` hanya aktif jika `<html class="dark">` -- tapi aplikasi ini **tidak menggunakan dark mode class**. Tema dikelola via CSS variables, bukan Tailwind dark mode. Jadi logo di footer **tidak pernah diinvert**, dan jika footer bg gelap (sidebar bg gelap), logo bisa invisible.
+
+**Fix**: Deteksi lightness dari sidebar background CSS variable, atau gunakan `brightness-0 invert` tanpa `dark:` prefix karena footer selalu pakai `bg-sidebar` yang bisa gelap.
+
+### 3. TINGGI: `@import` CSS di Akhir File -- Invalid per CSS Spec
+
+**File**: `src/index.css` baris 241
+
+`@import url('...Amiri...')` ditempatkan **di akhir file** setelah semua rules. Per spesifikasi CSS, `@import` harus berada **sebelum semua aturan lain** (kecuali `@charset`). Browser modern mungkin mengabaikan import ini, menyebabkan font Amiri **tidak pernah dimuat**.
+
+**Fix**: Pindahkan `@import` ke **baris pertama** sebelum `@tailwind base`.
+
+### 4. SEDANG: Hero Stats Masih Query Tabel `hero_stats` yang 404
+
+**File**: `src/hooks/useHeroStats.ts`
+
+Meskipun sudah ada fallback ke `DEFAULT_HERO_STATS`, setiap page load tetap mengirim request ke `hero_stats` yang return **404**. Ini menghasilkan console warning dan network noise yang tidak perlu.
+
+Sementara `website_settings.custom_sections.stats` sudah punya data stats (dari DB response), hero section **tidak membaca** data itu -- malah query tabel terpisah yang tidak ada.
+
+**Fix**: Baca stats dari `custom_sections.stats` di `website_settings` (sudah ada datanya) alih-alih query tabel `hero_stats`. Hapus request 404 yang sia-sia.
+
+### 5. SEDANG: `DynamicHeroSection` Memanggil `useDepartures()` yang Gagal
+
+**File**: `src/components/home/DynamicHeroSection.tsx` baris 22
+
+Karena `useDepartures()` query gagal (bug #1), hero section memanggil hook yang error. Meskipun `departures` fallback ke `undefined`, ini tetap menghasilkan error di console dan wasted network request.
+
+**Fix**: Setelah fix bug #1, ini otomatis terselesaikan. Tapi lebih baik buat query departures terpisah yang lebih ringan khusus untuk homepage (hanya ambil `departure_date` untuk populate bulan).
+
+### 6. RENDAH: Duplikat Font Preload di `index.html`
+
+**File**: `index.html` baris 24-26
+
+Ada `<link rel="preload" ...>` dan `<link rel="stylesheet" ...>` untuk Google Fonts (Plus Jakarta Sans + Inter), **tapi** ThemeProvider bisa menimpa font ini dengan font lain dari database (saat ini: Playfair Display + Lato). Jadi preload font yang salah = wasted bandwidth.
+
+**Fix**: Hapus hardcoded font preload dari `index.html`. Biarkan `ThemeProvider.loadGoogleFonts()` yang menangani loading font secara dinamis.
 
 ---
 
@@ -56,13 +68,21 @@ Semua default CSS variable dihapus dari `:root` (baris 11-21). Jika localStorage
 
 | File | Perubahan |
 |:---|:---|
-| `index.html` | Hapus `user-scalable=no`, `maximum-scale=1.0` |
-| `src/index.css` | Tambah fallback `:root` vars, `font-arabic`, `prefers-reduced-motion` |
-| `src/App.tsx` | Konfigurasi `QueryClient` default options |
-| `src/components/providers/ThemeProvider.tsx` | Tambah `--sidebar-primary-foreground`, `--sidebar-accent-foreground`, `--chart-1`~`5` |
-| `src/components/home/DynamicHeroSection.tsx` | `bg-white` → `bg-card` |
-| `src/components/layout/DynamicNavbar.tsx` | Close menu on `location` change |
-| `src/components/layout/DynamicFooter.tsx` | Conditional logo invert |
-| `src/components/packages/PackageBookingForm.tsx` | Ambil WA number dari settings |
-| `src/components/ErrorBoundary.tsx` | Tambah reload counter guard |
+| `src/hooks/useDepartures.ts` | `packages(name, category)` → `packages(name, package_type)` |
+| `src/components/layout/DynamicFooter.tsx` | Hapus `dark:` prefix pada logo invert, gunakan conditional berdasarkan sidebar lightness |
+| `src/index.css` | Pindahkan `@import url('...Amiri...')` ke baris pertama |
+| `src/hooks/useHeroStats.ts` | Baca dari `website_settings.custom_sections.stats` bukan query tabel 404 |
+| `src/components/home/DynamicHeroSection.tsx` | Gunakan stats dari settings, bukan `useHeroStats()` |
+| `index.html` | Hapus hardcoded font preload (Plus Jakarta Sans + Inter) |
+
+## Prioritas
+
+| # | Prioritas | Item |
+|:--|:----------|:-----|
+| 1 | **KRITIS** | Fix `useDepartures` -- `category` → `package_type` (400 error aktif) |
+| 2 | **TINGGI** | Fix `@import` posisi di CSS (font Arab mungkin tidak dimuat) |
+| 3 | **TINGGI** | Fix footer logo invert (tidak efektif tanpa dark class) |
+| 4 | **SEDANG** | Hero stats: baca dari `custom_sections` bukan tabel 404 |
+| 5 | **SEDANG** | Bersihkan hero departures query |
+| 6 | **RENDAH** | Hapus font preload yang tidak terpakai |
 
