@@ -134,8 +134,8 @@ export function DynamicHeroSection({ settings }: { settings?: any }) {
                 <Skeleton className="h-20" />
               </>
             ) : (
-              heroStats?.map((stat) => (
-                <div key={index} className="text-center">
+              heroStats?.map((stat, i) => (
+                <div key={i} className="text-center">
                   <div className="text-3xl md:text-4xl font-bold text-accent">{stat.stat_value}</div>
                   <div className="text-sm text-white/80">{stat.stat_label}</div>
                 </div>
