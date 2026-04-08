@@ -120,8 +120,9 @@ export function PackageBookingForm({ pkg }: PackageBookingFormProps) {
   }, [roomAllocation, prices]);
 
   const updateRoomCount = (type: RoomType, delta: number) => {
+    const step = type === 'double' ? delta * 2 : delta;
     setRoomAllocation(prev => {
-      const newCount = Math.max(0, prev[type] + delta);
+      const newCount = Math.max(0, prev[type] + step);
       const newTotal = (type === 'quad' ? newCount : prev.quad) + (type === 'triple' ? newCount : prev.triple) + (type === 'double' ? newCount : prev.double) + (type === 'single' ? newCount : prev.single);
       if (newTotal > availableSeats) return prev;
       return { ...prev, [type]: newCount };
@@ -156,7 +157,11 @@ export function PackageBookingForm({ pkg }: PackageBookingFormProps) {
   };
 
   const doubleValidationError = roomAllocation.double > 0 && roomAllocation.double % 2 !== 0;
-  const canProceed = selectedDeparture && totalPassengers > 0 && hasPricing && !doubleValidationError;
+  const picValid = picSource === 'pusat' || 
+    (picSource === 'cabang' && !!selectedBranchId) || 
+    (picSource === 'agen' && !!selectedAgentId) || 
+    (picSource === 'referral' && !!referralCode.trim());
+  const canProceed = selectedDeparture && totalPassengers > 0 && hasPricing && !doubleValidationError && picValid;
 
   if (departuresLoading) {
     return (

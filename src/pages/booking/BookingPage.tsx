@@ -1,12 +1,12 @@
-import { PublicLayout } from "@/components/layout/PublicLayout";
+import { DynamicPublicLayout } from "@/components/layout/DynamicPublicLayout";
 import { BookingWizard } from "@/components/booking/BookingWizard";
 
 export default function BookingPage() {
   return (
-    <PublicLayout>
+    <DynamicPublicLayout>
       <div className="container py-8 max-w-4xl">
         <BookingWizard />
       </div>
-    </PublicLayout>
+    </DynamicPublicLayout>
   );
 }

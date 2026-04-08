@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useParams, useSearchParams, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent } from "@/components/ui/card";
@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import { StepIndicator } from "./StepIndicator";
 import { StepPassengersDynamic } from "./steps/StepPassengersDynamic";
 import { StepReviewDynamic } from "./steps/StepReviewDynamic";
-import { useBookingWizardDynamic, RoomAllocation, PICData } from "@/hooks/useBookingWizardDynamic";
-import { Loader2, ArrowLeft, BedDouble, Users, Building2, Ticket } from "lucide-react";
+import { useBookingWizardDynamic, RoomAllocation, PICData, DiscountData } from "@/hooks/useBookingWizardDynamic";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { Loader2, ArrowLeft, BedDouble, Users, Building2, AlertTriangle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { formatCurrency } from "@/lib/format";
@@ -27,6 +28,8 @@ export function BookingWizard() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user, isLoading: authLoading } = useAuth();
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [discountData, setDiscountData] = useState<DiscountData>({ discountAmount: 0, couponCode: '' });
   
   const initialDepartureId = searchParams.get('departure') || '';
   const initialRoomAllocation: RoomAllocation = {
@@ -35,6 +38,8 @@ export function BookingWizard() {
     double: parseInt(searchParams.get('double') || '0', 10),
     single: parseInt(searchParams.get('single') || '0', 10),
   };
+
+  const totalPassengersFromParams = initialRoomAllocation.quad + initialRoomAllocation.triple + initialRoomAllocation.double + initialRoomAllocation.single;
 
   // Read PIC data from URL params
   const picData: PICData = {
@@ -57,12 +62,25 @@ export function BookingWizard() {
   const { data: departureInfo } = useQuery({
     queryKey: ['departure-info', initialDepartureId],
     queryFn: async () => {
-      const { data, error } = await supabase.from('departures').select('id, departure_date, return_date, flight_number, price_quad, price_triple, price_double, price_single').eq('id', initialDepartureId).single();
+      const { data, error } = await supabase.from('departures').select('id, departure_date, return_date, flight_number, quota, booked_count, price_quad, price_triple, price_double, price_single').eq('id', initialDepartureId).single();
       if (error) throw error;
       return data;
     },
     enabled: !!initialDepartureId,
   });
+
+  // Quota validation
+  const [quotaError, setQuotaError] = useState<string | null>(null);
+  useEffect(() => {
+    if (departureInfo && totalPassengersFromParams > 0) {
+      const available = departureInfo.quota - (departureInfo.booked_count || 0);
+      if (totalPassengersFromParams > available) {
+        setQuotaError(`Kuota tidak mencukupi. Tersedia ${available} kursi, Anda memilih ${totalPassengersFromParams} jamaah.`);
+      } else {
+        setQuotaError(null);
+      }
+    }
+  }, [departureInfo, totalPassengersFromParams]);
 
   // Fetch PIC label for display
   const { data: picLabel } = useQuery({
@@ -101,8 +119,12 @@ export function BookingWizard() {
   };
 
   const handleSubmit = async () => {
-    const result = await submitBooking();
+    const result = await submitBooking(discountData);
     if (result?.bookingId) navigate(`/booking/success/${result.bookingId}`);
+  };
+
+  const handleCouponApplied = (discount: number, code: string) => {
+    setDiscountData({ discountAmount: discount, couponCode: code });
   };
 
   if (authLoading) {
@@ -127,6 +149,21 @@ export function BookingWizard() {
         <CardContent className="p-8 text-center">
           <h2 className="text-xl font-semibold mb-4">Pilih Keberangkatan & Kamar</h2>
           <p className="text-muted-foreground mb-6">Silakan pilih tanggal keberangkatan dan jumlah jamaah terlebih dahulu di halaman detail paket.</p>
+          <Button asChild><Link to={`/packages/${packageId}`}>Kembali ke Detail Paket</Link></Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (quotaError) {
+    return (
+      <Card className="max-w-lg mx-auto">
+        <CardContent className="p-8 text-center">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-destructive/10 mb-4">
+            <AlertTriangle className="h-8 w-8 text-destructive" />
+          </div>
+          <h2 className="text-xl font-semibold mb-4">Kuota Tidak Mencukupi</h2>
+          <p className="text-muted-foreground mb-6">{quotaError}</p>
           <Button asChild><Link to={`/packages/${packageId}`}>Kembali ke Detail Paket</Link></Button>
         </CardContent>
       </Card>
@@ -202,6 +239,7 @@ export function BookingWizard() {
                 price_double: departureInfo.price_double ?? 0,
                 price_single: departureInfo.price_single ?? 0,
               } : undefined}
+              onCouponApplied={handleCouponApplied}
             />
           )}
         </CardContent>
@@ -210,13 +248,23 @@ export function BookingWizard() {
       <div className="flex justify-between">
         <Button variant="outline" onClick={handlePrev} disabled={currentStepIndex === 0}>Sebelumnya</Button>
         {currentStep === 'review' ? (
-          <Button onClick={handleSubmit} disabled={isSubmitting}>
+          <Button onClick={() => setShowConfirm(true)} disabled={isSubmitting || !!quotaError}>
             {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Memproses...</> : 'Konfirmasi Booking'}
           </Button>
         ) : (
           <Button onClick={handleNext} disabled={!canProceed(currentStep, formData)}>Selanjutnya</Button>
         )}
       </div>
+
+      <ConfirmDialog
+        open={showConfirm}
+        onOpenChange={setShowConfirm}
+        title="Konfirmasi Booking"
+        description={`Anda akan membuat booking untuk ${totalPassengers} jamaah. Pastikan semua data sudah benar sebelum melanjutkan.`}
+        confirmLabel="Ya, Buat Booking"
+        cancelLabel="Periksa Lagi"
+        onConfirm={handleSubmit}
+      />
     </div>
   );
 }
