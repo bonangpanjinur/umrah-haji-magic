@@ -4644,6 +4644,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_departure_booked: {
+        Args: { _departure_id: string; _pax: number }
+        Returns: boolean
+      }
       is_account_locked: { Args: { _email: string }; Returns: boolean }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       log_activity: {
