@@ -49,7 +49,7 @@ export function StepPassengersDynamic({ passengers, onUpdate }: StepPassengersDy
       <div>
         <h3 className="text-lg font-semibold">Data Jamaah</h3>
         <p className="text-sm text-muted-foreground">
-          Lengkapi nama dan data jamaah. Data detail seperti passport dan KTP dapat dilengkapi setelah pembayaran.
+          Lengkapi nama dan data jamaah. Data detail seperti passport dapat dilengkapi setelah pembayaran.
         </p>
       </div>
 
@@ -91,6 +91,38 @@ export function StepPassengersDynamic({ passengers, onUpdate }: StepPassengersDy
                         placeholder="Sesuai KTP/Passport"
                         value={passenger.fullName}
                         onChange={(e) => updatePassenger(passenger.id, 'fullName', e.target.value)}
+                        className="text-base"
+                      />
+                    </div>
+
+                    {/* NIK */}
+                    <div className="space-y-1.5 col-span-1">
+                      <Label htmlFor={`nik-${passenger.id}`} className="text-sm">
+                        NIK <span className="text-muted-foreground text-xs">(opsional)</span>
+                      </Label>
+                      <Input
+                        id={`nik-${passenger.id}`}
+                        placeholder="16 digit NIK"
+                        value={passenger.nik}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, '').slice(0, 16);
+                          updatePassenger(passenger.id, 'nik', val);
+                        }}
+                        className="text-base"
+                        maxLength={16}
+                      />
+                    </div>
+
+                    {/* Birth Date */}
+                    <div className="space-y-1.5 col-span-1">
+                      <Label htmlFor={`birth-${passenger.id}`} className="text-sm">
+                        Tanggal Lahir <span className="text-muted-foreground text-xs">(opsional)</span>
+                      </Label>
+                      <Input
+                        id={`birth-${passenger.id}`}
+                        type="date"
+                        value={passenger.birthDate}
+                        onChange={(e) => updatePassenger(passenger.id, 'birthDate', e.target.value)}
                         className="text-base"
                       />
                     </div>

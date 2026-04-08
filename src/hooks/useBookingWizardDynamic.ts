@@ -17,6 +17,8 @@ export interface DynamicPassengerData {
   fullName: string;
   gender: 'male' | 'female';
   phone: string;
+  nik: string;
+  birthDate: string;
   passengerType: 'adult' | 'child' | 'infant';
   roomType: RoomType;
 }
@@ -35,6 +37,11 @@ export interface PICData {
   referralCode?: string;
 }
 
+export interface DiscountData {
+  discountAmount: number;
+  couponCode: string;
+}
+
 const generateTempId = () => `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
 function createPassengersFromAllocation(allocation: RoomAllocation): DynamicPassengerData[] {
@@ -42,7 +49,7 @@ function createPassengersFromAllocation(allocation: RoomAllocation): DynamicPass
   const types: RoomType[] = ['quad', 'triple', 'double', 'single'];
   for (const type of types) {
     for (let i = 0; i < allocation[type]; i++) {
-      passengers.push({ id: generateTempId(), fullName: '', gender: 'male', phone: '', passengerType: 'adult', roomType: type });
+      passengers.push({ id: generateTempId(), fullName: '', gender: 'male', phone: '', nik: '', birthDate: '', passengerType: 'adult', roomType: type });
     }
   }
   return passengers;
@@ -73,7 +80,7 @@ export function useBookingWizardDynamic(
     setFormData(prev => ({ ...prev, ...updates }));
   };
 
-  const submitBooking = async () => {
+  const submitBooking = async (discountData?: DiscountData) => {
     if (!user) {
       toast.error('Silakan login terlebih dahulu');
       return null;
@@ -93,7 +100,15 @@ export function useBookingWizardDynamic(
         const mainPassenger = formData.passengers[0];
         const { data: newCustomer, error: customerError } = await supabase
           .from('customers')
-          .insert({ user_id: user.id, full_name: mainPassenger.fullName, gender: mainPassenger.gender, phone: mainPassenger.phone || null, email: user.email })
+          .insert({
+            user_id: user.id,
+            full_name: mainPassenger.fullName,
+            gender: mainPassenger.gender,
+            phone: mainPassenger.phone || null,
+            email: user.email,
+            nik: mainPassenger.nik || null,
+            birth_date: mainPassenger.birthDate || null,
+          })
           .select('id')
           .single();
         if (customerError) throw customerError;
@@ -115,10 +130,13 @@ export function useBookingWizardDynamic(
         double: departure.price_double || 0, single: departure.price_single || 0,
       };
       
-      let totalPrice = 0;
+      let subtotal = 0;
       for (const passenger of formData.passengers) {
-        totalPrice += priceMap[passenger.roomType];
+        subtotal += priceMap[passenger.roomType];
       }
+
+      const discountAmount = discountData?.discountAmount || 0;
+      const totalPrice = Math.max(0, subtotal - discountAmount);
       
       const adultCount = formData.passengers.filter(p => p.passengerType === 'adult').length;
       const childCount = formData.passengers.filter(p => p.passengerType === 'child').length;
@@ -133,7 +151,19 @@ export function useBookingWizardDynamic(
       const mainRoomType = (Object.entries(roomCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || 'quad') as RoomType;
       const basePrice = priceMap[mainRoomType];
 
-      // 4. Determine PIC (branch_id, agent_id) from picData
+      // 4. Atomic quota check & increment
+      const { data: quotaOk, error: quotaError } = await supabase.rpc('increment_departure_booked', {
+        _departure_id: formData.departureId,
+        _pax: totalPax,
+      });
+
+      if (quotaError) throw new Error('Gagal memeriksa kuota keberangkatan');
+      if (!quotaOk) {
+        toast.error('Kuota keberangkatan tidak mencukupi. Silakan pilih jadwal lain.');
+        return null;
+      }
+
+      // 5. Determine PIC (branch_id, agent_id) from picData
       let branchId: string | null = null;
       let agentId: string | null = null;
 
@@ -145,7 +175,7 @@ export function useBookingWizardDynamic(
         }
       }
 
-      // 5. Create booking
+      // 6. Create booking
       const { data: booking, error: bookingError } = await supabase
         .from('bookings')
         .insert({
@@ -159,6 +189,8 @@ export function useBookingWizardDynamic(
           infant_count: infantCount,
           base_price: basePrice,
           total_price: totalPrice,
+          discount_amount: discountAmount,
+          remaining_amount: totalPrice,
           notes: formData.notes,
           branch_id: branchId,
           agent_id: agentId,
@@ -168,7 +200,7 @@ export function useBookingWizardDynamic(
 
       if (bookingError) throw bookingError;
 
-      // 6. Create passengers
+      // 7. Create passengers
       for (let i = 0; i < formData.passengers.length; i++) {
         const passenger = formData.passengers[i];
         let passengerId = customer.id;
@@ -176,7 +208,13 @@ export function useBookingWizardDynamic(
         if (i > 0) {
           const { data: passengerCustomer, error: passengerError } = await supabase
             .from('customers')
-            .insert({ full_name: passenger.fullName, gender: passenger.gender, phone: passenger.phone || null })
+            .insert({
+              full_name: passenger.fullName,
+              gender: passenger.gender,
+              phone: passenger.phone || null,
+              nik: passenger.nik || null,
+              birth_date: passenger.birthDate || null,
+            })
             .select('id')
             .single();
           if (passengerError) throw passengerError;
@@ -188,21 +226,19 @@ export function useBookingWizardDynamic(
           .insert({ booking_id: booking.id, customer_id: passengerId, is_main_passenger: i === 0, passenger_type: passenger.passengerType, room_preference: passenger.roomType });
       }
 
-      // 7. Update departure booked count
-      const { data: currentDeparture } = await supabase
-        .from('departures')
-        .select('booked_count')
-        .eq('id', formData.departureId)
-        .single();
-
-      if (currentDeparture) {
-        await supabase
-          .from('departures')
-          .update({ booked_count: (currentDeparture.booked_count || 0) + totalPax })
-          .eq('id', formData.departureId);
+      // 8. Increment coupon used_count if coupon was applied
+      if (discountData?.couponCode) {
+        try {
+          await supabase
+            .from('coupons')
+            .update({ used_count: (await supabase.from('coupons').select('used_count').eq('code', discountData.couponCode).single()).data?.used_count! + 1 })
+            .eq('code', discountData.couponCode);
+        } catch (couponErr) {
+          console.warn('Coupon usage tracking failed:', couponErr);
+        }
       }
 
-      // 8. Handle referral code if provided
+      // 9. Handle referral code if provided
       if (picData?.picSource === 'referral' && picData.referralCode) {
         try {
           const { data: refCode } = await supabase
