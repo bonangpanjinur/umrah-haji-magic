@@ -56,13 +56,9 @@ const hideInitialLoader = () => {
   const loader = document.getElementById('initialLoader');
   if (loader) {
     loader.classList.add('hidden');
-    // Remove loading state from body to enable scrolling
-    document.body.classList.remove('loading-state');
-    // Remove from DOM after transition completes
-    setTimeout(() => {
-      loader.remove();
-    }, 300);
+    setTimeout(() => loader.remove(), 300);
   }
+  document.body.classList.remove('loading-state');
 };
 
 // Render app and hide loader
@@ -70,4 +66,4 @@ const root = createRoot(document.getElementById("root")!);
 root.render(<App />);
 
 // Hide loader after a brief delay to ensure React has started rendering
-setTimeout(hideInitialLoader, 100);
+requestAnimationFrame(() => setTimeout(hideInitialLoader, 100));

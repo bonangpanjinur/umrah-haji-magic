@@ -11,12 +11,8 @@ interface PackageCardProps {
 }
 
 export function PackageCard({ pkg }: PackageCardProps) {
-  const lowestPrice = Math.min(
-    pkg.price_quad,
-    pkg.price_triple,
-    pkg.price_double,
-    pkg.price_single
-  );
+  const prices = [pkg.price_quad, pkg.price_triple, pkg.price_double, pkg.price_single].filter(p => p > 0);
+  const lowestPrice = prices.length > 0 ? Math.min(...prices) : 0;
 
   return (
     <Card className="group card-hover overflow-hidden">
@@ -83,7 +79,7 @@ export function PackageCard({ pkg }: PackageCardProps) {
         <div>
           <p className="text-xs text-muted-foreground">Mulai dari</p>
           <p className="text-lg font-bold text-primary">
-            {formatCurrency(lowestPrice)}
+            {lowestPrice > 0 ? formatCurrency(lowestPrice) : 'Hubungi Kami'}
           </p>
         </div>
         <Button asChild>
