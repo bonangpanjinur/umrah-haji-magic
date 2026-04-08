@@ -1,7 +1,7 @@
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { DynamicPublicLayout } from "@/components/layout/DynamicPublicLayout";
+import { DynamicDynamicPublicLayout } from "@/components/layout/DynamicDynamicPublicLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -65,31 +65,31 @@ export default function BookingSuccess() {
 
   if (isLoading) {
     return (
-      <PublicLayout>
+      <DynamicPublicLayout>
         <div className="container py-12 max-w-2xl">
           <Skeleton className="h-64 w-full" />
         </div>
-      </PublicLayout>
+      </DynamicPublicLayout>
     );
   }
 
   if (!booking) {
     return (
-      <PublicLayout>
+      <DynamicPublicLayout>
         <div className="container py-12 max-w-2xl text-center">
           <h1 className="text-2xl font-bold">Booking tidak ditemukan</h1>
           <Button asChild className="mt-4">
             <Link to="/">Kembali ke Beranda</Link>
           </Button>
         </div>
-      </PublicLayout>
+      </DynamicPublicLayout>
     );
   }
 
   const departure = booking.departure as any;
 
   return (
-    <PublicLayout>
+    <DynamicPublicLayout>
       <div className="container py-12 max-w-2xl">
         {/* Success Icon */}
         <div className="text-center mb-8">
@@ -210,6 +210,6 @@ export default function BookingSuccess() {
           </Button>
         </div>
       </div>
-    </PublicLayout>
+    </DynamicPublicLayout>
   );
 }
