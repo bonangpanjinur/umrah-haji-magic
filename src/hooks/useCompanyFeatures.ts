@@ -1,17 +1,14 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Shield, Award, Clock, HeartHandshake, Building2, Headphones } from 'lucide-react';
 
 export interface CompanyFeature {
   id: string;
-  settings_id: string;
   icon_name: string;
   title: string;
   description: string;
   display_order: number;
   is_active: boolean;
-  created_at: string;
-  updated_at: string;
 }
 
 const iconMap: Record<string, React.ComponentType<any>> = {
@@ -20,12 +17,12 @@ const iconMap: Record<string, React.ComponentType<any>> = {
 };
 
 const DEFAULT_COMPANY_FEATURES: CompanyFeature[] = [
-  { id: '1', settings_id: 'default', icon_name: 'Shield', title: 'Izin Resmi Kemenag', description: 'Terdaftar dan berizin resmi dari Kementerian Agama RI dengan nomor PPIU yang valid.', display_order: 1, is_active: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-  { id: '2', settings_id: 'default', icon_name: 'Award', title: 'Pengalaman 15+ Tahun', description: 'Lebih dari 15 tahun pengalaman memberangkatkan jamaah umroh dan haji dengan aman.', display_order: 2, is_active: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-  { id: '3', settings_id: 'default', icon_name: 'Building2', title: 'Hotel Bintang 5', description: 'Akomodasi terbaik dengan hotel bintang 5 dekat Masjidil Haram dan Masjid Nabawi.', display_order: 3, is_active: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-  { id: '4', settings_id: 'default', icon_name: 'HeartHandshake', title: 'Muthawif Berpengalaman', description: 'Pembimbing ibadah profesional yang akan mendampingi selama perjalanan.', display_order: 4, is_active: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-  { id: '5', settings_id: 'default', icon_name: 'Clock', title: 'Jadwal Fleksibel', description: 'Berbagai pilihan jadwal keberangkatan yang bisa disesuaikan dengan waktu Anda.', display_order: 5, is_active: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-  { id: '6', settings_id: 'default', icon_name: 'Headphones', title: 'Layanan 24/7', description: 'Tim customer service siap membantu Anda kapan saja sebelum dan selama perjalanan.', display_order: 6, is_active: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  { id: '1', icon_name: 'Shield', title: 'Izin Resmi Kemenag', description: 'Terdaftar dan berizin resmi dari Kementerian Agama RI dengan nomor PPIU yang valid.', display_order: 1, is_active: true },
+  { id: '2', icon_name: 'Award', title: 'Pengalaman 15+ Tahun', description: 'Lebih dari 15 tahun pengalaman memberangkatkan jamaah umroh dan haji dengan aman.', display_order: 2, is_active: true },
+  { id: '3', icon_name: 'Building2', title: 'Hotel Bintang 5', description: 'Akomodasi terbaik dengan hotel bintang 5 dekat Masjidil Haram dan Masjid Nabawi.', display_order: 3, is_active: true },
+  { id: '4', icon_name: 'HeartHandshake', title: 'Muthawif Berpengalaman', description: 'Pembimbing ibadah profesional yang akan mendampingi selama perjalanan.', display_order: 4, is_active: true },
+  { id: '5', icon_name: 'Clock', title: 'Jadwal Fleksibel', description: 'Berbagai pilihan jadwal keberangkatan yang bisa disesuaikan dengan waktu Anda.', display_order: 5, is_active: true },
+  { id: '6', icon_name: 'Headphones', title: 'Layanan 24/7', description: 'Tim customer service siap membantu Anda kapan saja sebelum dan selama perjalanan.', display_order: 6, is_active: true },
 ];
 
 export function useCompanyFeatures() {
@@ -33,18 +30,23 @@ export function useCompanyFeatures() {
     queryKey: ['company-features'],
     queryFn: async (): Promise<CompanyFeature[]> => {
       try {
-        const { data, error } = await (supabase as any)
-          .from('company_features')
-          .select('*')
-          .eq('is_active', true)
-          .order('display_order', { ascending: true });
-        
+        const { data, error } = await supabase
+          .from('website_settings')
+          .select('custom_sections')
+          .limit(1)
+          .single();
+
         if (error) {
-          console.warn('Error fetching company features:', error);
+          console.warn('Error fetching website_settings for features:', error);
           return DEFAULT_COMPANY_FEATURES;
         }
-        
-        return data && data.length > 0 ? data : DEFAULT_COMPANY_FEATURES;
+
+        const customSections = data?.custom_sections as Record<string, any> | null;
+        const features = customSections?.features as CompanyFeature[] | undefined;
+
+        return features && features.length > 0
+          ? features.filter(f => f.is_active).sort((a, b) => a.display_order - b.display_order)
+          : DEFAULT_COMPANY_FEATURES;
       } catch (err) {
         console.warn('Exception fetching company features:', err);
         return DEFAULT_COMPANY_FEATURES;
