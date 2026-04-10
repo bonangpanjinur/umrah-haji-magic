@@ -21,12 +21,30 @@ import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { toast } from "sonner";
 
 export default function AdminCustomers() {
+  const { hasRole } = useAuth();
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [packageFilter, setPackageFilter] = useState<string>("all");
   const [departureFilter, setDepartureFilter] = useState<string>("all");
   const [showFilters, setShowFilters] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
 
-  const [currentPage, setCurrentPage] = useState(1);
+  const canDelete = hasRole('super_admin') || hasRole('owner') || hasRole('branch_manager') || hasRole('operational');
+
+  const deleteMutation = useMutation({
+    mutationFn: async (customerId: string) => {
+      const { error } = await supabase.from('customers').delete().eq('id', customerId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Jamaah berhasil dihapus");
+      queryClient.invalidateQueries({ queryKey: ['admin-customers'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-customers-stats'] });
+    },
+    onError: (error: Error) => {
+      toast.error("Gagal menghapus: " + error.message);
+    },
+  });
   const pageSize = 20;
 
   const { data: customersData, isLoading } = useQuery({
