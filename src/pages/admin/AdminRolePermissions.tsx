@@ -44,10 +44,11 @@ const PERMISSION_GROUPS: Record<string, { label: string; keys: Record<string, { 
       itinerary_templates: { label: "Template Itinerary", description: "Kelola template itinerary" },
       savings: { label: "Tabungan", description: "Kelola tabungan umroh" },
       room_assignments: { label: "Kamar", description: "Kelola alokasi kamar" },
+      operational: { label: "Modul Operasional", description: "Akses modul operasional (manifest, checkin, luggage, dll)" },
     }
   },
   finance: {
-    label: 'Keuangan',
+    label: 'Keuangan & Akuntansi',
     keys: {
       payments: { label: "Pembayaran", description: "Kelola verifikasi pembayaran" },
       finance_cash: { label: "Kas & Bank", description: "Kelola kas dan bank" },
@@ -84,10 +85,15 @@ const PERMISSION_GROUPS: Record<string, { label: string; keys: Record<string, { 
       marketing_materials: { label: "Materi Promosi", description: "Kelola materi promosi" },
     }
   },
-  documents: {
-    label: 'Dokumen & Data',
+  master_data: {
+    label: 'Master Data',
     keys: {
-      master_data: { label: "Master Data", description: "Kelola hotel, maskapai, dll" },
+      master_data: { label: "Master Data", description: "Kelola hotel, maskapai, bandara, muthawif, dll" },
+    }
+  },
+  documents: {
+    label: 'Dokumen & Surat',
+    keys: {
       document_verification: { label: "Verifikasi Dokumen", description: "Verifikasi dokumen jamaah" },
       document_generator: { label: "Generate Surat", description: "Generate surat dan dokumen" },
       offline_content: { label: "Konten Offline", description: "Kelola konten offline jamaah" },
@@ -100,7 +106,7 @@ const PERMISSION_GROUPS: Record<string, { label: string; keys: Record<string, { 
     }
   },
   system: {
-    label: 'Pengaturan & Sistem',
+    label: 'Pengaturan',
     keys: {
       users: { label: "Users & Hak Akses", description: "Kelola pengguna dan hak akses" },
       settings: { label: "Pengaturan", description: "Pengaturan sistem" },
