@@ -135,10 +135,17 @@ export function StepPassengersDynamic({ passengers, onUpdate }: StepPassengersDy
                         onChange={(e) => {
                           const val = e.target.value.replace(/\D/g, '').slice(0, 16);
                           updatePassenger(passenger.id, 'nik', val);
+                          checkDuplicateNik(passenger.id, val);
                         }}
-                        className="text-base"
+                        className={`text-base ${nikWarnings[passenger.id] ? 'border-destructive' : ''}`}
                         maxLength={16}
                       />
+                      {nikWarnings[passenger.id] && (
+                        <p className="text-xs text-destructive flex items-center gap-1">
+                          <AlertTriangle className="h-3 w-3" />
+                          {nikWarnings[passenger.id]}
+                        </p>
+                      )}
                     </div>
 
                     {/* Birth Date */}
