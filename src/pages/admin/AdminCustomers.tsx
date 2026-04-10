@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Search, Eye, User, Phone, Mail, Users, FileCheck, Calendar, Star, UserPlus, Plus } from "lucide-react";
+import { Search, Eye, User, Phone, Mail, Users, FileCheck, Calendar, Star, UserPlus, Plus, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { RegisterAsJamaahDialog } from "@/components/admin/RegisterAsJamaahDialog";
@@ -16,13 +16,35 @@ import { useCustomers } from "@/hooks/useCustomers";
 import { LoadingState } from "@/components/shared/LoadingState";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { useAuth } from "@/hooks/useAuth";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { toast } from "sonner";
 
 export default function AdminCustomers() {
+  const { hasRole } = useAuth();
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [packageFilter, setPackageFilter] = useState<string>("all");
   const [departureFilter, setDepartureFilter] = useState<string>("all");
   const [showFilters, setShowFilters] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
 
+  const canDelete = hasRole('super_admin') || hasRole('owner') || hasRole('branch_manager') || hasRole('operational');
+
+  const deleteMutation = useMutation({
+    mutationFn: async (customerId: string) => {
+      const { error } = await supabase.from('customers').delete().eq('id', customerId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Jamaah berhasil dihapus");
+      queryClient.invalidateQueries({ queryKey: ['admin-customers'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-customers-stats'] });
+    },
+    onError: (error: Error) => {
+      toast.error("Gagal menghapus: " + error.message);
+    },
+  });
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 20;
 
@@ -361,12 +383,24 @@ export default function AdminCustomers() {
                           <p className="text-muted-foreground">Terdaftar</p>
                           <p>{format(new Date(customer.created_at), 'd MMM yyyy', { locale: id })}</p>
                         </div>
-                        <Button variant="outline" size="sm" asChild>
-                          <Link to={`/admin/customers/${customer.id}`}>
-                            <Eye className="h-4 w-4 mr-1" />
-                            Detail
-                          </Link>
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          <Button variant="outline" size="sm" asChild>
+                            <Link to={`/admin/customers/${customer.id}`}>
+                              <Eye className="h-4 w-4 mr-1" />
+                              Detail
+                            </Link>
+                          </Button>
+                          {canDelete && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                              onClick={() => setDeleteTarget({ id: customer.id, name: customer.full_name })}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -406,6 +440,20 @@ export default function AdminCustomers() {
           </div>
         </div>
       )}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title="Hapus Jamaah"
+        description={`Apakah Anda yakin ingin menghapus jamaah "${deleteTarget?.name}"? Data yang terkait (booking, dokumen) mungkin akan ikut terhapus. Tindakan ini tidak dapat dibatalkan.`}
+        confirmLabel="Hapus"
+        variant="destructive"
+        onConfirm={() => {
+          if (deleteTarget) {
+            deleteMutation.mutate(deleteTarget.id);
+            setDeleteTarget(null);
+          }
+        }}
+      />
     </div>
   );
 }

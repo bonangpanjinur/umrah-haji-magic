@@ -1,10 +1,12 @@
+import { useState, useCallback } from "react";
 import { DynamicPassengerData } from "@/hooks/useBookingWizardDynamic";
+import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { User, BedDouble } from "lucide-react";
+import { User, BedDouble, AlertTriangle } from "lucide-react";
 import { RoomType } from "@/types/database";
 
 interface StepPassengersDynamicProps {
@@ -27,6 +29,32 @@ const ROOM_COLORS: Record<RoomType, string> = {
 };
 
 export function StepPassengersDynamic({ passengers, onUpdate }: StepPassengersDynamicProps) {
+  const [nikWarnings, setNikWarnings] = useState<Record<string, string>>({});
+
+  const checkDuplicateNik = useCallback(async (passengerId: string, nik: string) => {
+    if (!nik || nik.length !== 16) {
+      setNikWarnings(prev => { const n = { ...prev }; delete n[passengerId]; return n; });
+      return;
+    }
+    // Check duplicate within form
+    const dupeInForm = passengers.find(p => p.id !== passengerId && p.nik === nik);
+    if (dupeInForm) {
+      setNikWarnings(prev => ({ ...prev, [passengerId]: `NIK sama dengan jamaah "${dupeInForm.fullName || 'lainnya'}" di form ini` }));
+      return;
+    }
+    // Check in DB
+    try {
+      const { data } = await supabase.from("customers").select("id, full_name").eq("nik", nik).limit(1);
+      if (data && data.length > 0) {
+        setNikWarnings(prev => ({ ...prev, [passengerId]: `NIK sudah terdaftar atas nama "${data[0].full_name}"` }));
+      } else {
+        setNikWarnings(prev => { const n = { ...prev }; delete n[passengerId]; return n; });
+      }
+    } catch {
+      // ignore
+    }
+  }, [passengers]);
+
   const updatePassenger = (id: string, field: keyof DynamicPassengerData, value: string) => {
     const updated = passengers.map(p => 
       p.id === id ? { ...p, [field]: value } : p
@@ -107,10 +135,17 @@ export function StepPassengersDynamic({ passengers, onUpdate }: StepPassengersDy
                         onChange={(e) => {
                           const val = e.target.value.replace(/\D/g, '').slice(0, 16);
                           updatePassenger(passenger.id, 'nik', val);
+                          checkDuplicateNik(passenger.id, val);
                         }}
-                        className="text-base"
+                        className={`text-base ${nikWarnings[passenger.id] ? 'border-destructive' : ''}`}
                         maxLength={16}
                       />
+                      {nikWarnings[passenger.id] && (
+                        <p className="text-xs text-destructive flex items-center gap-1">
+                          <AlertTriangle className="h-3 w-3" />
+                          {nikWarnings[passenger.id]}
+                        </p>
+                      )}
                     </div>
 
                     {/* Birth Date */}

@@ -100,10 +100,41 @@ export function AddCustomerDialog({ trigger }: AddCustomerDialogProps) {
     },
   });
 
+  const [nikWarning, setNikWarning] = useState<string | null>(null);
+  const [checkingNik, setCheckingNik] = useState(false);
+
+  const checkDuplicateNik = async (nik: string) => {
+    if (!nik || nik.length !== 16) {
+      setNikWarning(null);
+      return;
+    }
+    setCheckingNik(true);
+    try {
+      const { data, error } = await supabase
+        .from("customers")
+        .select("id, full_name")
+        .eq("nik", nik)
+        .limit(1);
+      if (!error && data && data.length > 0) {
+        setNikWarning(`NIK sudah terdaftar atas nama "${data[0].full_name}"`);
+      } else {
+        setNikWarning(null);
+      }
+    } catch {
+      setNikWarning(null);
+    } finally {
+      setCheckingNik(false);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.full_name.trim()) {
       toast.error("Nama lengkap wajib diisi");
+      return;
+    }
+    if (nikWarning) {
+      toast.error("NIK sudah terdaftar. Tidak bisa menambahkan duplikat.");
       return;
     }
     createMutation.mutate();
@@ -172,10 +203,16 @@ export function AddCustomerDialog({ trigger }: AddCustomerDialogProps) {
               <Input
                 id="nik"
                 value={formData.nik}
-                onChange={e => handleChange("nik", e.target.value)}
+                onChange={e => {
+                  handleChange("nik", e.target.value);
+                  checkDuplicateNik(e.target.value);
+                }}
                 placeholder="16 digit"
                 maxLength={16}
+                className={nikWarning ? "border-destructive" : ""}
               />
+              {checkingNik && <p className="text-xs text-muted-foreground mt-1">Memeriksa NIK...</p>}
+              {nikWarning && <p className="text-xs text-destructive mt-1">{nikWarning}</p>}
             </div>
           </div>
 
