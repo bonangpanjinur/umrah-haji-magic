@@ -45,6 +45,7 @@ export default function AdminCustomers() {
       toast.error("Gagal menghapus: " + error.message);
     },
   });
+  const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 20;
 
   const { data: customersData, isLoading } = useQuery({
