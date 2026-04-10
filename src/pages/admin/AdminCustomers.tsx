@@ -445,7 +445,7 @@ export default function AdminCustomers() {
         onOpenChange={(open) => !open && setDeleteTarget(null)}
         title="Hapus Jamaah"
         description={`Apakah Anda yakin ingin menghapus jamaah "${deleteTarget?.name}"? Data yang terkait (booking, dokumen) mungkin akan ikut terhapus. Tindakan ini tidak dapat dibatalkan.`}
-        confirmText="Hapus"
+        confirmLabel="Hapus"
         variant="destructive"
         onConfirm={() => {
           if (deleteTarget) {
