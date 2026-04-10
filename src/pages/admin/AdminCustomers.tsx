@@ -383,12 +383,24 @@ export default function AdminCustomers() {
                           <p className="text-muted-foreground">Terdaftar</p>
                           <p>{format(new Date(customer.created_at), 'd MMM yyyy', { locale: id })}</p>
                         </div>
-                        <Button variant="outline" size="sm" asChild>
-                          <Link to={`/admin/customers/${customer.id}`}>
-                            <Eye className="h-4 w-4 mr-1" />
-                            Detail
-                          </Link>
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          <Button variant="outline" size="sm" asChild>
+                            <Link to={`/admin/customers/${customer.id}`}>
+                              <Eye className="h-4 w-4 mr-1" />
+                              Detail
+                            </Link>
+                          </Button>
+                          {canDelete && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                              onClick={() => setDeleteTarget({ id: customer.id, name: customer.full_name })}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
