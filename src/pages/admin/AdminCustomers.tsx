@@ -440,6 +440,20 @@ export default function AdminCustomers() {
           </div>
         </div>
       )}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title="Hapus Jamaah"
+        description={`Apakah Anda yakin ingin menghapus jamaah "${deleteTarget?.name}"? Data yang terkait (booking, dokumen) mungkin akan ikut terhapus. Tindakan ini tidak dapat dibatalkan.`}
+        confirmText="Hapus"
+        variant="destructive"
+        onConfirm={() => {
+          if (deleteTarget) {
+            deleteMutation.mutate(deleteTarget.id);
+            setDeleteTarget(null);
+          }
+        }}
+      />
     </div>
   );
 }
