@@ -29,6 +29,32 @@ const ROOM_COLORS: Record<RoomType, string> = {
 };
 
 export function StepPassengersDynamic({ passengers, onUpdate }: StepPassengersDynamicProps) {
+  const [nikWarnings, setNikWarnings] = useState<Record<string, string>>({});
+
+  const checkDuplicateNik = useCallback(async (passengerId: string, nik: string) => {
+    if (!nik || nik.length !== 16) {
+      setNikWarnings(prev => { const n = { ...prev }; delete n[passengerId]; return n; });
+      return;
+    }
+    // Check duplicate within form
+    const dupeInForm = passengers.find(p => p.id !== passengerId && p.nik === nik);
+    if (dupeInForm) {
+      setNikWarnings(prev => ({ ...prev, [passengerId]: `NIK sama dengan jamaah "${dupeInForm.fullName || 'lainnya'}" di form ini` }));
+      return;
+    }
+    // Check in DB
+    try {
+      const { data } = await supabase.from("customers").select("id, full_name").eq("nik", nik).limit(1);
+      if (data && data.length > 0) {
+        setNikWarnings(prev => ({ ...prev, [passengerId]: `NIK sudah terdaftar atas nama "${data[0].full_name}"` }));
+      } else {
+        setNikWarnings(prev => { const n = { ...prev }; delete n[passengerId]; return n; });
+      }
+    } catch {
+      // ignore
+    }
+  }, [passengers]);
+
   const updatePassenger = (id: string, field: keyof DynamicPassengerData, value: string) => {
     const updated = passengers.map(p => 
       p.id === id ? { ...p, [field]: value } : p
