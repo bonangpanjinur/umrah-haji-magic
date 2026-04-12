@@ -60,6 +60,7 @@ interface UserWithRoles {
   id: string;
   user_id: string;
   full_name: string | null;
+  email?: string | null;
   phone: string | null;
   created_at: string;
   roles: { id: string; role: AppRole; branch_id: string | null }[];
@@ -85,6 +86,10 @@ export default function AdminUsers() {
   const { data: users, isLoading } = useQuery({
     queryKey: ['admin-users'],
     queryFn: async () => {
+      // First get all auth users to get emails
+      const { data: { users: authUsers }, error: authError } = await supabase.auth.admin.listUsers();
+      if (authError) throw authError;
+
       // First get all profiles
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
@@ -109,10 +114,14 @@ export default function AdminUsers() {
 
       // Create a map of user_id -> employee_code for quick lookup
       const employeeMap = new Map((employees || []).map(e => [e.user_id, e.employee_code]));
+      
+      // Create a map of user_id -> email for quick lookup
+      const emailMap = new Map((authUsers || []).map(u => [u.id, u.email]));
 
       // Combine the data
       const usersWithRoles: UserWithRoles[] = (profiles || []).map(profile => ({
         ...profile,
+        email: emailMap.get(profile.user_id),
         roles: (roles || []).filter(r => r.user_id === profile.user_id).map(r => ({
           id: r.id,
           role: r.role as AppRole,
@@ -234,6 +243,7 @@ export default function AdminUsers() {
     const search = searchTerm.toLowerCase();
     return (
       user.full_name?.toLowerCase().includes(search) ||
+      user.email?.toLowerCase().includes(search) ||
       user.phone?.includes(search) ||
       user.roles.some(r => ROLE_LABELS[r.role].toLowerCase().includes(search))
     );
@@ -270,7 +280,7 @@ export default function AdminUsers() {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Cari nama, role..."
+            placeholder="Cari nama, email, role..."
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
             className="pl-10 w-full sm:w-64"
@@ -353,7 +363,7 @@ export default function AdminUsers() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Nama</TableHead>
+                    <TableHead>Nama & Email</TableHead>
                     <TableHead>Telepon</TableHead>
                     <TableHead>Role</TableHead>
                     <TableHead>Bergabung</TableHead>
@@ -364,18 +374,21 @@ export default function AdminUsers() {
                   {filteredUsers.map((user) => (
                     <TableRow key={user.id}>
                       <TableCell className="font-medium">
-                        <div className="flex items-center gap-2">
-                          <span>{user.full_name || 'N/A'}</span>
-                          {user.hasEmployeeRecord ? (
-                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                              <Link2 className="h-3 w-3 mr-1" />
-                              {user.employeeCode}
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
-                              No Employee
-                            </Badge>
-                          )}
+                        <div className="flex flex-col">
+                          <div className="flex items-center gap-2">
+                            <span>{user.full_name || 'N/A'}</span>
+                            {user.hasEmployeeRecord ? (
+                              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                                <Link2 className="h-3 w-3 mr-1" />
+                                {user.employeeCode}
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
+                                No Employee
+                              </Badge>
+                            )}
+                          </div>
+                          <span className="text-xs text-muted-foreground font-normal">{user.email || '-'}</span>
                         </div>
                       </TableCell>
                       <TableCell>{user.phone || '-'}</TableCell>
@@ -407,21 +420,21 @@ export default function AdminUsers() {
                       <TableCell>
                         {format(new Date(user.created_at), 'd MMM yyyy', { locale: id })}
                       </TableCell>
-	                      <TableCell className="text-right">
-	                        <div className="flex justify-end gap-2">
-	                          <Button
-	                            variant="outline"
-	                            size="sm"
-	                            onClick={() => {
-	                              setSelectedUser(user);
-	                              setShowAddRoleDialog(true);
-	                            }}
-	                          >
-	                            <UserPlus className="h-4 w-4 mr-1" />
-	                            Tambah Role
-	                          </Button>
-	                          
-	                          {isSuperAdmin && (
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedUser(user);
+                              setShowAddRoleDialog(true);
+                            }}
+                          >
+                            <UserPlus className="h-4 w-4 mr-1" />
+                            Tambah Role
+                          </Button>
+                          
+                          {isSuperAdmin && (
                             <>
                               <Button
                                 variant="outline"
@@ -435,19 +448,19 @@ export default function AdminUsers() {
                                 <Key className="h-4 w-4 mr-1" />
                                 Reset Password
                               </Button>
-	                            <Button
-	                              variant="outline"
-	                              size="sm"
-	                              className="text-destructive hover:bg-destructive/10"
-	                              onClick={() => setUserToDelete(user)}
-	                            >
-	                              <Trash2 className="h-4 w-4 mr-1" />
-	                              Hapus User
-	                            </Button>
-	                            </>
-	                          )}
-	                        </div>
-	                      </TableCell>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-destructive hover:bg-destructive/10"
+                                onClick={() => setUserToDelete(user)}
+                              >
+                                <Trash2 className="h-4 w-4 mr-1" />
+                                Hapus User
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
