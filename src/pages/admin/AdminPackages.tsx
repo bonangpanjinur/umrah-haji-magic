@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { formatCurrency, formatPackageType } from "@/lib/format";
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Search, Plus, Edit, Eye, Package, Trash2, Calendar, TrendingUp, ShoppingCart, Star, BarChart3, Filter, X } from "lucide-react";
+import { Search, Plus, Edit, Eye, Package, Trash2, Calendar, TrendingUp, ShoppingCart, Star, BarChart3, Filter, X, Download } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
@@ -31,6 +31,10 @@ import { SavingsPackageForm } from "@/components/admin/forms/SavingsPackageForm"
 import { toast } from "sonner";
 import { usePackageStats, PackageStatsFilters } from "@/hooks/usePackageStats";
 import { format, subDays } from "date-fns";
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { exportPackageStats, exportTopPackages, exportPackageBreakdown, exportDailyStats, exportComprehensiveReport } from "@/lib/export-stats";
+
+const COLORS = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
 
 export default function AdminPackages() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -162,6 +166,18 @@ export default function AdminPackages() {
     setCustomEndDate("");
   };
 
+  const getDateRangeLabel = () => {
+    if (selectedDateRange === "custom" && customStartDate && customEndDate) {
+      return `${customStartDate} hingga ${customEndDate}`;
+    }
+    const labels: Record<string, string> = {
+      "7days": "7 Hari Terakhir",
+      "30days": "30 Hari Terakhir",
+      "90days": "90 Hari Terakhir"
+    };
+    return labels[selectedDateRange] || "30 Hari Terakhir";
+  };
+
   const getUpcomingDepartures = (departures: any[]) => {
     if (!departures) return 0;
     const today = new Date().toISOString().split('T')[0];
@@ -213,17 +229,33 @@ export default function AdminPackages() {
       {/* Statistics Section */}
       <Card>
         <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle>Realisasi Paket</CardTitle>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => setShowFilters(!showFilters)}
-              className="gap-2"
-            >
-              <Filter className="h-4 w-4" />
-              Filter
-            </Button>
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <CardTitle>Realisasi Paket</CardTitle>
+              <p className="text-xs text-muted-foreground mt-1">{getDateRangeLabel()}</p>
+            </div>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setShowFilters(!showFilters)}
+                className="gap-2"
+              >
+                <Filter className="h-4 w-4" />
+                Filter
+              </Button>
+              {stats && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => exportComprehensiveReport(stats, getDateRangeLabel())}
+                  className="gap-2"
+                >
+                  <Download className="h-4 w-4" />
+                  Ekspor
+                </Button>
+              )}
+            </div>
           </div>
         </CardHeader>
         
@@ -314,8 +346,9 @@ export default function AdminPackages() {
         {/* Statistics Tabs */}
         <CardContent className="pt-4">
           <Tabs value={activeStatsTab} onValueChange={setActiveStatsTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="overview">Ringkasan</TabsTrigger>
+              <TabsTrigger value="chart">Grafik</TabsTrigger>
               <TabsTrigger value="packages">Per Paket</TabsTrigger>
               <TabsTrigger value="breakdown">Kategori</TabsTrigger>
             </TabsList>
@@ -448,8 +481,108 @@ export default function AdminPackages() {
               </div>
             </TabsContent>
 
+            {/* Chart Tab */}
+            <TabsContent value="chart" className="space-y-4">
+              {isStatsLoading ? (
+                <Skeleton className="h-96" />
+              ) : (
+                <>
+                  {/* Daily Sales Chart */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base">Tren Penjualan Harian</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {stats?.dailyChartData && stats.dailyChartData.length > 0 ? (
+                        <ResponsiveContainer width="100%" height={300}>
+                          <LineChart data={stats.dailyChartData}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="date" angle={-45} textAnchor="end" height={80} />
+                            <YAxis yAxisId="left" />
+                            <YAxis yAxisId="right" orientation="right" />
+                            <Tooltip />
+                            <Legend />
+                            <Line yAxisId="left" type="monotone" dataKey="pax" stroke="#3b82f6" name="Pax" strokeWidth={2} />
+                            <Line yAxisId="right" type="monotone" dataKey="bookings" stroke="#10b981" name="Booking" strokeWidth={2} />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      ) : (
+                        <div className="h-64 flex items-center justify-center text-muted-foreground">Tidak ada data</div>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* Revenue Chart */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base">Tren Pendapatan Harian</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {stats?.dailyChartData && stats.dailyChartData.length > 0 ? (
+                        <ResponsiveContainer width="100%" height={300}>
+                          <BarChart data={stats.dailyChartData}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="date" angle={-45} textAnchor="end" height={80} />
+                            <YAxis />
+                            <Tooltip formatter={(value) => formatCurrency(value as number)} />
+                            <Legend />
+                            <Bar dataKey="revenue" fill="#f59e0b" name="Pendapatan" />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      ) : (
+                        <div className="h-64 flex items-center justify-center text-muted-foreground">Tidak ada data</div>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* Package Type Distribution */}
+                  {stats?.packageTypeBreakdown && stats.packageTypeBreakdown.length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="text-base">Distribusi Kategori Paket</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <ResponsiveContainer width="100%" height={300}>
+                          <PieChart>
+                            <Pie
+                              data={stats.packageTypeBreakdown}
+                              dataKey="count"
+                              nameKey="type"
+                              cx="50%"
+                              cy="50%"
+                              outerRadius={100}
+                              label
+                            >
+                              {stats.packageTypeBreakdown.map((entry: any, index: number) => (
+                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                              ))}
+                            </Pie>
+                            <Tooltip />
+                            <Legend />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </CardContent>
+                    </Card>
+                  )}
+                </>
+              )}
+            </TabsContent>
+
             {/* Per Package Tab */}
             <TabsContent value="packages" className="space-y-4">
+              <div className="flex justify-end mb-4">
+                {stats?.topPackages && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => exportTopPackages(stats.topPackages, getDateRangeLabel())}
+                    className="gap-2"
+                  >
+                    <Download className="h-4 w-4" />
+                    Ekspor Tabel
+                  </Button>
+                )}
+              </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
@@ -489,6 +622,19 @@ export default function AdminPackages() {
 
             {/* Breakdown Tab */}
             <TabsContent value="breakdown" className="space-y-4">
+              <div className="flex justify-end mb-4">
+                {stats?.packageTypeBreakdown && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => exportPackageBreakdown(stats.packageTypeBreakdown, stats.totalSold, getDateRangeLabel())}
+                    className="gap-2"
+                  >
+                    <Download className="h-4 w-4" />
+                    Ekspor Tabel
+                  </Button>
+                )}
+              </div>
               <div className="grid gap-4 md:grid-cols-2">
                 {isStatsLoading ? (
                   <>
