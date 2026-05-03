@@ -18,15 +18,14 @@ export function usePackages() {
             airline:airlines(*),
             hotel_makkah:hotels!departures_hotel_makkah_id_fkey(*),
             hotel_madinah:hotels!departures_hotel_madinah_id_fkey(*)
-          ),
-          package_type_ref:package_types(*)
+          )
         `)
         .eq('is_active', true)
         .order('is_featured', { ascending: false })
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data as Package[];
+      return data as unknown as Package[];
     },
   });
 }
@@ -47,15 +46,14 @@ export function useFeaturedPackages() {
             airline:airlines(*),
             hotel_makkah:hotels!departures_hotel_makkah_id_fkey(*),
             hotel_madinah:hotels!departures_hotel_madinah_id_fkey(*)
-          ),
-          package_type_ref:package_types(*)
+          )
         `)
         .eq('is_active', true)
         .eq('is_featured', true)
         .limit(6);
 
       if (error) throw error;
-      return data as Package[];
+      return data as unknown as Package[];
     },
   });
 }
@@ -78,14 +76,13 @@ export function usePackage(packageId: string | undefined) {
             airline:airlines(*),
             hotel_makkah:hotels!departures_hotel_makkah_id_fkey(*),
             hotel_madinah:hotels!departures_hotel_madinah_id_fkey(*)
-          ),
-          package_type_ref:package_types(*)
+          )
         `)
         .eq('id', packageId)
         .single();
 
       if (error) throw error;
-      return data as Package;
+      return data as unknown as Package;
     },
     enabled: !!packageId,
   });
@@ -110,7 +107,7 @@ export function usePackageDepartures(packageId: string | undefined) {
       return data.map(d => ({
         ...d,
         available_seats: (d.quota || 0) - (d.booked_count || 0),
-      })) as Departure[];
+      })) as unknown as Departure[];
     },
     enabled: !!packageId,
   });
@@ -136,7 +133,7 @@ export function useUpcomingDepartures() {
       return data.map(d => ({
         ...d,
         available_seats: (d.quota || 0) - (d.booked_count || 0),
-      })) as (Departure & { package: Package })[];
+      })) as unknown as (Departure & { package: Package })[];
     },
   });
 }
@@ -157,8 +154,7 @@ export function useSearchPackages(searchTerm: string, packageType?: string) {
             airline:airlines(*),
             hotel_makkah:hotels!departures_hotel_makkah_id_fkey(*),
             hotel_madinah:hotels!departures_hotel_madinah_id_fkey(*)
-          ),
-          package_type_ref:package_types(*)
+          )
         `)
         .eq('is_active', true);
 
@@ -173,7 +169,7 @@ export function useSearchPackages(searchTerm: string, packageType?: string) {
       const { data, error } = await query.order('is_featured', { ascending: false });
 
       if (error) throw error;
-      return data as Package[];
+      return data as unknown as Package[];
     },
     enabled: true,
   });

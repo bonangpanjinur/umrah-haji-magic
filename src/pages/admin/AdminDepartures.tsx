@@ -110,7 +110,7 @@ export default function AdminDepartures() {
   });
 
   const months = departures 
-    ? [...new Set(departures.map(d => d.departure_date ? d.departure_date.substring(0, 7) : (d.month ? `MONTH-${d.month}` : null)).filter(Boolean))]
+    ? [...new Set(departures.map(d => d.departure_date ? d.departure_date.substring(0, 7) : ((d as any).month ? `MONTH-${(d as any).month}` : null)).filter(Boolean))]
         .sort()
         .map(m => {
           if (m?.startsWith('MONTH-')) {
@@ -135,7 +135,7 @@ export default function AdminDepartures() {
     if (statusFilter !== "all" && dep.status !== statusFilter) return false;
     if (monthFilter !== "all") {
       if (monthFilter.startsWith('MONTH-')) {
-        if (dep.month !== monthFilter.replace('MONTH-', '')) return false;
+        if ((dep as any).month !== monthFilter.replace('MONTH-', '')) return false;
       } else {
         if (!dep.departure_date || !dep.departure_date.startsWith(monthFilter)) return false;
       }
@@ -196,8 +196,8 @@ export default function AdminDepartures() {
         </>
       );
     }
-    if (dep.month) {
-      const monthLabel = MONTHS.find(m => m.value === dep.month)?.label || dep.month;
+    if ((dep as any).month) {
+      const monthLabel = MONTHS.find(m => m.value === (dep as any).month)?.label || (dep as any).month;
       return (
         <>
           <p className="font-medium text-sm">Bulan {monthLabel}</p>
@@ -575,7 +575,7 @@ export default function AdminDepartures() {
           <AlertDialogHeader>
             <AlertDialogTitle>Hapus Keberangkatan?</AlertDialogTitle>
             <AlertDialogDescription>
-              Anda yakin ingin menghapus jadwal keberangkatan {deleteDeparture && (deleteDeparture.departure_date ? `tanggal ${formatDate(deleteDeparture.departure_date)}` : (deleteDeparture.month ? `bulan ${MONTHS.find(m => m.value === deleteDeparture.month)?.label}` : 'ini'))}? 
+              Anda yakin ingin menghapus jadwal keberangkatan {deleteDeparture && (deleteDeparture.departure_date ? `tanggal ${formatDate(deleteDeparture.departure_date)}` : ((deleteDeparture as any).month ? `bulan ${MONTHS.find(m => m.value === (deleteDeparture as any).month)?.label}` : 'ini'))}? 
               Tindakan ini tidak dapat dibatalkan.
             </AlertDialogDescription>
           </AlertDialogHeader>

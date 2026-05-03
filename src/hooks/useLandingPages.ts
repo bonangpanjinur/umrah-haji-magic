@@ -7,7 +7,7 @@ export function useLandingPages() {
   return useQuery({
     queryKey: ["landing-pages"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("landing_pages")
         .select("*")
         .order("created_at", { ascending: false });
@@ -27,7 +27,7 @@ export function useLandingPage(identifier: string, isPublic = true) {
       // Step 1: Get the landing page
       const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(identifier);
       
-      let query = supabase.from("landing_pages").select("*");
+      let query = (supabase as any).from("landing_pages").select("*");
       
       if (isUuid) {
         query = query.eq("id", identifier);
@@ -89,7 +89,7 @@ export function useCreateLandingPage() {
   
   return useMutation({
     mutationFn: async (newData: Partial<LandingPageData>) => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("landing_pages")
         .insert([newData])
         .select()
@@ -133,7 +133,7 @@ export function useUpdateLandingPage() {
         (cleanData as any)[key] === undefined && delete (cleanData as any)[key]
       );
 
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("landing_pages")
         .update(cleanData)
         .eq("id", id)
@@ -159,7 +159,7 @@ export function useDeleteLandingPage() {
   
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from("landing_pages")
         .delete()
         .eq("id", id);

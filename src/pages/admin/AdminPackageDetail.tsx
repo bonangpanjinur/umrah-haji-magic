@@ -75,8 +75,7 @@ export default function AdminPackageDetail() {
           airline:airlines(id, name, code),
           hotel_makkah:hotels!packages_hotel_makkah_id_fkey(id, name, star_rating),
           hotel_madinah:hotels!packages_hotel_madinah_id_fkey(id, name, star_rating),
-          muthawif:muthawifs(id, name),
-          package_type_ref:package_types(name)
+          muthawif:muthawifs(id, name)
         `)
         .eq('id', id)
         .single();
@@ -267,7 +266,7 @@ export default function AdminPackageDetail() {
               {!packageData.is_active && <Badge variant="destructive">Nonaktif</Badge>}
               {packageData.is_featured && <Badge variant="secondary">Featured</Badge>}
             </div>
-            <p className="text-muted-foreground">{packageData.code} • {packageData.package_type_ref?.name || formatPackageType(packageData.package_type)}</p>
+            <p className="text-muted-foreground">{packageData.code} • {formatPackageType(packageData.package_type)}</p>
           </div>
         </div>
         <Button onClick={() => setIsPackageFormOpen(true)}>
@@ -454,7 +453,7 @@ export default function AdminPackageDetail() {
                                   </>
                                 ) : (
                                   <>
-                                    <p className="font-medium">Bulan {MONTHS.find(m => m.value === departure.month)?.label || departure.month}</p>
+                                    <p className="font-medium">Bulan {MONTHS.find(m => m.value === (departure as any).month)?.label || (departure as any).month}</p>
                                     <p className="text-xs text-muted-foreground italic">Tanggal belum ditentukan</p>
                                   </>
                                 )}
@@ -599,7 +598,7 @@ export default function AdminPackageDetail() {
           <AlertDialogHeader>
             <AlertDialogTitle>Lepas Keberangkatan?</AlertDialogTitle>
             <AlertDialogDescription>
-              Apakah Anda yakin ingin melepas keberangkatan {unlinkDeparture && (unlinkDeparture.departure_date ? `tanggal ${formatDate(unlinkDeparture.departure_date)}` : `bulan ${MONTHS.find(m => m.value === unlinkDeparture.month)?.label}`)} dari paket ini?
+              Apakah Anda yakin ingin melepas keberangkatan {unlinkDeparture && (unlinkDeparture.departure_date ? `tanggal ${formatDate(unlinkDeparture.departure_date)}` : `bulan ${MONTHS.find(m => m.value === (unlinkDeparture as any).month)?.label}`)} dari paket ini?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

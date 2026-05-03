@@ -98,6 +98,7 @@ type WebsiteSettingsRow = Database['public']['Tables']['website_settings']['Row'
 const mapWebsiteSettings = (data: WebsiteSettingsRow): WebsiteSettings => {
   const raw = data as any;
   return {
+    google_console_verification: raw.google_console_verification ?? null,
     ...data,
     homepage_sections: data.homepage_sections as unknown as HomepageSection[] | null,
     custom_sections: data.custom_sections as unknown as CustomSection[] | null,

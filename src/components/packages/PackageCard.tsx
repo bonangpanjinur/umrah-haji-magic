@@ -109,12 +109,12 @@ export function PackageCard({
   // Calculate seat availability
   const getTotalQuota = () => {
     if (nearestDeparture?.quota) return nearestDeparture.quota;
-    return pkg.quota || 0;
+    return (pkg as any).quota || 0;
   };
 
   const getBookedCount = () => {
     if (nearestDeparture?.booked_count) return nearestDeparture.booked_count;
-    return pkg.booked_count || 0;
+    return (pkg as any).booked_count || 0;
   };
 
   const totalQuota = getTotalQuota();
@@ -243,7 +243,7 @@ export function PackageCard({
                   </div>
                   <div>
                     <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Maskapai</p>
-                    <p className="text-xs font-semibold line-clamp-1">{nearestDeparture?.airline?.name || pkg.airline?.name || "TBA"}</p>
+                    <p className="text-xs font-semibold line-clamp-1">{(nearestDeparture as any)?.airline?.name || pkg.airline?.name || "TBA"}</p>
                   </div>
                 </div>
               )}
@@ -257,7 +257,7 @@ export function PackageCard({
                     <div>
                       <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Hotel Makkah</p>
                       <p className="text-xs font-semibold line-clamp-1">
-                        {nearestDeparture?.hotel_makkah?.name || pkg.hotel_makkah?.name || "TBA"}
+                        {(nearestDeparture as any)?.hotel_makkah?.name || pkg.hotel_makkah?.name || "TBA"}
                       </p>
                     </div>
                   </div>
@@ -269,7 +269,7 @@ export function PackageCard({
                     <div>
                       <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Hotel Madinah</p>
                       <p className="text-xs font-semibold line-clamp-1">
-                        {nearestDeparture?.hotel_madinah?.name || pkg.hotel_madinah?.name || "TBA"}
+                        {(nearestDeparture as any)?.hotel_madinah?.name || pkg.hotel_madinah?.name || "TBA"}
                       </p>
                     </div>
                   </div>
@@ -380,14 +380,14 @@ export function PackageCard({
             {showAirline && (
               <div className="flex items-center gap-3">
                 <Plane className="h-4 w-4 text-primary flex-shrink-0" />
-                <span className="font-semibold text-slate-900 text-sm">{nearestDeparture?.airline?.name || pkg.airline?.name || "TBA"}</span>
+                <span className="font-semibold text-slate-900 text-sm">{(nearestDeparture as any)?.airline?.name || pkg.airline?.name || "TBA"}</span>
               </div>
             )}
 
             {showHotel && (
               <div className="flex items-center gap-3">
                 <Hotel className="h-4 w-4 text-primary flex-shrink-0" />
-                <span className="font-semibold text-slate-900 text-sm">Bintang {nearestDeparture?.hotel_makkah?.star_rating || pkg.hotel_makkah?.star_rating || "4"}</span>
+                <span className="font-semibold text-slate-900 text-sm">Bintang {(nearestDeparture as any)?.hotel_makkah?.star_rating || pkg.hotel_makkah?.star_rating || "4"}</span>
               </div>
             )}
 

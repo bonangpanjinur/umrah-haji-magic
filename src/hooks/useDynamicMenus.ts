@@ -42,7 +42,7 @@ export const useDynamicMenus = () => {
       if (!user || !isAdmin()) return [];
 
       // Get all menu items from database
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('menu_items')
         .select('*')
         .order('group_name', { ascending: true })
@@ -172,7 +172,7 @@ export const useSyncMenus = () => {
 
   const syncMenus = async (menus: any[]) => {
     try {
-      const { data, error } = await supabase.rpc('bulk_sync_menu_items', {
+      const { data, error } = await (supabase as any).rpc('bulk_sync_menu_items', {
         _menu_items: JSON.stringify(menus)
       });
 

@@ -108,7 +108,7 @@ export default function AdminUsers() {
 
       if (profilesError) throw profilesError;
 
-      const { data: authUsers, error: authError } = await supabase.rpc('list_users_with_emails');
+      const { data: authUsers, error: authError } = await (supabase as any).rpc('list_users_with_emails');
       const emailMap = new Map((authUsers || []).map(u => [u.id, u.email]));
 
       const { data: roles, error: rolesError } = await supabase
@@ -128,7 +128,7 @@ export default function AdminUsers() {
 
       const usersWithRoles: UserWithRoles[] = (profiles || []).map(profile => ({
         ...profile,
-        email: emailMap.get(profile.user_id) || null,
+        email: (emailMap.get(profile.user_id) || null) as string,
         roles: sortRoles((roles || []).filter(r => r.user_id === profile.user_id).map(r => ({
           id: r.id,
           role: r.role as AppRole,
@@ -196,7 +196,7 @@ export default function AdminUsers() {
   // Delete user mutation
   const deleteUserMutation = useMutation({
     mutationFn: async (userId: string) => {
-      const { error } = await supabase.rpc('delete_user_by_admin', {
+      const { error } = await (supabase as any).rpc('delete_user_by_admin', {
         target_user_id: userId
       });
       if (error) throw error;
@@ -214,7 +214,7 @@ export default function AdminUsers() {
   // Reset password via email mutation
   const resetPasswordEmailMutation = useMutation({
     mutationFn: async (userId: string) => {
-      const { error } = await supabase.rpc('reset_user_password_by_admin', {
+      const { error } = await (supabase as any).rpc('reset_user_password_by_admin', {
         target_user_id: userId
       });
       if (error) throw error;
@@ -236,7 +236,7 @@ export default function AdminUsers() {
       if (!newPassword || newPassword.length < 8) {
         throw new Error('Password harus minimal 8 karakter');
       }
-      const { error } = await supabase.rpc('set_user_password_by_admin', {
+      const { error } = await (supabase as any).rpc('set_user_password_by_admin', {
         target_user_id: userId,
         new_password: newPassword
       });

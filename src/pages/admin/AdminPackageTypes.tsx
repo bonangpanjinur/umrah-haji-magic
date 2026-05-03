@@ -20,7 +20,7 @@ export default function AdminPackageTypes() {
   const { data: packageTypes, isLoading } = useQuery({
     queryKey: ["admin-package-types"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("package_types")
         .select("*")
         .order("display_order", { ascending: true });
@@ -31,7 +31,7 @@ export default function AdminPackageTypes() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("package_types").delete().eq("id", id);
+      const { error } = await (supabase as any).from("package_types").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {

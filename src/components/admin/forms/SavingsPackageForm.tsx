@@ -155,7 +155,7 @@ export function SavingsPackageForm({ packageData, onSuccess, onCancel }: Savings
   const { data: packageTypes } = useQuery({
     queryKey: ["package-types"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("package_types")
         .select("*")
         .eq("is_active", true)
