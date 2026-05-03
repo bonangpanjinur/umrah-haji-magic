@@ -266,7 +266,7 @@ export default function AdminPackageDetail() {
               {!packageData.is_active && <Badge variant="destructive">Nonaktif</Badge>}
               {packageData.is_featured && <Badge variant="secondary">Featured</Badge>}
             </div>
-            <p className="text-muted-foreground">{packageData.code} • {packageData.package_type_ref?.name || formatPackageType(packageData.package_type)}</p>
+            <p className="text-muted-foreground">{packageData.code} • {formatPackageType(packageData.package_type)}</p>
           </div>
         </div>
         <Button onClick={() => setIsPackageFormOpen(true)}>

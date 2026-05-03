@@ -704,7 +704,7 @@ export default function AdminPackages() {
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute top-2 left-2 flex gap-1">
-                  <Badge>{pkg.package_type_ref?.name || formatPackageType(pkg.package_type)}</Badge>
+                  <Badge>{formatPackageType(pkg.package_type)}</Badge>
                   {pkg.is_featured && <Badge variant="secondary">Featured</Badge>}
                 </div>
                 {!pkg.is_active && (
