@@ -242,7 +242,7 @@ router.get('/:key', async (req: Request, res: Response, next: NextFunction) => {
     }
 
     // Get menu item
-    const { data: menu, error: menuError } = await supabase
+    const { data: menu, error: menuError } = await (supabase as any)
       .from('menu_items')
       .select('*')
       .eq('key', key)
@@ -320,7 +320,7 @@ router.post('/check-access', async (req: Request, res: Response, next: NextFunct
     }
 
     // Get menu items
-    const { data: menus, error: menusError } = await supabase
+    const { data: menus, error: menusError } = await (supabase as any)
       .from('menu_items')
       .select('*')
       .in('key', menu_keys);

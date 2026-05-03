@@ -52,13 +52,13 @@ export function PackageTypeForm({ packageTypeData, onSuccess, onCancel }: Packag
   const mutation = useMutation({
     mutationFn: async (values: PackageTypeFormValues) => {
       if (isEditing && packageTypeData) {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from("package_types")
           .update(values)
           .eq("id", packageTypeData.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from("package_types")
           .insert(values);
         if (error) throw error;
