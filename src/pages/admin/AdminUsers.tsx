@@ -128,7 +128,7 @@ export default function AdminUsers() {
 
       const usersWithRoles: UserWithRoles[] = (profiles || []).map(profile => ({
         ...profile,
-        email: emailMap.get(profile.user_id) || null,
+        email: (emailMap.get(profile.user_id) || null) as string,
         roles: sortRoles((roles || []).filter(r => r.user_id === profile.user_id).map(r => ({
           id: r.id,
           role: r.role as AppRole,
