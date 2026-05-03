@@ -25,7 +25,7 @@ export function usePackages() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data as Package[];
+      return data as unknown as Package[];
     },
   });
 }
@@ -53,7 +53,7 @@ export function useFeaturedPackages() {
         .limit(6);
 
       if (error) throw error;
-      return data as Package[];
+      return data as unknown as Package[];
     },
   });
 }
@@ -82,7 +82,7 @@ export function usePackage(packageId: string | undefined) {
         .single();
 
       if (error) throw error;
-      return data as Package;
+      return data as unknown as Package;
     },
     enabled: !!packageId,
   });
@@ -107,7 +107,7 @@ export function usePackageDepartures(packageId: string | undefined) {
       return data.map(d => ({
         ...d,
         available_seats: (d.quota || 0) - (d.booked_count || 0),
-      })) as Departure[];
+      })) as unknown as Departure[];
     },
     enabled: !!packageId,
   });
@@ -133,7 +133,7 @@ export function useUpcomingDepartures() {
       return data.map(d => ({
         ...d,
         available_seats: (d.quota || 0) - (d.booked_count || 0),
-      })) as (Departure & { package: Package })[];
+      })) as unknown as (Departure & { package: Package })[];
     },
   });
 }
@@ -169,7 +169,7 @@ export function useSearchPackages(searchTerm: string, packageType?: string) {
       const { data, error } = await query.order('is_featured', { ascending: false });
 
       if (error) throw error;
-      return data as Package[];
+      return data as unknown as Package[];
     },
     enabled: true,
   });
