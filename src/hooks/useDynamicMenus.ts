@@ -172,7 +172,7 @@ export const useSyncMenus = () => {
 
   const syncMenus = async (menus: any[]) => {
     try {
-      const { data, error } = await supabase.rpc('bulk_sync_menu_items', {
+      const { data, error } = await (supabase as any).rpc('bulk_sync_menu_items', {
         _menu_items: JSON.stringify(menus)
       });
 
