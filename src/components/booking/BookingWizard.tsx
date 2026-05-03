@@ -167,11 +167,9 @@ export function BookingWizard() {
               {departureInfo && (
                 <>
                   {" "}•{" "}
-                  {departureInfo.departure_date 
+                  {departureInfo.departure_date
                     ? `Berangkat ${format(new Date(departureInfo.departure_date), "d MMMM yyyy", { locale: idLocale })}`
-                    : departureInfo.month 
-                      ? `Bulan ${MONTHS.find(m => m.value === departureInfo.month)?.label || departureInfo.month}`
-                      : 'Tanggal Belum Ditentukan'}
+                    : 'Tanggal Belum Ditentukan'}
                 </>
               )}
             </p>
