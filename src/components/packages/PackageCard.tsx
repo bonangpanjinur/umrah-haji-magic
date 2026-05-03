@@ -387,7 +387,7 @@ export function PackageCard({
             {showHotel && (
               <div className="flex items-center gap-3">
                 <Hotel className="h-4 w-4 text-primary flex-shrink-0" />
-                <span className="font-semibold text-slate-900 text-sm">Bintang {nearestDeparture?.hotel_makkah?.star_rating || pkg.hotel_makkah?.star_rating || "4"}</span>
+                <span className="font-semibold text-slate-900 text-sm">Bintang {(nearestDeparture as any)?.hotel_makkah?.star_rating || pkg.hotel_makkah?.star_rating || "4"}</span>
               </div>
             )}
 
