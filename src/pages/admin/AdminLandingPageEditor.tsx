@@ -1,3 +1,4 @@
+import { Badge } from "@/components/ui/badge";
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLandingPage, useUpdateLandingPage } from "@/hooks/useLandingPages";

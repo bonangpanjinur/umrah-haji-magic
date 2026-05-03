@@ -767,12 +767,12 @@ export default function AdminPackages() {
           </DialogHeader>
           {packageTypeFilter === "tabungan" ? (
             <SavingsPackageForm 
-              initialData={editingPackage} 
+              {...({initialData: editingPackage} as any)} 
               onSuccess={handleFormClose} 
             />
           ) : (
             <RegularPackageForm 
-              initialData={editingPackage} 
+              {...({initialData: editingPackage} as any)} 
               onSuccess={handleFormClose} 
             />
           )}
