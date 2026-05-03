@@ -453,7 +453,7 @@ export default function AdminPackageDetail() {
                                   </>
                                 ) : (
                                   <>
-                                    <p className="font-medium">Bulan {MONTHS.find(m => m.value === departure.month)?.label || departure.month}</p>
+                                    <p className="font-medium">Bulan {MONTHS.find(m => m.value === (departure as any).month)?.label || (departure as any).month}</p>
                                     <p className="text-xs text-muted-foreground italic">Tanggal belum ditentukan</p>
                                   </>
                                 )}
@@ -598,7 +598,7 @@ export default function AdminPackageDetail() {
           <AlertDialogHeader>
             <AlertDialogTitle>Lepas Keberangkatan?</AlertDialogTitle>
             <AlertDialogDescription>
-              Apakah Anda yakin ingin melepas keberangkatan {unlinkDeparture && (unlinkDeparture.departure_date ? `tanggal ${formatDate(unlinkDeparture.departure_date)}` : `bulan ${MONTHS.find(m => m.value === unlinkDeparture.month)?.label}`)} dari paket ini?
+              Apakah Anda yakin ingin melepas keberangkatan {unlinkDeparture && (unlinkDeparture.departure_date ? `tanggal ${formatDate(unlinkDeparture.departure_date)}` : `bulan ${MONTHS.find(m => m.value === (unlinkDeparture as any).month)?.label}`)} dari paket ini?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
