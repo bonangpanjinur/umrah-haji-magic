@@ -89,10 +89,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .select('role, branch_id')
         .eq('user_id', userId);
       
+      let userRoles: AppRole[] = [];
       if (rolesData) {
-        setRoles(sortRoles(rolesData.map(r => r.role as AppRole)));
+        userRoles = sortRoles(rolesData.map(r => r.role as AppRole));
+        setRoles(userRoles);
         const branchRole = rolesData.find(r => r.branch_id);
         setBranchId(branchRole?.branch_id || null);
+      }
+
+      // Fetch permissions for the user's roles
+      if (userRoles.length > 0) {
+        const { data: permData } = await (supabase as any)
+          .from('role_permissions')
+          .select('permission_key, is_enabled')
+          .in('role', userRoles)
+          .eq('is_enabled', true);
+        if (permData) {
+          setPermissions(Array.from(new Set(permData.map((p: any) => p.permission_key))));
+        } else {
+          setPermissions([]);
+        }
+      } else {
+        setPermissions([]);
       }
     } catch (error) {
       console.error('Error fetching user data:', error);
