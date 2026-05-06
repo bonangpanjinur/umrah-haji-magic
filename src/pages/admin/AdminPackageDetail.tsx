@@ -575,7 +575,8 @@ export default function AdminPackageDetail() {
           </DialogHeader>
           <PackageForm 
             packageData={packageData} 
-            onSuccess={() => setIsPackageFormOpen(false)} 
+            onSuccess={() => setIsPackageFormOpen(false)}
+            onCancel={() => setIsPackageFormOpen(false)}
           />
         </DialogContent>
       </Dialog>
