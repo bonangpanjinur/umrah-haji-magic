@@ -63,9 +63,8 @@ const AdminPayroll = lazy(() => import("@/pages/admin/AdminPayroll"));
 const AdminManasik = lazy(() => import("@/pages/admin/AdminManasik"));
 const AdminVisaManagement = lazy(() => import("@/pages/admin/AdminVisaManagement"));
 
-// All roles except 'customer' are allowed to enter the admin layout shell.
-// The specific menus and pages will be further restricted by UDAC permissions.
-const ALL_STAFF_ROLES = ['super_admin', 'owner', 'branch_manager', 'finance', 'sales', 'marketing', 'operational', 'equipment', 'agent'] as const;
+// Staff roles allowed in /admin shell. Agent has its own /agent panel.
+const ALL_STAFF_ROLES = ['super_admin', 'owner', 'branch_manager', 'finance', 'sales', 'marketing', 'operational', 'equipment'] as const;
 
 function LazyPage({ children }: { children: React.ReactNode }) {
   return <Suspense fallback={<LoadingState />}>{children}</Suspense>;
