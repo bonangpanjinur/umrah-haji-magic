@@ -589,7 +589,8 @@ export default function AdminPackageDetail() {
           <LinkDepartureForm 
             packageId={id!} 
             linkedDepartureIds={linkedDepartureIds}
-            onSuccess={() => setIsLinkDepartureOpen(false)} 
+            onSuccess={() => setIsLinkDepartureOpen(false)}
+            onCancel={() => setIsLinkDepartureOpen(false)}
           />
         </DialogContent>
       </Dialog>
