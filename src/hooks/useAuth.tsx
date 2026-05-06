@@ -162,13 +162,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return roles.includes(role);
   };
 
+  // Strict admin: super_admin/owner/branch_manager only
   const isAdmin = (): boolean => {
-    // All roles except 'customer' are considered admin/staff
-    return roles.length > 0 && !roles.every(role => role === 'customer');
+    return roles.some(r => r === 'super_admin' || r === 'owner' || r === 'branch_manager');
   };
 
-  const isSuperAdmin = (): boolean => {
-    return roles.includes('super_admin');
+  // Staff = any non-customer, non-agent role (allowed in /admin shell)
+  const isStaff = (): boolean => {
+    return roles.length > 0 && roles.some(r => r !== 'customer' && r !== 'agent');
+  };
+
+  const isAgent = (): boolean => roles.includes('agent');
+  const isCustomer = (): boolean => roles.length === 0 || roles.every(r => r === 'customer');
+  const isSuperAdmin = (): boolean => roles.includes('super_admin');
+
+  const hasPermission = (permissionKey: string): boolean => {
+    // Super admin & owner have all permissions
+    if (roles.includes('super_admin') || roles.includes('owner')) return true;
+    return permissions.includes(permissionKey);
   };
 
   return (
@@ -180,12 +191,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         roles,
         branchId,
         isLoading,
+        permissions,
         signUp,
         signIn,
         signOut,
         hasRole,
         isAdmin,
+        isStaff,
+        isAgent,
+        isCustomer,
         isSuperAdmin,
+        hasPermission,
       }}
     >
       {children}
