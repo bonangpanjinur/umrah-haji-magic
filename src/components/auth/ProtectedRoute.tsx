@@ -14,15 +14,13 @@ interface ProtectedRouteProps {
 export default function ProtectedRoute({ 
   children, 
   requireAuth = true,
-  allowedRoles
+  allowedRoles,
+  permission,
 }: ProtectedRouteProps) {
-  const { user, isLoading: authLoading, isAdmin, roles } = useAuth();
+  const { user, isLoading: authLoading, isStaff, isAgent, roles, hasPermission } = useAuth();
   const location = useLocation();
 
-  const isLoading = authLoading;
-
-  // Show loading state while checking auth
-  if (isLoading) {
+  if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
@@ -33,22 +31,30 @@ export default function ProtectedRoute({
     );
   }
 
-  // If loading finished but no user, and it's required, redirect to login
-  if (!isLoading && requireAuth && !user) {
+  if (requireAuth && !user) {
     return <Navigate to={`/auth/login?redirect=${encodeURIComponent(location.pathname + location.search)}`} replace />;
   }
 
-  // If it's an admin route (starts with /admin) and user is not admin, redirect to home
-  if (location.pathname.startsWith('/admin') && !isAdmin()) {
-    return <Navigate to="/" replace />;
+  // /admin shell: only staff (non-customer, non-pure-agent) can enter.
+  // Agents have their own /agent panel.
+  if (location.pathname.startsWith('/admin')) {
+    if (!isStaff()) {
+      if (isAgent()) return <Navigate to="/agent" replace />;
+      return <Navigate to="/" replace />;
+    }
   }
 
-  // Check if user has allowed role
+  // Role gate
   if (allowedRoles && allowedRoles.length > 0) {
     const hasAllowedRole = roles.some(role => allowedRoles.includes(role));
     if (!hasAllowedRole) {
       return <Navigate to="/" replace />;
     }
+  }
+
+  // Permission gate (granular per route)
+  if (permission && !hasPermission(permission)) {
+    return <Navigate to="/admin" replace />;
   }
 
   return <>{children}</>;
