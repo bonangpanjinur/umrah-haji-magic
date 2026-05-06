@@ -23,24 +23,25 @@ export default function Login() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
-  const { user, isAdmin, isLoading: authLoading } = useAuth();
+  const { user, isStaff, isAgent, isLoading: authLoading } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const redirectTo = searchParams.get('redirect');
 
-  // Redirect if already logged in
   useEffect(() => {
     if (user && !authLoading) {
       if (redirectTo) {
         navigate(redirectTo);
-      } else if (isAdmin()) {
+      } else if (isStaff()) {
         navigate('/admin');
+      } else if (isAgent()) {
+        navigate('/agent');
       } else {
         navigate('/my-bookings');
       }
     }
-  }, [user, authLoading, isAdmin, navigate, redirectTo]);
+  }, [user, authLoading, isStaff, isAgent, navigate, redirectTo]);
 
   const { register, handleSubmit, formState: { errors } } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),

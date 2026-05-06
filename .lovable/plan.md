@@ -1,132 +1,222 @@
-# Analisis Menu Admin (Top-Down) & Rencana Perbaikan
+# Rencana Perbaikan & Pengembangan Sistem Umroh
 
-## TEMUAN STRUKTURAL (KRITIS — harus diperbaiki dulu)
-
-### A. KRITIS: Tabel `menu_items` TIDAK ADA di Database
-- `useDynamicMenus.ts` query `from('menu_items')` → **gagal diam-diam**
-- Akibat: sidebar `AdminLayoutDynamicImproved` selalu menampilkan "Tidak ada menu tersedia" / kosong, kecuali ada fallback (tidak ada)
-- Subscription realtime `public:menu_items_changes` juga error
-- **Fix**: Buat tabel `menu_items` + seed dari daftar route di `AdminRoutes.tsx`, ATAU ubah hook untuk pakai konstanta hardcoded (lebih cepat & aman). Rekomendasi: hardcoded constant + tetap sediakan tabel untuk override visibility.
-
-### B. KRITIS: `role_permissions` ada tapi TIDAK DIPAKAI untuk filter sidebar
-- Tabel `role_permissions` punya 14+ permission_key per role, tapi `useDynamicMenus` sengaja **tidak melakukan filtering** (komentar: "no permission filtering")
-- `useMenuAccess` juga selalu return `true`
-- Akibat: semua staf (sales, marketing, finance, operational, equipment, agent) **melihat & bisa akses semua menu admin** — termasuk Finance, HR, Settings, Permissions
-- `ProtectedRoute` hanya cek `isAdmin()` (luas), tidak per-permission
-- **Fix**: Implementasikan filtering: tiap menu punya `required_permission`, hook `usePermissions()` baca `role_permissions`, sidebar & route guard pakai key yang sama.
-
-### C. KRITIS: `isAdmin()` Terlalu Luas
-- `roles.length > 0 && !roles.every(r => r==='customer'||r==='jamaah')` → role `agent` juga dianggap admin dan bisa masuk `/admin`
-- Padahal agent punya panel sendiri (`/agent`)
-- **Fix**: Pisahkan `isStaff()` (akses /admin shell) dari `isAgent()`. Agent tidak boleh lewat `ALL_STAFF_ROLES` di AdminRoutes.
-
-### D. SEDANG: Error Console "Cannot read properties of undefined (reading 'payload')"
-- Tipikal datang dari Supabase realtime channel saat tabel tidak ada (menu_items) atau query subscription invalid
-- Hilang otomatis setelah fix A.
+Berdasarkan audit menyeluruh terhadap menu admin, agent, operasional, jamaah, customer, dan publik — berikut peta lengkap fitur yang **belum ada**, yang **harus diperbaiki**, dan urutan pengerjaannya.
 
 ---
 
-## AUDIT PER MENU (urut dari atas sidebar)
+## A. FITUR YANG BELUM ADA (HARUS DIBUAT)
 
-Group sidebar (asumsi urutan standar `group_name` di seed): **Dashboard → Produk & Operasional → Jamaah & Agent → Keuangan → SDM → Pemasaran → Pengaturan**
+### A1. Database & Schema (Pondasi)
+Tanpa ini, banyak menu akan 404/400:
+- Tabel `menu_items` (sidebar dinamis) — saat ini belum ada, sidebar kosong
+- Tabel `package_types` — referensi di kode tapi tidak ada
+- Tabel `company_features` — referensi tapi tidak ada
+- Kolom `month` di `departures` (untuk grouping bulanan)
+- Kolom `airline`, `hotel_makkah`, `hotel_madinah` di `packages` (dipakai PackageCard tapi di-cast `as any`)
+- Tabel `role_permissions` — sudah ada tapi tidak dipakai filter sidebar
 
-### 1. Dashboard (`/admin`)
-- OK secara fungsi. Stats per branch sudah respect role.
-- Minor: query `equipment_items.stock_quantity` & `customer_documents.status` perlu dipastikan kolomnya ada (cek nanti, biasanya OK).
+### A2. Sistem Permission Granular (RBAC sebenarnya)
+- Filter sidebar berdasar `role_permissions` (saat ini semua staff lihat semua menu)
+- Prop `permission` di `ProtectedRoute` (saat ini di-ignore — komentar "Deprecated")
+- Halaman admin **Role & Permissions** untuk super_admin mengatur akses per role
+- Pemisahan yang jelas: `isStaff()` vs `isAgent()` vs `isCustomer()`
 
-### 2. Analytics (`/admin/analytics`)
-- Cek: beberapa chart masih dummy / 404 jika tabel tidak ada. Konfirmasi saat eksekusi.
+### A3. Fitur Bisnis yang Hilang
+- **Refund Management** — workflow pengembalian dana (request → approve → kembalikan)
+- **Cancellation Policy** per paket + workflow pembatalan booking
+- **Waiting List** untuk paket yang full
+- **Group Booking discount** (diskon rombongan otomatis)
+- **Multi-currency display** (USD/SAR untuk landing internasional)
+- **Voucher/Coupon redemption flow** di checkout (halaman admin Coupons sudah ada, integrasi belum)
+- **PIC Fee splitting** otomatis ke wallet agent saat pembayaran lunas
+- **Manasik Online** (zoom/youtube embed + attendance) — saat ini hanya jadwal offline
+- **E-Sertifikat Manasik & Umroh** (PDF + QR verify)
+- **Survey Kepuasan post-trip** otomatis kirim WA + simpan rating
 
-### 3. Paket (`/admin/packages`, `/admin/packages/:id`, `/admin/package-types`, `/admin/departures`)
-- Bug terbaru sudah disebut: harga di admin belum ambil termurah dari `departures` (di website sudah benar).
-- **Fix**: `AdminPackages` list & `AdminPackageDetail` → tampilkan "mulai dari" = MIN(`departures.price_*`) per paket.
-- `AdminPackageTypes` & `AdminDepartures`: pastikan kolom `package_type` (bukan `category`) sudah konsisten — dari rencana lama sudah difix, verifikasi.
+### A4. Komunikasi & Marketing
+- **Broadcast WhatsApp** ke segment (jamaah by departure, leads, agent)
+- **Email Marketing** templates + send (campaign blast)
+- **Push Notification** (PWA Web Push) untuk jamaah app
+- **Chat in-app** customer ↔ admin (saat ini hanya helpdesk ticket)
+- **Auto-reminder pelunasan** sudah ada — perlu **auto-reminder dokumen** (paspor, vaksin meningitis, foto)
 
-### 4. Booking (`/admin/bookings`, `/admin/bookings/create`, `/admin/bookings/:id`)
-- PIC selection sudah dipasang sebelumnya — verifikasi tampil di create & detail.
-- Card "Bantuan Langkah" yang menutup harga saat scroll → perlu sticky/collapsible (sudah disebut sebelumnya, cek apakah sudah).
+### A5. Operasional Lapangan
+- **Tracking Pesawat real-time** (integrasi flight API) di hari keberangkatan
+- **Live tracking bus** (sudah ada SOS, perlu live map untuk semua bus)
+- **Daily report Muthawif** (laporan harian tim lapangan)
+- **Incident report** (laporan kejadian: jamaah sakit, hilang, dll)
+- **Distribusi obat & medical kit** tracking
 
-### 5. Pembayaran (`/admin/payments`)
-- Cek: filter status, export, dan upload bukti.
+### A6. Finance Lanjutan
+- **Cashflow forecast** 3-6 bulan ke depan
+- **Budgeting per departure** vs realisasi
+- **Tax/PPN management** invoice
+- **Multi-bank reconciliation** otomatis (upload mutasi → match payment)
+- **Komisi marketing/influencer** terpisah dari komisi agent
 
-### 6. Keuangan: PL / Cash / AR / AP / Vendors
-- AR: tombol reminder piutang sudah direncanakan — verifikasi.
-- Vendors & AP: pastikan tidak query tabel yang belum ada.
+### A7. Jamaah PWA App (Belum Lengkap)
+- **Itinerary harian dengan notifikasi** ("15 menit lagi makan siang")
+- **Doa & Panduan offline** sudah ada — perlu **audio doa**
+- **Kompas kiblat** + waktu sholat lokasi sekarang
+- **Marketplace oleh-oleh** (optional)
+- **Galeri foto bersama** per departure (upload + tag)
+- **Forum/Group chat** per rombongan
 
-### 7. Pelanggan & Jamaah (`/admin/customers`, `/admin/customers/:id`, `/admin/document-verification`)
-- Fitur hapus jamaah duplikat NIK (owner/super_admin/manager) — verifikasi sudah ada button + konfirmasi + audit log.
-- Document verification: status badge & approve/reject flow.
-
-### 8. Agen (`/admin/agents`)
-- Daftar agen + commission. Tidak boleh muncul ke role `agent` sendiri.
-
-### 9. Cabang (`/admin/branches`)
-- Hanya super_admin/owner yang boleh.
-
-### 10. Kamar (`/admin/room-assignments`)
-- Auto-pair teman kamar saat nomor sama (rencana lama). Verifikasi update RLS `booking_passengers` sudah ada policy UPDATE.
-
-### 11. Tabungan (`/admin/savings`)
-- Insert error `remaining_amount` (rencana lama). Verifikasi default value sudah set + tombol "Konversi ke Booking".
-
-### 12. Loyalty / Referrals / Coupons / Support / Leads
-- Cek query 404. Leads analytics & detail.
-
-### 13. HR (`/admin/hr`, `/admin/hr/payroll`)
-- Absensi manual dialog (rencana lama) — verifikasi.
-- Hak akses ketat (hanya HR/owner).
-
-### 14. Manasik / Itinerary / Haji / Visa / Equipment / Bus
-- Pastikan tidak ada query 404 (`gallery_items`, `about_page_content` sudah difix sebelumnya).
-
-### 15. WhatsApp / Marketing / Landing Pages / Static Pages / Testimonials
-- Editor landing page: cek save berfungsi.
-- Static pages: konten dinamis untuk footer.
-
-### 16. Appearance / Settings / Permissions / Reports
-- Permissions matrix: harus benar-benar mempengaruhi sidebar (lihat poin B).
-- Settings: tab hak akses harus ter-link ke `role_permissions`.
-
-### 17. Master Data / Airlines / Airports / Hotels / Muthawifs / Bus Providers
-- CRUD standar. Cek tombol delete & RLS.
+### A8. Reporting & Analytics
+- **Dashboard executive** (KPI utama: revenue, booking, agent performance)
+- **Cohort analysis** customer retention
+- **Funnel analytics** (visit → lead → booking → paid)
+- **Agent leaderboard** publik internal
 
 ---
 
-## RENCANA PERBAIKAN — PRIORITAS
+## B. FITUR YANG HARUS DIPERBAIKI / DISEMPURNAKAN
 
-| # | Prioritas | Item | File Utama |
-|:--|:--|:--|:--|
-| 1 | **KRITIS** | Buat tabel `menu_items` + seed dari `AdminRoutes.tsx` (group, label, path, icon, sort_order, required_permission) | Migration SQL |
-| 2 | **KRITIS** | Implementasikan filter sidebar berdasar `role_permissions`: hook `usePermissions()` + filter di `useDynamicMenus` | `useDynamicMenus.ts`, `usePermissions.ts` (baru) |
-| 3 | **KRITIS** | Route guard per-permission di `ProtectedRoute` (prop `permission`) + apply ke setiap `<Route>` admin | `ProtectedRoute.tsx`, `AdminRoutes.tsx` |
-| 4 | **KRITIS** | Pisahkan `isStaff()` vs `isAgent()`; keluarkan `agent` dari `ALL_STAFF_ROLES` admin | `useAuth.tsx`, `AdminRoutes.tsx` |
-| 5 | **TINGGI** | Fix harga "mulai dari" di Admin Packages list & detail (MIN dari departures) | `AdminPackages.tsx`, `AdminPackageDetail.tsx`, `usePackages.ts` |
-| 6 | **TINGGI** | Verifikasi & perbaiki bug realtime payload undefined (akan hilang setelah #1) + tambah guard subscription | `useDynamicMenus.ts` |
-| 7 | **TINGGI** | Verifikasi fitur tertunda: PIC selection, Hapus jamaah, Reminder AR, Auto-pair kamar, Absensi manual, Konversi tabungan → booking. Fix yang belum jadi. | berbagai admin pages |
-| 8 | **SEDANG** | Sticky/collapsible "Bantuan Langkah" pada `/booking` agar tidak menutup card harga saat scroll | `BookingWizard.tsx` |
-| 9 | **SEDANG** | UI Permission Matrix: grouping per modul, label lengkap, link ke menu key | `AdminSettings.tsx` (tab Permissions) |
-| 10 | **RENDAH** | Audit query 404 sisa (gallery_items, dll yang belum bersih) | scan + fix |
+### B1. Auth & Akses (Kritikal)
+- `isAdmin()` masih terlalu longgar — agent ikut masuk `/admin`
+- Login redirect tidak konsisten (agent → `/agent`, customer → `/`, staff → `/admin`)
+- Session timeout 30 menit belum aktif di semua role
+- 2FA baru ada untuk super_admin — perlu opsional untuk semua admin
 
-## Detail Teknis Singkat
+### B2. Sidebar & Navigasi
+- Sidebar admin kosong karena `menu_items` table tidak ada
+- Breadcrumb tidak konsisten antar halaman
+- Mobile sidebar admin overlap dengan konten di tablet
+- Notification bell belum realtime di semua role
 
-**Skema `menu_items`** (jika belum dibuat):
-```
-menu_items (id uuid pk, key text unique, label text, path text,
-            icon text, group_name text, sort_order int,
-            required_permission text references role_permissions(permission_key) by key,
-            is_active bool default true)
-```
-Seed berisi ~50 baris sesuai `AdminRoutes.tsx` (dashboard, analytics, packages, departures, equipment, savings, master-data, branches, bookings, payments, finance, finance-cash, finance/ar, finance/ap, vendors, customers, document-verification, agents, coupons, loyalty, referrals, support, leads, room-assignments, reports, advanced-reports, scheduled-reports, hr, hr/payroll, haji, itinerary-templates, offline-content, documents-generator, whatsapp, marketing-materials, appearance, static-pages, testimonials, landing-pages, settings, package-types, manasik, visa).
+### B3. Booking Wizard
+- Card "Bantuan Langkah" menutupi info harga (sudah dilaporkan)
+- Step PIC Selection tidak muncul untuk paket tertentu
+- Validasi NIK duplikat hanya cek session, belum cek silang antar booking aktif
+- Auto-save progress (jamaah refresh browser → data hilang)
+- Pembayaran DP partial belum bisa langsung lanjut tanpa logout
 
-**`usePermissions` hook**:
-- Fetch sekali: `select role,permission_key from role_permissions where is_enabled=true and role in (myRoles)`
-- Return `Set<string>` permission keys + `can(key)`.
+### B4. Package Management
+- Harga "starting from" di list belum tampil (MIN dari departures)
+- Upload foto paket belum ada cropper/compress
+- Itinerary builder masih textarea — perlu day-by-day visual
+- Tidak ada preview "tampilan publik" sebelum publish
 
-**Filter sidebar**:
-- `useDynamicMenus` filter `menus.filter(m => can(m.required_permission))`.
-- Super admin bypass.
+### B5. Customer & Jamaah
+- Hapus duplikat NIK belum ada UI (hanya query manual)
+- Bulk import customer (CSV) belum ada
+- Foto paspor belum auto-OCR (extract nomor & expiry)
+- Riwayat perjalanan customer belum ditampilkan di profil
 
-**Route guard**:
-- `<ProtectedRoute permission="finance.view">` redirect `/admin` jika tidak punya.
+### B6. Operasional
+- Room assignment auto-pair gender belum sempurna (kadang mismatched)
+- Manifest PDF belum include foto jamaah
+- Equipment checklist belum ada signature digital
+- QR scan check-in kadang lambat (perlu offline-first)
 
-Setelah disetujui, saya kerjakan urutan #1 → #4 dulu (struktural), kemudian #5–#7 (fitur), lalu sisanya.
+### B7. Finance
+- Verifikasi pembayaran belum ada batch approve
+- Invoice PDF belum auto-kirim WhatsApp setelah lunas
+- Komisi agent kadang dobel-hitung kalau ada cancellation
+- Export Excel laporan belum include filter aktif
+
+### B8. HR
+- Manual attendance perlu approval flow
+- Payroll belum support komponen variable (lembur, bonus, potongan)
+- Slip gaji PDF belum ada
+- Cuti/izin workflow belum ada
+
+### B9. Whitelabel & Multi-tenant
+- Branding per cabang belum apply ke email & invoice
+- Domain custom per agent belum bisa
+- Theme switcher belum tersimpan per user
+
+### B10. UI/UX Umum
+- Banyak loading skeleton hilang → flash empty state
+- Empty state generic — perlu CTA spesifik per modul
+- Error toast tidak konsisten (kadang technical message)
+- Mobile responsiveness admin masih banyak yang patah
+
+### B11. Performance & Quality
+- Beberapa query tidak pakai pagination (>1000 row limit)
+- N+1 query di list booking & customer
+- Gambar belum lazy load di publik
+- Bundle size besar (perlu code splitting per route)
+- Banyak `as any` cast karena schema mismatch — perlu sync types
+
+---
+
+## C. RENCANA PENGERJAAN BERTAHAP
+
+### 🔴 FASE 1 — Pondasi & Stabilisasi (Wajib Duluan, ~1 minggu)
+**Tujuan: sistem tidak crash, sidebar muncul, akses benar**
+1. Migrasi DB: buat `menu_items`, `package_types`, `company_features`, tambah kolom `month`/`airline`/`hotel_*` di `packages` & `departures`
+2. Seed `menu_items` dari `AdminRoutes.tsx`
+3. Aktifkan filter sidebar berbasis `role_permissions`
+4. Aktifkan `permission` prop di `ProtectedRoute`
+5. Fix `isAdmin()` — pisah `isStaff/isAgent/isCustomer`
+6. Hapus semua `as any` setelah schema sync (regen types)
+7. Login redirect per role
+
+### 🟠 FASE 2 — Perbaikan Booking & Package (~1 minggu)
+1. Fix card "Bantuan Langkah" overlap
+2. Tampilkan harga "starting from" (MIN departures)
+3. PIC selection step muncul konsisten
+4. Validasi NIK duplikat cross-booking
+5. Auto-save wizard progress (localStorage)
+6. Itinerary day-by-day visual builder
+7. Preview publik paket sebelum publish
+
+### 🟡 FASE 3 — Operasional & Finance (~1-2 minggu)
+1. Refund & cancellation workflow
+2. Verifikasi pembayaran batch + auto-kirim invoice WA
+3. Voucher/coupon integrasi checkout
+4. Manifest PDF + foto jamaah
+5. Equipment checklist signature digital
+6. Slip gaji PDF + komponen variable payroll
+7. Cuti/izin workflow HR
+
+### 🟢 FASE 4 — Komunikasi & Engagement (~1 minggu)
+1. Broadcast WhatsApp ke segment
+2. Email marketing campaign
+3. Push notification PWA jamaah
+4. Survey kepuasan post-trip otomatis
+5. Auto-reminder dokumen (paspor expiry dll)
+6. Chat in-app customer ↔ admin
+
+### 🔵 FASE 5 — Jamaah PWA Lanjutan (~1 minggu)
+1. Audio doa
+2. Kompas kiblat & waktu sholat
+3. Galeri foto bersama per departure
+4. Forum/group chat per rombongan
+5. Itinerary harian + notifikasi waktu
+
+### 🟣 FASE 6 — Analytics & Whitelabel (~1 minggu)
+1. Dashboard executive KPI
+2. Cohort & funnel analytics
+3. Agent leaderboard
+4. Branding cabang apply ke email/invoice
+5. Custom domain per agent
+6. Cashflow forecast & budgeting per departure
+
+### ⚪ FASE 7 — Polish & Performance (ongoing)
+1. Pagination semua list
+2. Fix N+1 queries
+3. Lazy load gambar publik
+4. Code splitting per route
+5. Loading skeleton & empty state konsisten
+6. Mobile responsiveness admin
+7. E-sertifikat manasik & umroh
+8. Tracking pesawat & live bus map
+
+---
+
+## Detail Teknis (Untuk Eksekusi)
+
+- **Schema regeneration**: setelah Fase 1 migrasi, regen `src/integrations/supabase/types.ts` — hapus semua `as any` cast.
+- **Permission engine**: gunakan `useDynamicMenus` + helper `hasPermission(key)` dari `role_permissions`. Cache di `useAuth`.
+- **Realtime**: pastikan `supabase_realtime` publication include: `notifications`, `bookings`, `payments`, `whatsapp_logs`.
+- **PWA push**: pakai `web-push` lib + edge function `send-push`. VAPID keys disimpan di secrets.
+- **Flight tracking**: integrasi AviationStack atau FlightAware (perlu API key dari user).
+- **OCR paspor**: pakai Lovable AI Gateway `google/gemini-2.5-flash` untuk extract nomor & expiry dari foto.
+
+---
+
+## Konfirmasi
+
+Apakah saya mulai dari **Fase 1 (Pondasi & Stabilisasi)**? Atau ada fase/fitur tertentu yang ingin diprioritaskan duluan?

@@ -16,7 +16,12 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   hasRole: (role: AppRole) => boolean;
   isAdmin: () => boolean;
+  isStaff: () => boolean;
+  isAgent: () => boolean;
+  isCustomer: () => boolean;
   isSuperAdmin: () => boolean;
+  hasPermission: (permissionKey: string) => boolean;
+  permissions: string[];
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -26,6 +31,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [roles, setRoles] = useState<AppRole[]>([]);
+  const [permissions, setPermissions] = useState<string[]>([]);
   const [branchId, setBranchId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const authHandledRef = useRef(false);
@@ -83,10 +89,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .select('role, branch_id')
         .eq('user_id', userId);
       
+      let userRoles: AppRole[] = [];
       if (rolesData) {
-        setRoles(sortRoles(rolesData.map(r => r.role as AppRole)));
+        userRoles = sortRoles(rolesData.map(r => r.role as AppRole));
+        setRoles(userRoles);
         const branchRole = rolesData.find(r => r.branch_id);
         setBranchId(branchRole?.branch_id || null);
+      }
+
+      // Fetch permissions for the user's roles
+      if (userRoles.length > 0) {
+        const { data: permData } = await (supabase as any)
+          .from('role_permissions')
+          .select('permission_key, is_enabled')
+          .in('role', userRoles)
+          .eq('is_enabled', true);
+        if (permData) {
+          setPermissions(Array.from(new Set(permData.map((p: any) => p.permission_key))));
+        } else {
+          setPermissions([]);
+        }
+      } else {
+        setPermissions([]);
       }
     } catch (error) {
       console.error('Error fetching user data:', error);
@@ -138,13 +162,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return roles.includes(role);
   };
 
+  // Strict admin: super_admin/owner/branch_manager only
   const isAdmin = (): boolean => {
-    // All roles except 'customer' are considered admin/staff
-    return roles.length > 0 && !roles.every(role => role === 'customer');
+    return roles.some(r => r === 'super_admin' || r === 'owner' || r === 'branch_manager');
   };
 
-  const isSuperAdmin = (): boolean => {
-    return roles.includes('super_admin');
+  // Staff = any non-customer, non-agent role (allowed in /admin shell)
+  const isStaff = (): boolean => {
+    return roles.length > 0 && roles.some(r => r !== 'customer' && r !== 'agent');
+  };
+
+  const isAgent = (): boolean => roles.includes('agent');
+  const isCustomer = (): boolean => roles.length === 0 || roles.every(r => r === 'customer');
+  const isSuperAdmin = (): boolean => roles.includes('super_admin');
+
+  const hasPermission = (permissionKey: string): boolean => {
+    // Super admin & owner have all permissions
+    if (roles.includes('super_admin') || roles.includes('owner')) return true;
+    return permissions.includes(permissionKey);
   };
 
   return (
@@ -156,12 +191,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         roles,
         branchId,
         isLoading,
+        permissions,
         signUp,
         signIn,
         signOut,
         hasRole,
         isAdmin,
+        isStaff,
+        isAgent,
+        isCustomer,
         isSuperAdmin,
+        hasPermission,
       }}
     >
       {children}

@@ -48,7 +48,7 @@ const DynamicIcon = ({ name, className }: { name?: string; className?: string })
 };
 
 function AdminLayoutDynamicImproved() {
-  const { user, profile, signOut, isAdmin } = useAuth();
+  const { user, profile, signOut, isStaff } = useAuth();
   const { groupedMenus, isLoading: menusLoading } = useDynamicMenus();
   const location = useLocation();
   const navigate = useNavigate();
@@ -143,7 +143,7 @@ function AdminLayoutDynamicImproved() {
     })).filter(group => group.items.length > 0);
   }, [groupedMenus, searchQuery]);
 
-  if (!user || !isAdmin()) {
+  if (!user || !isStaff()) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center space-y-3">
