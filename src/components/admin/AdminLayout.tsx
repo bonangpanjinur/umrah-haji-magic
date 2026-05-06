@@ -130,7 +130,7 @@ const NAV_GROUPS: NavGroup[] = [
 ];
 
 function AdminLayout() {
-  const { user, profile, signOut, isAdmin, isLoading: authLoading } = useAuth();
+  const { user, profile, signOut, isStaff, isLoading: authLoading } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -214,7 +214,7 @@ function AdminLayout() {
     );
   }
 
-  if (!user || !isAdmin()) {
+  if (!user || !isStaff()) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
