@@ -16,7 +16,12 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   hasRole: (role: AppRole) => boolean;
   isAdmin: () => boolean;
+  isStaff: () => boolean;
+  isAgent: () => boolean;
+  isCustomer: () => boolean;
   isSuperAdmin: () => boolean;
+  hasPermission: (permissionKey: string) => boolean;
+  permissions: string[];
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
