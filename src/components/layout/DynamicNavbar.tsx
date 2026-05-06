@@ -39,7 +39,7 @@ interface DynamicNavbarProps {
 
 export function DynamicNavbar({ tenantSettings }: DynamicNavbarProps = {}) {
   const [isOpen, setIsOpen] = useState(false);
-  const { user, profile, isAdmin, signOut } = useAuth();
+  const { user, profile, isStaff, isAgent, signOut } = useAuth();
   const { data: mainSettings } = useWebsiteSettings();
   const settings = tenantSettings || mainSettings;
   const navigate = useNavigate();
@@ -51,7 +51,8 @@ export function DynamicNavbar({ tenantSettings }: DynamicNavbarProps = {}) {
   };
 
   const getDashboardLink = () => {
-    if (isAdmin()) return '/admin';
+    if (isStaff()) return '/admin';
+    if (isAgent()) return '/agent';
     return '/my-bookings';
   };
 
