@@ -32,19 +32,18 @@ export interface MenuGroup {
  * Hook untuk fetch semua menu items (tanpa filtering permission)
  */
 export const useDynamicMenus = () => {
-  const { user, isAdmin } = useAuth();
+  const { user, isStaff, hasPermission } = useAuth();
   const queryClient = useQueryClient();
 
-  // Fetch all menus - no permission filtering
-  const { data: menus = [], isLoading, error, refetch } = useQuery({
+  const { data: rawMenus = [], isLoading, error, refetch } = useQuery({
     queryKey: ['dynamic-menus', user?.id],
     queryFn: async () => {
-      if (!user || !isAdmin()) return [];
+      if (!user || !isStaff()) return [];
 
-      // Get all menu items from database
       const { data, error } = await (supabase as any)
         .from('menu_items')
         .select('*')
+        .eq('is_active', true)
         .order('group_name', { ascending: true })
         .order('sort_order', { ascending: true });
 
@@ -64,9 +63,14 @@ export const useDynamicMenus = () => {
         required_permission: m.required_permission
       }));
     },
-    enabled: !!user && isAdmin,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    enabled: !!user,
+    staleTime: 1000 * 60 * 5,
   });
+
+  // Apply permission filtering on the client (uses cached permissions in useAuth)
+  const menus: MenuItem[] = rawMenus.filter((m: MenuItem) =>
+    !m.required_permission || hasPermission(m.required_permission)
+  );
 
   // Real-time sync: Invalidate cache when menu_items change
   useEffect(() => {
